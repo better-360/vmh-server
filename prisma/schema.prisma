@@ -1,0 +1,545 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String                @id @default(uuid()) @db.Uuid
+  email              String                @unique
+  password           String
+  firstName          String
+  lastName           String
+  telephone          String?
+  profileImage       String?
+  notifications      Boolean               @default(true)
+  emailConfirmed     Boolean               @default(false)
+  telephoneConfirmed Boolean               @default(false)
+  stripeCustomerId   String?
+  lastLogin          DateTime?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  deletedAt          DateTime?
+  isActive           Boolean               @default(true)
+  attachment         Attachment[]
+  invoices           Invoice[]
+  tickets            Ticket[]
+  roles              UserRole[]
+  invitations        Invitation[]
+  ticketMessages     TicketMessage[]
+  virtualAddress     UserAddress[]
+  deliveryAddress    UserDeliveryAddress[]
+  subscriptions      UserSubscription[]
+  workspaces         WorkspaceMember[]
+  featureUsages      UserFeatureUsage[]
+}
+
+model Workspace {
+  id        String            @id @default(uuid())
+  name      String
+  isActive  Boolean           @default(true)
+  createdAt DateTime          @default(now())
+  members   WorkspaceMember[]
+  ticket Ticket[]
+}
+
+model WorkspaceMember {
+  id          String        @id @default(uuid())
+  userId      String
+  workspaceId String
+  role        WorkspaceRole
+  joinedAt    DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+  isDeleted   Boolean       @default(false)
+  user        User          @relation(fields: [userId], references: [id])
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id])
+}
+
+enum WorkspaceRole {
+  OWNER
+  MEMBER
+}
+
+model UserBalance {
+  id               String               @id @default(uuid())
+  userId           String               @unique
+  stripeCustomerId String               @unique // Stripe müşteri kimliği
+  currentDebt      Int                  @default(0)
+  isRestricted     Boolean              @default(false)
+  lastChargedAt    DateTime?
+  transactions     BalanceTransaction[]
+  reminders        BalanceReminder[]
+}
+
+model BalanceTransaction {
+  id              String            @id @default(uuid())
+  userBalanceId   String
+  stripeInvoiceId String? // Ödemeyi hangi invoice temsil ediyor
+  amount          Decimal
+  status          TransactionStatus
+  attemptedAt     DateTime
+  userBalance     UserBalance       @relation(fields: [userBalanceId], references: [id], onDelete: Cascade)
+}
+
+model BalanceReminder {
+  id            String       @id @default(uuid())
+  userBalanceId String
+  sentAt        DateTime
+  type          ReminderType
+
+  userBalance UserBalance @relation(fields: [userBalanceId], references: [id], onDelete: Cascade)
+}
+
+enum ReminderType {
+  LOW_BALANCE
+  FAILED_PAYMENT
+  FINAL_WARNING
+}
+
+model OfficeLocation {
+  id            String        @id @default(uuid())
+  label         String // Örn: Soho - NYC
+  addressLine   String // Örn: 447 Broadway
+  city          String
+  state         String
+  country       String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime? // Silinmişse burada tutulur
+  isActive      Boolean       @default(true) // Adres aktif mi?
+  latitude      Float? // Opsiyonel, harita entegrasyonu için
+  longitude     Float? // Opsiyonel, harita entegrasyonu için
+  zipCode       String? // Opsiyonel, posta kodu
+  description   String? // Opsiyonel, adres hakkında açıklama
+  userAddresses UserAddress[] // Bu lokasyona ait kullanıcı adresleri
+  subscriptions UserSubscription[] // Bu lokasyona ait abonelikler
+  featureUsages UserFeatureUsage[] // Bu lokasyona ait feature kullanımları
+}
+
+model UserAddress {
+  id               String @id @default(uuid())
+  userId           String // Kullanıcı ID'si
+  officeLocationId String // Hangi ofis lokasyonuna ait
+  steNumber        String @unique // 6 haneli örn: "004712"
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Silinmişse burada tutulur
+  isActive  Boolean   @default(true) // Adres aktif mi?
+  isDefault Boolean   @default(false) // Kullanıcı için varsayılan adres mi?
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  officeLocation OfficeLocation @relation(fields: [officeLocationId], references: [id], onDelete: Cascade)
+  packages       Package[]
+
+  @@unique([userId, officeLocationId]) // Aynı kullanıcı aynı adresten sadece bir kez alabilir
+}
+
+
+model UserSubscription {
+  id                   String       @id @default(uuid())
+  userId               String
+  officeLocationId     String       // Her ofis lokasyonu için ayrı abonelik
+  planId               String
+  billingCycle         BillingCycle
+  stripeSubscriptionId String?
+  startDate            DateTime
+  endDate              DateTime?
+  isActive             Boolean      @default(true)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  plan           PlanPrice      @relation(fields: [planId], references: [id])
+  user           User           @relation(fields: [userId], references: [id])
+  officeLocation OfficeLocation @relation(fields: [officeLocationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, officeLocationId, isActive], name: "OneActiveSubscriptionPerOffice")
+  @@index([userId, isActive])
+  @@index([officeLocationId, isActive])
+}
+
+model Plan {
+  id          String        @id @default(uuid())
+  name        String        @unique
+  description String?
+  imageUrl    String?
+  stripeProductId String // Stripe tarafındaki Product ID
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+  isDeleted   Boolean       @default(false)
+  features    PlanFeature[]
+  prices      PlanPrice[]
+}
+
+
+model PlanPrice {
+  id               String             @id @default(uuid())
+  planId           String
+  billingCycle     BillingCycle
+  amount            Int // Fiyat miktarı (örn: 9999 = 99.99 USD)
+  currency         String // Örn: "USD", "EUR"
+  description      String? // Opsiyonel, fiyat açıklaması
+  stripePriceId    String? // Stripe tarafındaki Price ID
+  plan             Plan               @relation(fields: [planId], references: [id], onDelete: Cascade)
+  subscriptedUsers UserSubscription[]
+  isActive         Boolean            @default(true)
+  isDeleted        Boolean            @default(false)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  deletedAt        DateTime? // Silinmişse burada tutulur
+
+  @@unique([planId, billingCycle]) // Aynı plan için aynı dönem sadece bir kez tanımlanır
+}
+
+model Feature {
+  id              String        @id @default(uuid())
+  name            String        @unique
+  description     String?
+  imageUrl        String?
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+  isDeleted       Boolean       @default(false)
+  featuresInPlans PlanFeature[]
+  usages          UserFeatureUsage[]
+}
+
+model PlanFeature {
+  id            String  @id @default(uuid())
+  planId        String
+  featureId     String
+  includedLimit Int? // null = sınırsız, 0 = hak yok ama parayla alabilirsin, yoksa null
+  unitPrice     Int? // null = hiç sunulmuyor, varsa ücretli
+  plan          Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature       Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+  isDeleted     Boolean       @default(false)
+
+  @@unique([planId, featureId])
+}
+
+model UserFeatureUsage {
+  id               String   @id @default(uuid())
+  userId           String
+  officeLocationId String   // Hangi ofis lokasyonu için kullanım
+  featureId        String
+  usedCount        Int      // kaç kez kullandı
+  usedAt           DateTime
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  officeLocation OfficeLocation @relation(fields: [officeLocationId], references: [id], onDelete: Cascade)
+  feature        Feature        @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, officeLocationId, featureId, usedAt])
+}
+
+model Package {
+  id            String   @id @default(uuid())
+  steNumber     String // Paketin üzerindeki STE numarası
+  userAddressId String // Hangi kullanıcıya ait adres (UserAddress üzerinden)
+  receivedAt    DateTime // Kargonun sisteme giriş zamanı
+
+  senderName    String? // Gönderen kişi/firma adı
+  senderAddress String? // Gönderen adres bilgisi
+  carrier       String? // Kargo firması (UPS, FedEx, vs.)
+
+  width      Float? // cm
+  height     Float? // cm
+  length     Float? // cm
+  weightKg   Float? // kg
+  volumeDesi Float? // opsiyonel, istersen otomatik hesaplatabilirsin
+
+  photoUrls String[] // Fotoğraf linkleri (örn: S3 URL’leri)
+  status    PackageStatus @default(PENDING)
+
+  userAddress UserAddress @relation(fields: [userAddressId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  actions PackageAction[] // Paketle ilgili aksiyonlar (forward, shred, vs.)
+}
+
+model PackageAction {
+  id           String         @id @default(uuid())
+  packageId    String
+  type         PackageActionType
+  status       ActionStatus    // örn: PENDING, IN_PROGRESS, DONE, FAILED
+  requestedAt  DateTime        @default(now())
+  completedAt  DateTime?
+  meta         Json?           // ilgili aksiyonun detayları
+  package      Package         @relation(fields: [packageId], references: [id], onDelete: Cascade)
+}
+
+enum PackageActionType {
+  FORWARD
+  SHRED
+  SCAN
+  HOLD
+  JUNK
+}
+
+enum ActionStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  FAILED
+}
+
+
+model UserDeliveryAddress {
+  id          String              @id @default(uuid())
+  type        DeliveryAddressType @default(DELIVERY)
+  userId      String
+  label       String // Örn: Ev, Ofis, Yazlık
+  addressLine String
+  city        String
+  state       String
+  country     String
+  zipCode     String?
+  isDefault   Boolean             @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, isDefault], name: "OnlyOneDefault") // sadece 1 default adres
+}
+
+model Invoice {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @db.Uuid
+  amount    Float?
+  currency  String?
+  status    String?
+  link      String
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Invitation {
+  id         String           @id @default(uuid()) @db.Uuid
+  companyId  String           @db.Uuid
+  userId     String           @unique @default(uuid()) @db.Uuid
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status     InvitationStatus
+  createdAt  DateTime         @default(now())
+  approvedAt DateTime?
+  updatedAt  DateTime?        @updatedAt
+  deletedAt  DateTime?
+}
+
+model Ticket {
+  id          String          @id @default(uuid()) @db.Uuid
+  ticketNo    Int             @default(autoincrement())
+  userId      String          @db.Uuid
+  subject     String
+  category    String
+  status      TicketStatus    @default(OPEN)
+  priority    TicketPriority
+  isActivate  Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @default(now())
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages    TicketMessage[]
+  attachments Attachment[]    @relation("AttachmentToTicket")
+  workspaceId String?       @db.Uuid // İsteğe bağlı, eğer ticket bir workspace'e ait ise
+  workspace   Workspace?     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model TicketMessage {
+  id          String       @id @default(uuid()) @db.Uuid
+  ticketId    String       @db.Uuid
+  userId      String       @db.Uuid
+  message     String
+  fromStaff   Boolean
+  createdAt   DateTime     @default(now())
+  ticket      Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attachments Attachment[] @relation("AttachmentToTicketMessage")
+}
+
+model Attachment {
+  id            String          @id @default(uuid()) @db.Uuid
+  name          String
+  url           String
+  type          String
+  uploadedById  String          @db.Uuid
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  uploadedBy    User            @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  ticket        Ticket[]        @relation("AttachmentToTicket")
+  ticketMessage TicketMessage[] @relation("AttachmentToTicketMessage")
+}
+
+enum InvitationStatus {
+  WAITING
+  APPROVED
+  CANCELLED
+  DELETED
+  REJECTED
+  OTHER
+}
+
+enum DeliveryAddressType {
+  DELIVERY
+  BILLING
+  PICKUP
+}
+
+enum PackageStatus {
+  PENDING // Yeni geldi, işlenmeyi bekliyor
+  IN_PROCESS // Aksiyon bekliyor (forward, shred, vs.)
+  COMPLETED // Aksiyonlar tamamlandı
+  CANCELLED // İptal edildi / yanlış eşleştirme
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  REOPENED
+  ON_HOLD
+  WAITING_FOR_CUSTOMER
+  WAITING_FOR_STAFF
+  WAITING_FOR_THIRD_PARTY
+  ESCALATED
+  CANCELLED
+  CLOSED_BY_CUSTOMER
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum OrderStatus {
+  PAYMENT_PENDING
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+  CANCELLED
+  REFUNDED
+  ERROR
+  PROGRESS_ERROR
+  FAILED
+}
+
+enum RoleType {
+  SUPERADMIN
+  ADMIN
+  STAFF
+  CUSTOMER
+}
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  RESOLVED
+  CLOSED
+  REOPENED
+  ON_HOLD
+  WAITING_FOR_CUSTOMER
+  WAITING_FOR_STAFF
+  WAITING_FOR_THIRD_PARTY
+  ESCALATED
+  CANCELLED
+  CLOSED_BY_CUSTOMER
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TaskType {
+  GENERAL
+  LEGAL
+  ACCOUNTING
+  TAX
+  HR
+  OTHER
+}
+
+enum ProductType {
+  SERVICE
+  PRODUCT
+  OTHER
+}
+
+enum PermissionAction {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  MANAGE
+}
+
+model UserRole {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @default(uuid()) @db.Uuid
+  role      RoleType
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  isDeleted Boolean   @default(false)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Permission {
+  id            String           @id @default(uuid()) @db.Uuid
+  companyUserId String           @db.Uuid
+  action        PermissionAction
+  subject       String
+  conditions    Json?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@unique([companyUserId, action, subject])
+  @@map("permissions")
+}
+
+enum TransactionStatus {
+  SUCCESS
+  PENDING
+  INPROGRESS
+  FAILED
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+  WEEKLY
+  QUARTERLY
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  INVITATION
+  OTHER
+}
+
+model Token {
+  id        String    @id @db.Uuid
+  token     String    @unique
+  type      TokenType
+  createdAt DateTime  @default(now())
+  email     String
+  expires   DateTime
+}
