@@ -8,48 +8,52 @@ datasource db {
 }
 
 model User {
-  id                 String                @id @default(uuid()) @db.Uuid
-  email              String                @unique
+  id                 String            @id @default(uuid()) @db.Uuid
+  email              String            @unique
   password           String
   firstName          String
   lastName           String
   telephone          String?
   profileImage       String?
-  notifications      Boolean               @default(true)
-  emailConfirmed     Boolean               @default(false)
-  telephoneConfirmed Boolean               @default(false)
+  notifications      Boolean           @default(true)
+  emailConfirmed     Boolean           @default(false)
+  telephoneConfirmed Boolean           @default(false)
   stripeCustomerId   String?
   lastLogin          DateTime?
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
   deletedAt          DateTime?
-  isActive           Boolean               @default(true)
+  isActive           Boolean           @default(true)
   attachment         Attachment[]
   invoices           Invoice[]
   tickets            Ticket[]
   roles              UserRole[]
   invitations        Invitation[]
   ticketMessages     TicketMessage[]
-  virtualAddress     UserAddress[]
-  deliveryAddress    UserDeliveryAddress[]
-  subscriptions      UserSubscription[]
+  balance            UserBalance?
   workspaces         WorkspaceMember[]
-  featureUsages      UserFeatureUsage[]
 }
 
 model Workspace {
-  id        String            @id @default(uuid())
-  name      String
-  isActive  Boolean           @default(true)
-  createdAt DateTime          @default(now())
-  members   WorkspaceMember[]
-  ticket Ticket[]
+  id                String                     @id @default(uuid()) @db.Uuid
+  name              String
+  isActive          Boolean                    @default(true)
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  members           WorkspaceMember[]
+  tickets           Ticket[]
+  invoices          Invoice[]
+  invitations       Invitation[]
+  addresses         WorkspaceAddress[]
+  subscriptions     WorkspaceSubscription[]
+  featureUsages     WorkspaceFeatureUsage[]
+  deliveryAddresses WorkspaceDeliveryAddress[]
 }
 
 model WorkspaceMember {
-  id          String        @id @default(uuid())
-  userId      String
-  workspaceId String
+  id          String        @id @default(uuid()) @db.Uuid
+  userId      String        @db.Uuid
+  workspaceId String        @db.Uuid
   role        WorkspaceRole
   joinedAt    DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -65,19 +69,20 @@ enum WorkspaceRole {
 }
 
 model UserBalance {
-  id               String               @id @default(uuid())
-  userId           String               @unique
+  id               String               @id @default(uuid()) @db.Uuid
+  userId           String               @unique @db.Uuid
   stripeCustomerId String               @unique // Stripe müşteri kimliği
   currentDebt      Int                  @default(0)
   isRestricted     Boolean              @default(false)
   lastChargedAt    DateTime?
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions     BalanceTransaction[]
   reminders        BalanceReminder[]
 }
 
 model BalanceTransaction {
-  id              String            @id @default(uuid())
-  userBalanceId   String
+  id              String            @id @default(uuid()) @db.Uuid
+  userBalanceId   String            @db.Uuid
   stripeInvoiceId String? // Ödemeyi hangi invoice temsil ediyor
   amount          Decimal
   status          TransactionStatus
@@ -86,12 +91,11 @@ model BalanceTransaction {
 }
 
 model BalanceReminder {
-  id            String       @id @default(uuid())
-  userBalanceId String
+  id            String       @id @default(uuid()) @db.Uuid
+  userBalanceId String       @db.Uuid
   sentAt        DateTime
   type          ReminderType
-
-  userBalance UserBalance @relation(fields: [userBalanceId], references: [id], onDelete: Cascade)
+  userBalance   UserBalance  @relation(fields: [userBalanceId], references: [id], onDelete: Cascade)
 }
 
 enum ReminderType {
@@ -101,50 +105,50 @@ enum ReminderType {
 }
 
 model OfficeLocation {
-  id            String        @id @default(uuid())
-  label         String // Örn: Soho - NYC
-  addressLine   String // Örn: 447 Broadway
-  city          String
-  state         String
-  country       String
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  deletedAt     DateTime? // Silinmişse burada tutulur
-  isActive      Boolean       @default(true) // Adres aktif mi?
-  latitude      Float? // Opsiyonel, harita entegrasyonu için
-  longitude     Float? // Opsiyonel, harita entegrasyonu için
-  zipCode       String? // Opsiyonel, posta kodu
-  description   String? // Opsiyonel, adres hakkında açıklama
-  userAddresses UserAddress[] // Bu lokasyona ait kullanıcı adresleri
-  subscriptions UserSubscription[] // Bu lokasyona ait abonelikler
-  featureUsages UserFeatureUsage[] // Bu lokasyona ait feature kullanımları
+  id                     String                  @id @default(uuid()) @db.Uuid
+  label                  String // Örn: Soho - NYC
+  addressLine            String // Örn: 447 Broadway
+  addressLine2           String? // Örn: 447 Broadway
+  city                   String
+  state                  String
+  country                String
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  deletedAt              DateTime? // Silinmişse burada tutulur
+  isActive               Boolean                 @default(true) // Adres aktif mi?
+  latitude               Float? // Opsiyonel, harita entegrasyonu için
+  longitude              Float? // Opsiyonel, harita entegrasyonu için
+  zipCode                String? // Opsiyonel, posta kodu
+  description            String? // Opsiyonel, adres hakkında açıklama
+  workspaceAddresses     WorkspaceAddress[] // Bu lokasyona ait workspace adresleri
+  workspaceSubscriptions WorkspaceSubscription[] // Bu lokasyona ait abonelikler
+  workspaceFeatureUsages WorkspaceFeatureUsage[] // Bu lokasyona ait feature kullanımları
 }
 
-model UserAddress {
-  id               String @id @default(uuid())
-  userId           String // Kullanıcı ID'si
-  officeLocationId String // Hangi ofis lokasyonuna ait
+model WorkspaceAddress {
+  id               String @id @default(uuid()) @db.Uuid
+  workspaceId      String @db.Uuid // Workspace ID'si
+  officeLocationId String @db.Uuid // Hangi ofis lokasyonuna ait
   steNumber        String @unique // 6 haneli örn: "004712"
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Silinmişse burada tutulur
   isActive  Boolean   @default(true) // Adres aktif mi?
-  isDefault Boolean   @default(false) // Kullanıcı için varsayılan adres mi?
+  isDefault Boolean   @default(false) // Workspace için varsayılan adres mi?
 
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace      Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   officeLocation OfficeLocation @relation(fields: [officeLocationId], references: [id], onDelete: Cascade)
   packages       Package[]
 
-  @@unique([userId, officeLocationId]) // Aynı kullanıcı aynı adresten sadece bir kez alabilir
+  @@unique([workspaceId, officeLocationId]) // Aynı workspace aynı adresten sadece bir kez alabilir
 }
 
-
-model UserSubscription {
-  id                   String       @id @default(uuid())
-  userId               String
-  officeLocationId     String       // Her ofis lokasyonu için ayrı abonelik
-  planId               String
+model WorkspaceSubscription {
+  id                   String       @id @default(uuid()) @db.Uuid
+  workspaceId          String       @db.Uuid
+  officeLocationId     String       @db.Uuid // Her ofis lokasyonu için ayrı abonelik
+  planId               String       @db.Uuid
   billingCycle         BillingCycle
   stripeSubscriptionId String?
   startDate            DateTime
@@ -154,99 +158,98 @@ model UserSubscription {
   updatedAt            DateTime     @updatedAt
 
   plan           PlanPrice      @relation(fields: [planId], references: [id])
-  user           User           @relation(fields: [userId], references: [id])
+  workspace      Workspace      @relation(fields: [workspaceId], references: [id])
   officeLocation OfficeLocation @relation(fields: [officeLocationId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, officeLocationId, isActive], name: "OneActiveSubscriptionPerOffice")
-  @@index([userId, isActive])
+  @@unique([workspaceId, officeLocationId, isActive], name: "OneActiveSubscriptionPerOffice")
+  @@index([workspaceId, isActive])
   @@index([officeLocationId, isActive])
 }
 
 model Plan {
-  id          String        @id @default(uuid())
-  name        String        @unique
-  description String?
-  imageUrl    String?
-  stripeProductId String // Stripe tarafındaki Product ID
-  isActive    Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  deletedAt   DateTime?
-  isDeleted   Boolean       @default(false)
-  features    PlanFeature[]
-  prices      PlanPrice[]
-}
-
-
-model PlanPrice {
-  id               String             @id @default(uuid())
-  planId           String
-  billingCycle     BillingCycle
-  amount            Int // Fiyat miktarı (örn: 9999 = 99.99 USD)
-  currency         String // Örn: "USD", "EUR"
-  description      String? // Opsiyonel, fiyat açıklaması
-  stripePriceId    String? // Stripe tarafındaki Price ID
-  plan             Plan               @relation(fields: [planId], references: [id], onDelete: Cascade)
-  subscriptedUsers UserSubscription[]
-  isActive         Boolean            @default(true)
-  isDeleted        Boolean            @default(false)
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  deletedAt        DateTime? // Silinmişse burada tutulur
-
-  @@unique([planId, billingCycle]) // Aynı plan için aynı dönem sadece bir kez tanımlanır
-}
-
-model Feature {
-  id              String        @id @default(uuid())
+  id              String        @id @default(uuid()) @db.Uuid
   name            String        @unique
   description     String?
   imageUrl        String?
+  stripeProductId String // Stripe tarafındaki Product ID
   isActive        Boolean       @default(true)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   deletedAt       DateTime?
   isDeleted       Boolean       @default(false)
-  featuresInPlans PlanFeature[]
-  usages          UserFeatureUsage[]
+  features        PlanFeature[]
+  prices          PlanPrice[]
+}
+
+model PlanPrice {
+  id                     String                  @id @default(uuid()) @db.Uuid
+  planId                 String                  @db.Uuid
+  billingCycle           BillingCycle
+  amount                 Int // Fiyat miktarı (örn: 9999 = 99.99 USD)
+  currency               String // Örn: "USD", "EUR"
+  description            String? // Opsiyonel, fiyat açıklaması
+  stripePriceId          String? // Stripe tarafındaki Price ID
+  plan                   Plan                    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  isActive               Boolean                 @default(true)
+  isDeleted              Boolean                 @default(false)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  deletedAt              DateTime? // Silinmişse burada tutulur
+  workspaceSubscriptions WorkspaceSubscription[]
+
+  @@unique([planId, billingCycle]) // Aynı plan için aynı dönem sadece bir kez tanımlanır
+}
+
+model Feature {
+  id                     String                  @id @default(uuid()) @db.Uuid
+  name                   String                  @unique
+  description            String?
+  imageUrl               String?
+  isActive               Boolean                 @default(true)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  deletedAt              DateTime?
+  isDeleted              Boolean                 @default(false)
+  featuresInPlans        PlanFeature[]
+  workspaceFeatureUsages WorkspaceFeatureUsage[]
 }
 
 model PlanFeature {
-  id            String  @id @default(uuid())
-  planId        String
-  featureId     String
+  id            String    @id @default(uuid()) @db.Uuid
+  planId        String    @db.Uuid
+  featureId     String    @db.Uuid
   includedLimit Int? // null = sınırsız, 0 = hak yok ama parayla alabilirsin, yoksa null
   unitPrice     Int? // null = hiç sunulmuyor, varsa ücretli
-  plan          Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
-  feature       Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  plan          Plan      @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature       Feature   @relation(fields: [featureId], references: [id], onDelete: Cascade)
   isActive      Boolean   @default(true)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
-  isDeleted     Boolean       @default(false)
+  isDeleted     Boolean   @default(false)
 
   @@unique([planId, featureId])
 }
 
-model UserFeatureUsage {
-  id               String   @id @default(uuid())
-  userId           String
-  officeLocationId String   // Hangi ofis lokasyonu için kullanım
-  featureId        String
-  usedCount        Int      // kaç kez kullandı
+model WorkspaceFeatureUsage {
+  id               String         @id @default(uuid()) @db.Uuid
+  workspaceId      String         @db.Uuid
+  officeLocationId String         @db.Uuid // Hangi ofis lokasyonu için kullanım
+  featureId        String         @db.Uuid
+  usedCount        Int // kaç kez kullandı
   usedAt           DateTime
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  officeLocation OfficeLocation @relation(fields: [officeLocationId], references: [id], onDelete: Cascade)
-  feature        Feature        @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  workspace        Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  officeLocation   OfficeLocation @relation(fields: [officeLocationId], references: [id], onDelete: Cascade)
+  feature          Feature        @relation(fields: [featureId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, officeLocationId, featureId, usedAt])
+  @@unique([workspaceId, officeLocationId, featureId, usedAt])
 }
 
 model Package {
-  id            String   @id @default(uuid())
-  steNumber     String // Paketin üzerindeki STE numarası
-  userAddressId String // Hangi kullanıcıya ait adres (UserAddress üzerinden)
-  receivedAt    DateTime // Kargonun sisteme giriş zamanı
+  id                 String   @id @default(uuid()) @db.Uuid
+  steNumber          String // Paketin üzerindeki STE numarası
+  workspaceAddressId String   @db.Uuid // Hangi workspace adresine ait
+  receivedAt         DateTime // Kargonun sisteme giriş zamanı
 
   senderName    String? // Gönderen kişi/firma adı
   senderAddress String? // Gönderen adres bilgisi
@@ -258,25 +261,25 @@ model Package {
   weightKg   Float? // kg
   volumeDesi Float? // opsiyonel, istersen otomatik hesaplatabilirsin
 
-  photoUrls String[] // Fotoğraf linkleri (örn: S3 URL’leri)
+  photoUrls String[] // Fotoğraf linkleri (örn: S3 URL'leri)
   status    PackageStatus @default(PENDING)
 
-  userAddress UserAddress @relation(fields: [userAddressId], references: [id], onDelete: Cascade)
+  workspaceAddress WorkspaceAddress @relation(fields: [workspaceAddressId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  actions PackageAction[] // Paketle ilgili aksiyonlar (forward, shred, vs.)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  actions   PackageAction[] // Paketle ilgili aksiyonlar (forward, shred, vs.)
 }
 
 model PackageAction {
-  id           String         @id @default(uuid())
-  packageId    String
-  type         PackageActionType
-  status       ActionStatus    // örn: PENDING, IN_PROGRESS, DONE, FAILED
-  requestedAt  DateTime        @default(now())
-  completedAt  DateTime?
-  meta         Json?           // ilgili aksiyonun detayları
-  package      Package         @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  id          String            @id @default(uuid()) @db.Uuid
+  packageId   String            @db.Uuid
+  type        PackageActionType
+  status      ActionStatus // örn: PENDING, IN_PROGRESS, DONE, FAILED
+  requestedAt DateTime          @default(now())
+  completedAt DateTime?
+  meta        Json? // ilgili aksiyonun detayları
+  package     Package           @relation(fields: [packageId], references: [id], onDelete: Cascade)
 }
 
 enum PackageActionType {
@@ -294,11 +297,10 @@ enum ActionStatus {
   FAILED
 }
 
-
-model UserDeliveryAddress {
-  id          String              @id @default(uuid())
+model WorkspaceDeliveryAddress {
+  id          String              @id @default(uuid()) @db.Uuid
   type        DeliveryAddressType @default(DELIVERY)
-  userId      String
+  workspaceId String              @db.Uuid
   label       String // Örn: Ev, Ofis, Yazlık
   addressLine String
   city        String
@@ -307,36 +309,38 @@ model UserDeliveryAddress {
   zipCode     String?
   isDefault   Boolean             @default(false)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
-  @@unique([userId, isDefault], name: "OnlyOneDefault") // sadece 1 default adres
+  @@unique([workspaceId, isDefault], name: "OnlyOneDefaultPerWorkspace") // sadece 1 default adres per workspace
 }
 
 model Invoice {
-  id        String   @id @default(uuid()) @db.Uuid
-  companyId String   @db.Uuid
-  amount    Float?
-  currency  String?
-  status    String?
-  link      String
-  userId    String   @db.Uuid
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  amount      Float?
+  currency    String?
+  status      String?
+  link        String
+  userId      String    @db.Uuid
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
 
 model Invitation {
-  id         String           @id @default(uuid()) @db.Uuid
-  companyId  String           @db.Uuid
-  userId     String           @unique @default(uuid()) @db.Uuid
-  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status     InvitationStatus
-  createdAt  DateTime         @default(now())
-  approvedAt DateTime?
-  updatedAt  DateTime?        @updatedAt
-  deletedAt  DateTime?
+  id          String           @id @default(uuid()) @db.Uuid
+  workspaceId String           @db.Uuid
+  userId      String           @unique @db.Uuid
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      InvitationStatus
+  createdAt   DateTime         @default(now())
+  approvedAt  DateTime?
+  updatedAt   DateTime?        @updatedAt
+  deletedAt   DateTime?
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
 
 model Ticket {
@@ -353,8 +357,8 @@ model Ticket {
   user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages    TicketMessage[]
   attachments Attachment[]    @relation("AttachmentToTicket")
-  workspaceId String?       @db.Uuid // İsteğe bağlı, eğer ticket bir workspace'e ait ise
-  workspace   Workspace?     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String?         @db.Uuid // İsteğe bağlı, eğer ticket bir workspace'e ait ise
+  workspace   Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
 
 model TicketMessage {
@@ -492,7 +496,7 @@ enum PermissionAction {
 
 model UserRole {
   id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
   role      RoleType
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -536,7 +540,7 @@ enum TokenType {
 }
 
 model Token {
-  id        String    @id @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
   token     String    @unique
   type      TokenType
   createdAt DateTime  @default(now())

@@ -20,7 +20,7 @@ export class ReportService {
       } = query || {};
   
       const skip = (page - 1) * limit;
-      const where: Prisma.UserFeatureUsageWhereInput = {
+      const where: Prisma.WorkspaceFeatureUsageWhereInput = {
         ...(userId && { userId }),
         ...(officeLocationId && { officeLocationId }),
         ...(featureId && { featureId }),
@@ -28,13 +28,13 @@ export class ReportService {
       };
   
       const [usages, total] = await Promise.all([
-        this.prisma.userFeatureUsage.findMany({
+        this.prisma.workspaceFeatureUsage.findMany({
           where,
           skip,
           take: limit,
           include: {
-            user: {
-              select: { id: true, email: true, firstName: true, lastName: true },
+            workspace: {
+              select: { id: true, name: true, isActive: true },
             },
             officeLocation: {
               select: { id: true, label: true, addressLine: true, city: true },
@@ -45,7 +45,7 @@ export class ReportService {
           },
           orderBy: { usedAt: 'desc' },
         }),
-        this.prisma.userFeatureUsage.count({ where }),
+        this.prisma.workspaceFeatureUsage.count({ where }),
       ]);
   
       return {
@@ -61,11 +61,11 @@ export class ReportService {
 
 
     async getFeatureUsageById(id: string) {
-        const usage = await this.prisma.userFeatureUsage.findFirst({
+        const usage = await this.prisma.workspaceFeatureUsage.findFirst({
           where: { id },
           include: {
-            user: {
-              select: { id: true, email: true, firstName: true, lastName: true },
+            workspace: {
+              select: { id: true, name: true, isActive: true },
             },
             officeLocation: true,
             feature: true,
@@ -81,7 +81,7 @@ export class ReportService {
     
 
   async getOfficeFeatureUsageForMonth(officeLocationId: string, month: Date) {
-    return await this.prisma.userFeatureUsage.findMany({
+      return await this.prisma.workspaceFeatureUsage.findMany({
       where: {
         officeLocationId,
         usedAt: {
@@ -90,8 +90,8 @@ export class ReportService {
         },
       },
       include: {
-        user: {
-          select: { id: true, email: true, firstName: true, lastName: true },
+        workspace: {
+          select: { id: true, name: true, isActive: true },
         },
         feature: {
           select: { id: true, name: true, description: true },

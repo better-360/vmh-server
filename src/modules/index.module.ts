@@ -15,7 +15,7 @@ import { CatalogModule } from './catalog/catalog.module';
 import { ReportModule } from './report/report.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 
-g@Module({
+@Module({
   imports: [
     EventEmitterModule.forRoot(),
     CaslModule,

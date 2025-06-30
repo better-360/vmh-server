@@ -1,26 +1,26 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import {
-  CreateOfficeSubscriptionDto,
-  UpdateOfficeSubscriptionDto,
-  OfficeSubscriptionQueryDto,
+  CreateWorkspaceSubscriptionDto,
+  UpdateWorkspaceSubscriptionDto,
+  WorkspaceSubscriptionQueryDto,
 } from 'src/dtos/plan.dto';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class SubscriptionService {
-    private logger = new Logger('PrismaService');
+    private logger = new Logger('SubscriptionService');
 
   constructor(private readonly prisma: PrismaService,
   ) {}
   
     // =====================
-    // OFFICE SUBSCRIPTION OPERATIONS
+    // WORKSPACE SUBSCRIPTION OPERATIONS
     // =====================
   
-    async getOfficeSubscriptions(query?: OfficeSubscriptionQueryDto) {
+    async getWorkspaceSubscriptions(query?: WorkspaceSubscriptionQueryDto) {
       const {
-        userId,
+        workspaceId,
         officeLocationId,
         planId,
         billingCycle,
@@ -30,8 +30,8 @@ export class SubscriptionService {
       } = query || {};
   
       const skip = (page - 1) * limit;
-      const where: Prisma.UserSubscriptionWhereInput = {
-        ...(userId && { userId }),
+      const where: Prisma.WorkspaceSubscriptionWhereInput = {
+        ...(workspaceId && { workspaceId }),
         ...(officeLocationId && { officeLocationId }),
         ...(planId && { planId }),
         ...(billingCycle && { billingCycle }),
@@ -39,13 +39,13 @@ export class SubscriptionService {
       };
   
       const [subscriptions, total] = await Promise.all([
-        this.prisma.userSubscription.findMany({
+        this.prisma.workspaceSubscription.findMany({
           where,
           skip,
           take: limit,
           include: {
-            user: {
-              select: { id: true, email: true, firstName: true, lastName: true },
+            workspace: {
+              select: { id: true, name: true, isActive: true },
             },
             officeLocation: {
               select: { id: true, label: true, addressLine: true, city: true, state: true },
@@ -60,7 +60,7 @@ export class SubscriptionService {
           },
           orderBy: { createdAt: 'desc' },
         }),
-        this.prisma.userSubscription.count({ where }),
+        this.prisma.workspaceSubscription.count({ where }),
       ]);
   
       return {
@@ -74,12 +74,12 @@ export class SubscriptionService {
       };
     }
   
-    async getOfficeSubscriptionById(id: string) {
-      const subscription = await this.prisma.userSubscription.findFirst({
+    async getWorkspaceSubscriptionById(id: string) {
+      const subscription = await this.prisma.workspaceSubscription.findFirst({
         where: { id },
         include: {
-          user: {
-            select: { id: true, email: true, firstName: true, lastName: true },
+          workspace: {
+            select: { id: true, name: true, isActive: true },
           },
           officeLocation: true,
           plan: {
@@ -91,18 +91,18 @@ export class SubscriptionService {
       });
   
       if (!subscription) {
-        throw new NotFoundException('Office subscription not found');
+        throw new NotFoundException('Workspace subscription not found');
       }
   
       return subscription;
     }
   
-    async createOfficeSubscription(data: CreateOfficeSubscriptionDto) {
+    async createWorkspaceSubscription(data: CreateWorkspaceSubscriptionDto) {
       try {
-        // Check if user, office location, and plan exist
-        const [user, officeLocation, planPrice] = await Promise.all([
-          this.prisma.user.findFirst({
-            where: { id: data.userId, isActive: true },
+        // Check if workspace, office location, and plan exist
+        const [workspace, officeLocation, planPrice] = await Promise.all([
+          this.prisma.workspace.findFirst({
+            where: { id: data.workspaceId, isActive: true },
           }),
           this.prisma.officeLocation.findFirst({
             where: { id: data.officeLocationId, isActive: true },
@@ -113,8 +113,8 @@ export class SubscriptionService {
           }),
         ]);
   
-        if (!user) {
-          throw new NotFoundException('User not found');
+        if (!workspace) {
+          throw new NotFoundException('Workspace not found');
         }
   
         if (!officeLocation) {
@@ -131,9 +131,9 @@ export class SubscriptionService {
         }
   
         // Check if active subscription already exists for this office
-        const existingSubscription = await this.prisma.userSubscription.findFirst({
+        const existingSubscription = await this.prisma.workspaceSubscription.findFirst({
           where: {
-            userId: data.userId,
+            workspaceId: data.workspaceId,
             officeLocationId: data.officeLocationId,
             isActive: true,
           },
@@ -143,11 +143,11 @@ export class SubscriptionService {
           throw new ConflictException('Active subscription already exists for this office location');
         }
   
-        return await this.prisma.userSubscription.create({
+        return await this.prisma.workspaceSubscription.create({
           data,
           include: {
-            user: {
-              select: { id: true, email: true, firstName: true, lastName: true },
+            workspace: {
+              select: { id: true, name: true, isActive: true },
             },
             officeLocation: true,
             plan: {
@@ -156,16 +156,16 @@ export class SubscriptionService {
           },
         });
       } catch (error) {
-        this.logger.error(`Failed to create office subscription: ${error.message}`);
+        this.logger.error(`Failed to create workspace subscription: ${error.message}`);
         if (error instanceof NotFoundException || error instanceof ConflictException || error instanceof BadRequestException) {
           throw error;
         }
-        throw new BadRequestException('Failed to create office subscription');
+        throw new BadRequestException('Failed to create workspace subscription');
       }
     }
   
-    async updateOfficeSubscription(id: string, data: UpdateOfficeSubscriptionDto) {
-      await this.getOfficeSubscriptionById(id); // Check if exists
+    async updateWorkspaceSubscription(id: string, data: UpdateWorkspaceSubscriptionDto) {
+      await this.getWorkspaceSubscriptionById(id); // Check if exists
   
       try {
         // If planId is being updated, check if it exists
@@ -184,15 +184,15 @@ export class SubscriptionService {
           }
         }
   
-        return await this.prisma.userSubscription.update({
+        return await this.prisma.workspaceSubscription.update({
           where: { id },
           data: {
             ...data,
             updatedAt: new Date(),
           },
           include: {
-            user: {
-              select: { id: true, email: true, firstName: true, lastName: true },
+            workspace: {
+              select: { id: true, name: true, isActive: true },
             },
             officeLocation: true,
             plan: {
@@ -201,19 +201,19 @@ export class SubscriptionService {
           },
         });
       } catch (error) {
-        this.logger.error(`Failed to update office subscription: ${error.message}`);
+        this.logger.error(`Failed to update workspace subscription: ${error.message}`);
         if (error instanceof NotFoundException || error instanceof BadRequestException) {
           throw error;
         }
-        throw new BadRequestException('Failed to update office subscription');
+        throw new BadRequestException('Failed to update workspace subscription');
       }
     }
   
-    async cancelOfficeSubscription(id: string) {
-      await this.getOfficeSubscriptionById(id); // Check if exists
+    async cancelWorkspaceSubscription(id: string) {
+      await this.getWorkspaceSubscriptionById(id); // Check if exists
   
       try {
-        return await this.prisma.userSubscription.update({
+        return await this.prisma.workspaceSubscription.update({
           where: { id },
           data: {
             isActive: false,
@@ -222,20 +222,20 @@ export class SubscriptionService {
           },
         });
       } catch (error) {
-        this.logger.error(`Failed to cancel office subscription: ${error.message}`);
-        throw new BadRequestException('Failed to cancel office subscription');
+        this.logger.error(`Failed to cancel workspace subscription: ${error.message}`);
+        throw new BadRequestException('Failed to cancel workspace subscription');
       }
     }
   
     async getActiveSubscriptionsForOffice(officeLocationId: string) {
-      return await this.prisma.userSubscription.findMany({
+      return await this.prisma.workspaceSubscription.findMany({
         where: {
           officeLocationId,
           isActive: true,
         },
         include: {
-          user: {
-            select: { id: true, email: true, firstName: true, lastName: true },
+          workspace: {
+            select: { id: true, name: true, isActive: true },
           },
           plan: {
             include: { plan: true },
@@ -244,21 +244,21 @@ export class SubscriptionService {
       });
     }
   
-    async getUserOfficeSubscriptions(userId: string) {
-      return await this.prisma.userSubscription.findMany({
-        where: {
-          userId,
-          isActive: true,
+      async getWorkspaceActiveSubscriptions(workspaceId: string) {
+    return await this.prisma.workspaceSubscription.findMany({
+      where: {
+        workspaceId,
+        isActive: true,
+      },
+      include: {
+        officeLocation: {
+          select: { id: true, label: true, addressLine: true, city: true, state: true },
         },
-        include: {
-          officeLocation: {
-            select: { id: true, label: true, addressLine: true, city: true, state: true },
-          },
-          plan: {
-            include: { plan: true },
-          },
+        plan: {
+          include: { plan: true },
         },
-        orderBy: { createdAt: 'desc' },
-      });
-    }
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }

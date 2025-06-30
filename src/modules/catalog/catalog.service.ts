@@ -1,29 +1,28 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException, Logger, LoggerService } from '@nestjs/common';
 import {
-  CreateFeatureUsageDto,
-  UpdateFeatureUsageDto,
+  CreateWorkspaceFeatureUsageDto,
+  UpdateWorkspaceFeatureUsageDto,
 } from 'src/dtos/plan.dto';
 import { PrismaService } from 'src/prisma.service';
 
 @Injectable()
 export class CatalogService {
-    private logger = new Logger('PrismaService');
+    private logger = new Logger('CatalogService');
 
   constructor(
     private readonly prisma: PrismaService,
   ) {}
 
   // =====================
-  // FEATURE USAGE OPERATIONS
+  // WORKSPACE FEATURE USAGE OPERATIONS
   // =====================
 
-
-  async createFeatureUsage(data: CreateFeatureUsageDto) {
+  async createWorkspaceFeatureUsage(data: CreateWorkspaceFeatureUsageDto) {
     try {
-      // Check if user, office location, and feature exist
-      const [user, officeLocation, feature] = await Promise.all([
-        this.prisma.user.findFirst({
-          where: { id: data.userId, isActive: true },
+      // Check if workspace, office location, and feature exist
+      const [workspace, officeLocation, feature] = await Promise.all([
+        this.prisma.workspace.findFirst({
+          where: { id: data.workspaceId, isActive: true },
         }),
         this.prisma.officeLocation.findFirst({
           where: { id: data.officeLocationId, isActive: true },
@@ -33,8 +32,8 @@ export class CatalogService {
         }),
       ]);
 
-      if (!user) {
-        throw new NotFoundException('User not found');
+      if (!workspace) {
+        throw new NotFoundException('Workspace not found');
       }
 
       if (!officeLocation) {
@@ -46,9 +45,9 @@ export class CatalogService {
       }
 
       // Check if usage record already exists for this month
-      const existingUsage = await this.prisma.userFeatureUsage.findFirst({
+      const existingUsage = await this.prisma.workspaceFeatureUsage.findFirst({
         where: {
-          userId: data.userId,
+          workspaceId: data.workspaceId,
           officeLocationId: data.officeLocationId,
           featureId: data.featureId,
           usedAt: data.usedAt,
@@ -59,54 +58,54 @@ export class CatalogService {
         throw new ConflictException('Feature usage for this month already exists');
       }
 
-      return await this.prisma.userFeatureUsage.create({
+      return await this.prisma.workspaceFeatureUsage.create({
         data,
         include: {
-          user: {
-            select: { id: true, email: true, firstName: true, lastName: true },
+          workspace: {
+            select: { id: true, name: true },
           },
           officeLocation: true,
           feature: true,
         },
       });
     } catch (error) {
-      this.logger.error(`Failed to create feature usage: ${error.message}`);
+      this.logger.error(`Failed to create workspace feature usage: ${error.message}`);
       if (error instanceof NotFoundException || error instanceof ConflictException) {
         throw error;
       }
-      throw new BadRequestException('Failed to create feature usage');
+      throw new BadRequestException('Failed to create workspace feature usage');
     }
   }
 
-  async updateFeatureUsage(id: string, data: UpdateFeatureUsageDto) {
+  async updateWorkspaceFeatureUsage(id: string, data: UpdateWorkspaceFeatureUsageDto) {
     try {
-      return await this.prisma.userFeatureUsage.update({
+      return await this.prisma.workspaceFeatureUsage.update({
         where: { id },
         data,
         include: {
-          user: {
-            select: { id: true, email: true, firstName: true, lastName: true },
+          workspace: {
+            select: { id: true, name: true },
           },
           officeLocation: true,
           feature: true,
         },
       });
     } catch (error) {
-      this.logger.error(`Failed to update feature usage: ${error.message}`);
-      throw new BadRequestException('Failed to update feature usage');
+      this.logger.error(`Failed to update workspace feature usage: ${error.message}`);
+      throw new BadRequestException('Failed to update workspace feature usage');
     }
   }
 
-  async incrementFeatureUsage(userId: string, officeLocationId: string, featureId: string, incrementBy: number = 1) {
+  async incrementWorkspaceFeatureUsage(workspaceId: string, officeLocationId: string, featureId: string, incrementBy: number = 1) {
     try {
       const currentMonth = new Date();
       currentMonth.setDate(1);
       currentMonth.setHours(0, 0, 0, 0);
 
       // Try to increment existing usage
-      const existingUsage = await this.prisma.userFeatureUsage.findFirst({
+      const existingUsage = await this.prisma.workspaceFeatureUsage.findFirst({
         where: {
-          userId,
+          workspaceId,
           officeLocationId,
           featureId,
           usedAt: currentMonth,
@@ -114,14 +113,14 @@ export class CatalogService {
       });
 
       if (existingUsage) {
-        return await this.prisma.userFeatureUsage.update({
+        return await this.prisma.workspaceFeatureUsage.update({
           where: { id: existingUsage.id },
           data: {
             usedCount: { increment: incrementBy },
           },
           include: {
-            user: {
-              select: { id: true, email: true, firstName: true, lastName: true },
+            workspace: {
+              select: { id: true, name: true },
             },
             officeLocation: true,
             feature: true,
@@ -129,8 +128,8 @@ export class CatalogService {
         });
       } else {
         // Create new usage record
-        return await this.createFeatureUsage({
-          userId,
+        return await this.createWorkspaceFeatureUsage({
+          workspaceId,
           officeLocationId,
           featureId,
           usedAt: currentMonth,
@@ -138,8 +137,8 @@ export class CatalogService {
         });
       }
     } catch (error) {
-      this.logger.error(`Failed to increment feature usage: ${error.message}`);
-      throw new BadRequestException('Failed to increment feature usage');
+      this.logger.error(`Failed to increment workspace feature usage: ${error.message}`);
+      throw new BadRequestException('Failed to increment workspace feature usage');
     }
   }
 

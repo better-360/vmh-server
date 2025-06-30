@@ -778,6 +778,144 @@ export class OfficeSubscriptionQueryDto {
 }
 
 // =====================
+// WORKSPACE SUBSCRIPTION DTOs
+// =====================
+
+export class CreateWorkspaceSubscriptionDto {
+  @ApiProperty({
+    description: 'Workspace ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  workspaceId: string;
+
+  @ApiProperty({
+    description: 'Office Location ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  officeLocationId: string;
+
+  @ApiProperty({
+    description: 'Plan Price ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  planId: string;
+
+  @ApiProperty({
+    description: 'Billing cycle',
+    enum: BillingCycle,
+    example: BillingCycle.MONTHLY,
+  })
+  @IsEnum(BillingCycle)
+  billingCycle: BillingCycle;
+
+  @ApiPropertyOptional({
+    description: 'Stripe subscription ID',
+    example: 'sub_1234567890',
+  })
+  @IsString()
+  @IsOptional()
+  stripeSubscriptionId?: string;
+
+  @ApiProperty({
+    description: 'Subscription start date',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  @Type(() => Date)
+  startDate: Date;
+
+  @ApiPropertyOptional({
+    description: 'Subscription end date',
+    example: '2024-12-31T23:59:59.999Z',
+  })
+  @Type(() => Date)
+  @IsOptional()
+  endDate?: Date;
+}
+
+export class UpdateWorkspaceSubscriptionDto extends PartialType(CreateWorkspaceSubscriptionDto) {
+  @ApiPropertyOptional({
+    description: 'Is subscription active',
+    example: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+}
+
+export class WorkspaceSubscriptionQueryDto {
+  @ApiPropertyOptional({
+    description: 'Filter by workspace ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsOptional()
+  workspaceId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by office location ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsOptional()
+  officeLocationId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by plan ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsOptional()
+  planId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by billing cycle',
+    enum: BillingCycle,
+    example: BillingCycle.MONTHLY,
+  })
+  @IsEnum(BillingCycle)
+  @IsOptional()
+  billingCycle?: BillingCycle;
+
+  @ApiPropertyOptional({
+    description: 'Filter by active status',
+    example: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Page number',
+    example: 1,
+    minimum: 1,
+  })
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  @Type(() => Number)
+  page?: number;
+
+  @ApiPropertyOptional({
+    description: 'Items per page',
+    example: 10,
+    minimum: 1,
+    maximum: 100,
+  })
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number;
+}
+
+// =====================
 // FEATURE USAGE DTOs (Office Location Based)
 // =====================
 
@@ -1133,5 +1271,175 @@ export class BulkUpdatePlanFeaturesDto {
     includedLimit?: number;
     unitPrice?: number;
   }>;
+}
+
+// =====================
+// WORKSPACE FEATURE USAGE DTOs (Workspace Based)
+// =====================
+
+export class CreateWorkspaceFeatureUsageDto {
+  @ApiProperty({
+    description: 'Workspace ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  workspaceId: string;
+
+  @ApiProperty({
+    description: 'Office Location ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  officeLocationId: string;
+
+  @ApiProperty({
+    description: 'Feature ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  featureId: string;
+
+  @ApiProperty({
+    description: 'Usage month (first day of month)',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  @Type(() => Date)
+  usedAt: Date;
+
+  @ApiProperty({
+    description: 'Usage count',
+    example: 5,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  usedCount: number;
+}
+
+export class UpdateWorkspaceFeatureUsageDto {
+  @ApiProperty({
+    description: 'Usage count',
+    example: 10,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  usedCount: number;
+}
+
+export class WorkspaceFeatureUsageResponseDto {
+  @ApiProperty({
+    description: 'Feature usage ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'Workspace ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  workspaceId: string;
+
+  @ApiProperty({
+    description: 'Office Location ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  officeLocationId: string;
+
+  @ApiProperty({
+    description: 'Feature ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  featureId: string;
+
+  @ApiProperty({
+    description: 'Usage month',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  usedAt: Date;
+
+  @ApiProperty({
+    description: 'Usage count',
+    example: 5,
+  })
+  usedCount: number;
+
+  @ApiPropertyOptional({
+    description: 'Workspace details',
+    type: Object,
+  })
+  workspace?: any;
+
+  @ApiPropertyOptional({
+    description: 'Office location details',
+    type: Object,
+  })
+  officeLocation?: any;
+
+  @ApiPropertyOptional({
+    description: 'Feature details',
+    type: FeatureResponseDto,
+  })
+  feature?: FeatureResponseDto;
+}
+
+export class WorkspaceFeatureUsageQueryDto {
+  @ApiPropertyOptional({
+    description: 'Filter by workspace ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsOptional()
+  workspaceId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by office location ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsOptional()
+  officeLocationId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by feature ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsOptional()
+  featureId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by month',
+    example: '2024-01-01',
+  })
+  @IsOptional()
+  @Type(() => Date)
+  usedAt?: Date;
+
+  @ApiPropertyOptional({
+    description: 'Page number',
+    example: 1,
+    minimum: 1,
+  })
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  @Type(() => Number)
+  page?: number;
+
+  @ApiPropertyOptional({
+    description: 'Items per page',
+    example: 10,
+    minimum: 1,
+    maximum: 100,
+  })
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number;
 }
 

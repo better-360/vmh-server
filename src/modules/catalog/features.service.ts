@@ -14,8 +14,10 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class FeaturesService {
-  constructor(private readonly prisma: PrismaService,
-    private readonly logger: Logger,
+  private readonly logger = new Logger('FeaturesService');
+
+  constructor(
+    private readonly prisma: PrismaService,
   ) {}
 
   async getFeatures(query?: FeatureQueryDto) {
