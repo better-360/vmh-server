@@ -24,6 +24,7 @@ model User {
   updatedAt          DateTime          @updatedAt
   deletedAt          DateTime?
   isActive           Boolean           @default(true)
+  forms              Forms[]
   attachment         Attachment[]
   invoices           Invoice[]
   tickets            Ticket[]
@@ -32,6 +33,13 @@ model User {
   ticketMessages     TicketMessage[]
   balance            UserBalance?
   workspaces         WorkspaceMember[]
+}
+
+model Forms {
+  id       String @id @default(uuid()) @db.Uuid
+  userId   String @db.Uuid
+  user     User   @relation(fields: [userId], references: [id])
+  formName String
 }
 
 model Workspace {
@@ -61,11 +69,6 @@ model WorkspaceMember {
   isDeleted   Boolean       @default(false)
   user        User          @relation(fields: [userId], references: [id])
   workspace   Workspace     @relation(fields: [workspaceId], references: [id])
-}
-
-enum WorkspaceRole {
-  OWNER
-  MEMBER
 }
 
 model UserBalance {
@@ -280,21 +283,6 @@ model PackageAction {
   completedAt DateTime?
   meta        Json? // ilgili aksiyonun detayları
   package     Package           @relation(fields: [packageId], references: [id], onDelete: Cascade)
-}
-
-enum PackageActionType {
-  FORWARD
-  SHRED
-  SCAN
-  HOLD
-  JUNK
-}
-
-enum ActionStatus {
-  PENDING
-  IN_PROGRESS
-  DONE
-  FAILED
 }
 
 model WorkspaceDeliveryAddress {
@@ -539,6 +527,27 @@ enum TokenType {
   OTHER
 }
 
+enum PackageActionType {
+  FORWARD
+  SHRED
+  SCAN
+  HOLD
+  JUNK
+}
+
+enum ActionStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  FAILED
+}
+
+enum WorkspaceRole {
+  OWNER
+  MEMBER
+}
+
+
 model Token {
   id        String    @id @default(uuid()) @db.Uuid
   token     String    @unique
@@ -546,4 +555,6 @@ model Token {
   createdAt DateTime  @default(now())
   email     String
   expires   DateTime
+
+  @@unique([email, type], name: "unique_email_token_type")
 }

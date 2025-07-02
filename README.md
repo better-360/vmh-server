@@ -2,6 +2,10 @@
 
 Bu belgede sistemin backend mimarisi modül bazlı olarak tanımlanmıştır. Her modül kendi sorumluluğunda izole edilmiştir ve başka bir modülün sorumluluğunu almaz.
 
+
+###
+DB:Prisma+PostgreSQL
+Kullanıcı istek atarken JWT tokenla birlikte aktif workpsace id yi de headara göndermeli.
 ---
 
 ## 🔐 AuthModule
@@ -104,7 +108,7 @@ Kargo paketlerinin temel yönetimi.
 - STE numarası eşleştirme
 - Paket bilgilerini güncelleme
 - Fotoğraf ekleme
-- Durum güncelleme: `PENDING`, `IN_PROCESS`, `COMPLETED`
+- Durum güncelleme: `PENDING`, `IN_PROCESS`, `COMPLETED` vs.
 
 ---
 
@@ -118,6 +122,9 @@ Her pakete özel işlem akışlarını yöneten modül.
 - Aksiyonun işlenme süreci ve sonucu (async işlem takibi)
 
 ---
+
+## 🧩 ShippingModule
+- Kargo yönetimi
 
 
 ## 👤 SupportModule

@@ -38,7 +38,7 @@ export class PlansService {
         ],
       }),
     };
-
+console.log(where);
     const [plans, total] = await Promise.all([
       this.prisma.plan.findMany({
         where,
