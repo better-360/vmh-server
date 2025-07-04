@@ -42,6 +42,7 @@ import {
   PlanTemplateQueryDto,
   CreatePlanTemplateFeatureDto,
   UpdatePlanTemplateFeatureDto,
+  CreatePlanWithFeaturesDto,
 } from 'src/dtos/plan.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 
@@ -267,6 +268,101 @@ export class PlansController {
   @ApiConflictResponse({ description: 'Plan with this slug already exists for this location' })
   async createPlan(@Body() data: CreatePlanDto) {
     return this.plansService.createPlan(data);
+  }
+
+  @Post('plans/with-features')
+  @ApiOperation({ 
+    summary: 'Create a complete plan with features and prices',
+    description: 'Create a new subscription plan with all features and pricing options in one request'
+  })
+  @ApiBody({ 
+    type: CreatePlanWithFeaturesDto, 
+    description: 'Complete plan creation data with features and prices',
+    examples: {
+      'Premium Business Plan': {
+        value: {
+          officeLocationId: "123e4567-e89b-12d3-a456-426614174000",
+          name: "Premium Business Plan",
+          slug: "premium-business", 
+          description: "Comprehensive business plan with advanced features",
+          imageUrl: "https://example.com/premium-plan.png",
+          isActive: true,
+          features: [
+            {
+              featureId: "be2294ec-a909-462f-a81c-276d6ebbfb58",
+              includedLimit: 10,
+              unitPrice: 500,
+              isActive: true
+            },
+            {
+              featureId: "5e37ea6d-cba2-4413-8209-57b3b2a77035", 
+              includedLimit: null,
+              unitPrice: null,
+              isActive: true
+            }
+          ],
+          prices: [
+            {
+              billingCycle: "MONTHLY",
+              amount: 4999,
+              currency: "USD",
+              description: "Monthly subscription"
+            },
+            {
+              billingCycle: "YEARLY",
+              amount: 49999, 
+              currency: "USD",
+              description: "Annual subscription (save 17%)"
+            }
+          ]
+        }
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Plan with features and prices created successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        name: { type: 'string' },
+        slug: { type: 'string' },
+        description: { type: 'string' },
+        officeLocation: { type: 'object' },
+        features: { 
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              featureId: { type: 'string' },
+              includedLimit: { type: 'number', nullable: true },
+              unitPrice: { type: 'number', nullable: true },
+              feature: { type: 'object' }
+            }
+          }
+        },
+        prices: {
+          type: 'array', 
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              billingCycle: { type: 'string' },
+              amount: { type: 'number' },
+              currency: { type: 'string' }
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiBadRequestResponse({ description: 'Invalid input data or features not found' })
+  @ApiNotFoundResponse({ description: 'Office location not found' })
+  @ApiConflictResponse({ description: 'Plan with this slug already exists for this location' })
+  async createPlanWithFeatures(@Body() data: CreatePlanWithFeaturesDto) {
+    return this.plansService.createPlanWithFeatures(data);
   }
 
   @Post('plans/from-template')

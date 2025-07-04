@@ -20,8 +20,6 @@ import {
 import { PoliciesGuard } from 'src/authorization/guards/policies.guard';
 import { CheckPolicies } from 'src/authorization/decorators/check-policies.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
-import { Transform } from 'class-transformer';
-import { IsBoolean, IsOptional } from 'class-validator';
 
 @ApiTags('Office Locations')
 @Controller('locations')

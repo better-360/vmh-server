@@ -8,6 +8,7 @@ import {
   UpdatePlanPriceDto,
   PlanPriceQueryDto,
   CreatePlanFromTemplateDto,
+  CreatePlanWithFeaturesDto,
 } from 'src/dtos/plan.dto';
 import { Prisma } from '@prisma/client';
 
@@ -170,6 +171,119 @@ export class PlansService {
       }
       
       throw new BadRequestException('Failed to create plan');
+    }
+  }
+
+  async createPlanWithFeatures(data: CreatePlanWithFeaturesDto) {
+    try {
+      // Check if office location exists
+      const officeLocation = await this.prisma.officeLocation.findUnique({
+        where: { id: data.officeLocationId, isActive: true, isDeleted: false },
+      });
+
+      if (!officeLocation) {
+        throw new NotFoundException('Office location not found');
+      }
+
+      // Check if plan slug already exists for this location
+      const existingPlan = await this.prisma.plan.findFirst({
+        where: { 
+          slug: data.slug, 
+          officeLocationId: data.officeLocationId,
+          isDeleted: false 
+        },
+      });
+
+      if (existingPlan) {
+        throw new ConflictException('Plan with this slug already exists for this location');
+      }
+
+      // Validate all features exist
+      const featureIds = data.features.map(f => f.featureId);
+      const features = await this.prisma.feature.findMany({
+        where: { 
+          id: { in: featureIds },
+          isActive: true,
+          isDeleted: false 
+        },
+      });
+
+      if (features.length !== featureIds.length) {
+        const foundIds = features.map(f => f.id);
+        const missingIds = featureIds.filter(id => !foundIds.includes(id));
+        throw new BadRequestException(`Features not found: ${missingIds.join(', ')}`);
+      }
+
+      return await this.prisma.$transaction(async (tx) => {
+        // 1. Create Plan
+        const plan = await tx.plan.create({
+          data: {
+            officeLocationId: data.officeLocationId,
+            name: data.name,
+            slug: data.slug,
+            description: data.description,
+            imageUrl: data.imageUrl,
+            isActive: data.isActive ?? true,
+          },
+        });
+
+        // 2. Create Plan Features
+        if (data.features && data.features.length > 0) {
+          await tx.planFeature.createMany({
+            data: data.features.map(feature => ({
+              planId: plan.id,
+              featureId: feature.featureId,
+              includedLimit: feature.includedLimit,
+              unitPrice: feature.unitPrice,
+              isActive: feature.isActive ?? true,
+            })),
+          });
+        }
+
+        // 3. Create Plan Prices
+        if (data.prices && data.prices.length > 0) {
+          await tx.planPrice.createMany({
+            data: data.prices.map(price => ({
+              planId: plan.id,
+              billingCycle: price.billingCycle,
+              amount: price.amount,
+              currency: price.currency,
+              description: price.description,
+              stripePriceId: price.stripePriceId,
+              isActive: price.isActive ?? true,
+            })),
+          });
+        }
+
+        // Return complete plan with all relations
+        return tx.plan.findUnique({
+          where: { id: plan.id },
+          include: {
+            officeLocation: {
+              select: { id: true, label: true, city: true, state: true },
+            },
+            prices: {
+              where: { isActive: true, isDeleted: false },
+              orderBy: { amount: 'asc' },
+            },
+            features: {
+              where: { isActive: true, isDeleted: false },
+              include: {
+                feature: {
+                  select: { id: true, name: true, description: true, imageUrl: true },
+                },
+              },
+            },
+          },
+        });
+      });
+    } catch (error) {
+      this.logger.error(error.message);
+      if (error instanceof ConflictException || error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      
+      throw new BadRequestException('Failed to create plan with features');
     }
   }
 

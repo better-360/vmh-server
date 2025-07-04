@@ -76,6 +76,198 @@ export class CreatePlanDto {
   isActive?: boolean;
 }
 
+// =====================
+// PLAN WITH FEATURES DTOs (Helper classes first)
+// =====================
+
+export class CreatePlanFeatureForPlanDto {
+  @ApiProperty({
+    description: 'Feature ID',
+    example: 'be2294ec-a909-462f-a81c-276d6ebbfb58',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  featureId: string;
+
+  @ApiPropertyOptional({
+    description: 'Included limit (null = unlimited, 0 = not included but available)',
+    example: 10,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  includedLimit?: number;
+
+  @ApiPropertyOptional({
+    description: 'Unit price in cents for additional usage (null = not available)',
+    example: 500,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  unitPrice?: number;
+
+  @ApiPropertyOptional({
+    description: 'Is plan feature active',
+    example: true,
+    default: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+}
+
+export class CreatePlanPriceForPlanDto {
+  @ApiProperty({
+    description: 'Billing cycle',
+    enum: BillingCycle,
+    example: BillingCycle.MONTHLY,
+  })
+  @IsEnum(BillingCycle)
+  billingCycle: BillingCycle;
+
+  @ApiProperty({
+    description: 'Price amount in cents (e.g., 4999 = $49.99)',
+    example: 4999,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  amount: number;
+
+  @ApiProperty({
+    description: 'Currency code',
+    example: 'USD',
+  })
+  @IsString()
+  @IsNotEmpty()
+  currency: string;
+
+  @ApiPropertyOptional({
+    description: 'Price description',
+    example: 'Monthly subscription fee',
+  })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Stripe Price ID',
+    example: 'price_1234567890',
+  })
+  @IsString()
+  @IsOptional()
+  stripePriceId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Is price active',
+    example: true,
+    default: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+}
+
+export class CreatePlanWithFeaturesDto {
+  @ApiProperty({
+    description: 'Office Location ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  officeLocationId: string;
+
+  @ApiProperty({
+    description: 'Plan name',
+    example: 'Premium Business Plan',
+  })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({
+    description: 'Plan slug',
+    example: 'premium-business',
+  })
+  @IsString()
+  @IsNotEmpty()
+  slug: string;
+
+  @ApiPropertyOptional({
+    description: 'Plan description',
+    example: 'Comprehensive business plan with advanced features',
+  })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Plan image URL',
+    example: 'https://example.com/premium-plan.png',
+  })
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+
+  @ApiPropertyOptional({
+    description: 'Is plan active',
+    example: true,
+    default: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+
+  @ApiProperty({
+    description: 'Plan features to include',
+    type: [CreatePlanFeatureForPlanDto],
+    example: [
+      {
+        featureId: "be2294ec-a909-462f-a81c-276d6ebbfb58",
+        includedLimit: 10,
+        unitPrice: 500,
+        isActive: true
+      },
+      {
+        featureId: "5e37ea6d-cba2-4413-8209-57b3b2a77035",
+        includedLimit: null,
+        unitPrice: null,
+        isActive: true
+      }
+    ]
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreatePlanFeatureForPlanDto)
+  features: CreatePlanFeatureForPlanDto[];
+
+  @ApiProperty({
+    description: 'Plan pricing options',
+    type: [CreatePlanPriceForPlanDto],
+    example: [
+      {
+        billingCycle: "MONTHLY",
+        amount: 4999,
+        currency: "USD",
+        description: "Monthly subscription"
+      },
+      {
+        billingCycle: "YEARLY", 
+        amount: 49999,
+        currency: "USD",
+        description: "Annual subscription (save 17%)"
+      }
+    ]
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreatePlanPriceForPlanDto)
+  prices: CreatePlanPriceForPlanDto[];
+}
+
 export class UpdatePlanDto extends PartialType(CreatePlanDto) {
   @ApiPropertyOptional({
     description: 'Is plan deleted',
