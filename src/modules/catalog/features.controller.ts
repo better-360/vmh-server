@@ -49,6 +49,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 @ApiBearerAuth()
 @Controller('features')
 @UseGuards(JwtAuthGuard)
+@Public()
 export class FeaturesController {
   constructor(
     private readonly catalogService: CatalogService,

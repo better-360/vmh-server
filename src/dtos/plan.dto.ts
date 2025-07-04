@@ -27,12 +27,28 @@ export enum BillingCycle {
 
 export class CreatePlanDto {
   @ApiProperty({
+    description: 'Office Location ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  officeLocationId: string;
+
+  @ApiProperty({
     description: 'Plan name',
     example: 'Basic Plan',
   })
   @IsString()
   @IsNotEmpty()
   name: string;
+
+  @ApiProperty({
+    description: 'Plan slug',
+    example: 'basic-plan',
+  })
+  @IsString()
+  @IsNotEmpty()
+  slug: string;
 
   @ApiPropertyOptional({
     description: 'Plan description',
@@ -49,14 +65,6 @@ export class CreatePlanDto {
   @IsString()
   @IsOptional()
   imageUrl?: string;
-
-  @ApiProperty({
-    description: 'Stripe Product ID',
-    example: 'prod_1234567890',
-  })
-  @IsString()
-  @IsNotEmpty()
-  stripeProductId: string;
 
   @ApiPropertyOptional({
     description: 'Is plan active',
@@ -105,10 +113,10 @@ export class PlanResponseDto {
   imageUrl?: string;
 
   @ApiProperty({
-    description: 'Stripe Product ID',
-    example: 'prod_1234567890',
+    description: 'Office Location ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
   })
-  stripeProductId: string;
+  officeLocationId: string;
 
   @ApiProperty({
     description: 'Is plan active',
@@ -1441,5 +1449,409 @@ export class WorkspaceFeatureUsageQueryDto {
   @IsOptional()
   @Type(() => Number)
   limit?: number;
+}
+
+// =====================
+// PLAN TEMPLATE DTOs
+// =====================
+
+export class CreatePlanTemplateDto {
+  @ApiProperty({
+    description: 'Template name',
+    example: 'Basic Package Template',
+  })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({
+    description: 'Template slug',
+    example: 'basic-package',
+  })
+  @IsString()
+  @IsNotEmpty()
+  slug: string;
+
+  @ApiPropertyOptional({
+    description: 'Template description',
+    example: 'Basic package template for small businesses',
+  })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Template image URL',
+    example: 'https://example.com/template-image.png',
+  })
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+
+  @ApiProperty({
+    description: 'Monthly price in cents',
+    example: 1999,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  priceMonthly: number;
+
+  @ApiProperty({
+    description: 'Yearly price in cents',
+    example: 19999,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  priceYearly: number;
+
+  @ApiPropertyOptional({
+    description: 'Currency code',
+    example: 'USD',
+    default: 'USD',
+  })
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  @ApiPropertyOptional({
+    description: 'Template features',
+    type: [Object],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreatePlanTemplateFeatureDto)
+  @IsOptional()
+  features?: CreatePlanTemplateFeatureDto[];
+}
+
+export class UpdatePlanTemplateDto {
+  @ApiPropertyOptional({
+    description: 'Template name',
+    example: 'Basic Package Template',
+  })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({
+    description: 'Template slug',
+    example: 'basic-package',
+  })
+  @IsString()
+  @IsOptional()
+  slug?: string;
+
+  @ApiPropertyOptional({
+    description: 'Template description',
+    example: 'Basic package template for small businesses',
+  })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Template image URL',
+    example: 'https://example.com/template-image.png',
+  })
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+
+  @ApiPropertyOptional({
+    description: 'Monthly price in cents',
+    example: 1999,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  priceMonthly?: number;
+
+  @ApiPropertyOptional({
+    description: 'Yearly price in cents',
+    example: 19999,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  priceYearly?: number;
+
+  @ApiPropertyOptional({
+    description: 'Currency code',
+    example: 'USD',
+  })
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  @ApiPropertyOptional({
+    description: 'Is template active',
+    example: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Is template deleted',
+    example: false,
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isDeleted?: boolean;
+}
+
+export class PlanTemplateResponseDto {
+  @ApiProperty({
+    description: 'Template ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'Template name',
+    example: 'Basic Package Template',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'Template slug',
+    example: 'basic-package',
+  })
+  slug: string;
+
+  @ApiPropertyOptional({
+    description: 'Template description',
+    example: 'Basic package template for small businesses',
+  })
+  description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Template image URL',
+    example: 'https://example.com/template-image.png',
+  })
+  imageUrl?: string;
+
+  @ApiProperty({
+    description: 'Monthly price in cents',
+    example: 1999,
+  })
+  priceMonthly: number;
+
+  @ApiProperty({
+    description: 'Yearly price in cents',
+    example: 19999,
+  })
+  priceYearly: number;
+
+  @ApiProperty({
+    description: 'Currency code',
+    example: 'USD',
+  })
+  currency: string;
+
+  @ApiProperty({
+    description: 'Is template active',
+    example: true,
+  })
+  isActive: boolean;
+
+  @ApiProperty({
+    description: 'Is template deleted',
+    example: false,
+  })
+  isDeleted: boolean;
+
+  @ApiProperty({
+    description: 'Creation date',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    description: 'Last update date',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  updatedAt: Date;
+
+  @ApiPropertyOptional({
+    description: 'Deletion date',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  deletedAt?: Date;
+
+  @ApiPropertyOptional({
+    description: 'Template features',
+    type: [Object],
+  })
+  features?: any[];
+}
+
+export class CreatePlanTemplateFeatureDto {
+  @ApiProperty({
+    description: 'Feature ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  featureId: string;
+
+  @ApiPropertyOptional({
+    description: 'Included limit (null = unlimited, 0 = not included)',
+    example: 5,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  includedLimit?: number;
+
+  @ApiPropertyOptional({
+    description: 'Unit price in cents (null = not available for purchase)',
+    example: 500,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  unitPrice?: number;
+
+  @ApiPropertyOptional({
+    description: 'Is feature required in template',
+    example: true,
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isRequired?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Display order',
+    example: 1,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  displayOrder?: number;
+}
+
+export class UpdatePlanTemplateFeatureDto extends PartialType(CreatePlanTemplateFeatureDto) {}
+
+export class PlanTemplateQueryDto {
+  @ApiPropertyOptional({
+    description: 'Filter by active status',
+    example: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Filter by deleted status',
+    example: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  isDeleted?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Search by name or slug',
+    example: 'basic',
+  })
+  @IsString()
+  @IsOptional()
+  search?: string;
+
+  @ApiPropertyOptional({
+    description: 'Page number',
+    example: 1,
+    minimum: 1,
+  })
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  @Type(() => Number)
+  page?: number;
+
+  @ApiPropertyOptional({
+    description: 'Items per page',
+    example: 10,
+    minimum: 1,
+    maximum: 100,
+  })
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number;
+}
+
+export class CreatePlanFromTemplateDto {
+  @ApiProperty({
+    description: 'Template ID to copy from',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  templateId: string;
+
+  @ApiProperty({
+    description: 'Office Location ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  officeLocationId: string;
+
+  @ApiPropertyOptional({
+    description: 'Override plan name (optional)',
+    example: 'NYC Basic Plan',
+  })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({
+    description: 'Override plan slug (optional)',
+    example: 'nyc-basic',
+  })
+  @IsString()
+  @IsOptional()
+  slug?: string;
+
+  @ApiPropertyOptional({
+    description: 'Override monthly price (optional)',
+    example: 2499,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  priceMonthly?: number;
+
+  @ApiPropertyOptional({
+    description: 'Override yearly price (optional)',
+    example: 24999,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  priceYearly?: number;
+
+  @ApiPropertyOptional({
+    description: 'Override currency (optional)',
+    example: 'EUR',
+  })
+  @IsString()
+  @IsOptional()
+  currency?: string;
 }
 

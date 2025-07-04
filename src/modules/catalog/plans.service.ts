@@ -7,6 +7,7 @@ import {
   CreatePlanPriceDto,
   UpdatePlanPriceDto,
   PlanPriceQueryDto,
+  CreatePlanFromTemplateDto,
 } from 'src/dtos/plan.dto';
 import { Prisma } from '@prisma/client';
 
@@ -14,9 +15,7 @@ import { Prisma } from '@prisma/client';
 export class PlansService {
   private readonly logger = new Logger('PlansService');
 
-  constructor(private readonly prisma: PrismaService,
-  ) {}
-
+  constructor(private readonly prisma: PrismaService) {}
 
   async getPlans(query?: PlanQueryDto) {
     const {
@@ -35,16 +34,20 @@ export class PlansService {
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
           { description: { contains: search, mode: 'insensitive' } },
+          { slug: { contains: search, mode: 'insensitive' } },
         ],
       }),
     };
-console.log(where);
+
     const [plans, total] = await Promise.all([
       this.prisma.plan.findMany({
         where,
         skip,
         take: limit,
         include: {
+          officeLocation: {
+            select: { id: true, label: true, city: true, state: true },
+          },
           prices: {
             where: { isActive: true, isDeleted: false },
             orderBy: { amount: 'asc' },
@@ -74,10 +77,13 @@ console.log(where);
     };
   }
 
-    async getActivePlansWithPrices() {
+  async getActivePlansWithPrices() {
     return await this.prisma.plan.findMany({
       where: { isActive: true, isDeleted: false },
       include: {
+        officeLocation: {
+          select: { id: true, label: true, city: true, state: true },
+        },
         prices: {
           where: { isActive: true, isDeleted: false },
           orderBy: { amount: 'asc' },
@@ -95,11 +101,13 @@ console.log(where);
     });
   }
 
-
   async getPlanById(id: string) {
     const plan = await this.prisma.plan.findFirst({
       where: { id, isDeleted: false },
       include: {
+        officeLocation: {
+          select: { id: true, label: true, city: true, state: true },
+        },
         prices: {
           where: { isActive: true, isDeleted: false },
           orderBy: { amount: 'asc' },
@@ -121,18 +129,34 @@ console.log(where);
 
   async createPlan(data: CreatePlanDto) {
     try {
-      // Check if plan name already exists
+      // Check if office location exists
+      const officeLocation = await this.prisma.officeLocation.findUnique({
+        where: { id: data.officeLocationId},
+      });
+
+      if (!officeLocation) {
+        throw new NotFoundException('Office location not found');
+      }
+
+      // Check if plan slug already exists for this location
       const existingPlan = await this.prisma.plan.findFirst({
-        where: { name: data.name, isDeleted: false },
+        where: { 
+          slug: data.slug, 
+          officeLocationId: data.officeLocationId,
+          isDeleted: false 
+        },
       });
 
       if (existingPlan) {
-        throw new ConflictException('Plan with this name already exists');
+        throw new ConflictException('Plan with this slug already exists for this location');
       }
 
       return await this.prisma.plan.create({
         data,
         include: {
+          officeLocation: {
+            select: { id: true, label: true, city: true, state: true },
+          },
           prices: true,
           features: {
             include: { feature: true },
@@ -141,8 +165,8 @@ console.log(where);
       });
     } catch (error) {
       this.logger.error(error.message);
-      if (error instanceof ConflictException) {
-        throw new ConflictException('Plan with this name already exists');
+      if (error instanceof ConflictException || error instanceof NotFoundException) {
+        throw error;
       }
       
       throw new BadRequestException('Failed to create plan');
@@ -153,14 +177,20 @@ console.log(where);
     await this.getPlanById(id); // Check if exists
 
     try {
-      // Check if name already exists for other plans
-      if (data.name) {
+      // Check if slug already exists for other plans in same location
+      if (data.slug) {
+        const plan = await this.prisma.plan.findUnique({ where: { id } });
         const existingPlan = await this.prisma.plan.findFirst({
-          where: { name: data.name, id: { not: id }, isDeleted: false },
+          where: { 
+            slug: data.slug, 
+            officeLocationId: plan.officeLocationId,
+            id: { not: id }, 
+            isDeleted: false 
+          },
         });
 
         if (existingPlan) {
-          throw new ConflictException('Plan with this name already exists');
+          throw new ConflictException('Plan with this slug already exists for this location');
         }
       }
 
@@ -171,6 +201,9 @@ console.log(where);
           updatedAt: new Date(),
         },
         include: {
+          officeLocation: {
+            select: { id: true, label: true, city: true, state: true },
+          },
           prices: {
             where: { isActive: true, isDeleted: false },
           },
@@ -183,7 +216,7 @@ console.log(where);
     } catch (error) {
       this.logger.error(error.message);
       if (error instanceof ConflictException) {
-        throw new ConflictException('Plan with this name already exists');
+        throw error;
       }
       throw new BadRequestException('Failed to update plan');
     }
@@ -222,6 +255,126 @@ console.log(where);
     }
   }
 
+  async createPlanFromTemplate(data: CreatePlanFromTemplateDto) {
+    try {
+      // Get template with features
+      const template = await this.prisma.planTemplate.findFirst({
+        where: { id: data.templateId, isActive: true, isDeleted: false },
+        include: {
+          features: {
+            where: { planTemplateId: data.templateId },
+            include: {
+              feature: true,
+            },
+          },
+        },
+      });
+
+      if (!template) {
+        throw new NotFoundException('Template not found');
+      }
+
+      // Check if office location exists
+      const officeLocation = await this.prisma.officeLocation.findFirst({
+        where: { id: data.officeLocationId, isActive: true, isDeleted: false },
+      });
+
+      if (!officeLocation) {
+        throw new NotFoundException('Office location not found');
+      }
+
+      // Generate plan data from template
+      const planName = data.name || template.name;
+      const planSlug = data.slug || template.slug;
+
+      // Check if plan slug already exists for this location
+      const existingPlan = await this.prisma.plan.findFirst({
+        where: { 
+          slug: planSlug, 
+          officeLocationId: data.officeLocationId,
+          isDeleted: false 
+        },
+      });
+
+      if (existingPlan) {
+        throw new ConflictException('Plan with this slug already exists for this location');
+      }
+
+      return await this.prisma.$transaction(async (tx) => {
+        // 1. Create Plan
+        const plan = await tx.plan.create({
+          data: {
+            officeLocationId: data.officeLocationId,
+            name: planName,
+            slug: planSlug,
+            description: template.description,
+            imageUrl: template.imageUrl,
+          },
+        });
+
+        // 2. Create Plan Prices
+        const priceMonthly = data.priceMonthly ?? template.priceMonthly;
+        const priceYearly = data.priceYearly ?? template.priceYearly;
+        const currency = data.currency ?? template.currency;
+
+        await tx.planPrice.createMany({
+          data: [
+            {
+              planId: plan.id,
+              billingCycle: 'MONTHLY',
+              amount: priceMonthly,
+              currency,
+            },
+            {
+              planId: plan.id,
+              billingCycle: 'YEARLY',
+              amount: priceYearly,
+              currency,
+            },
+          ],
+        });
+
+        // 3. Create Plan Features
+        if (template.features && template.features.length > 0) {
+          await tx.planFeature.createMany({
+            data: template.features.map(templateFeature => ({
+              planId: plan.id,
+              featureId: templateFeature.featureId,
+              includedLimit: templateFeature.includedLimit,
+              unitPrice: templateFeature.unitPrice,
+            })),
+          });
+        }
+
+        // Return complete plan with relations
+        return tx.plan.findUnique({
+          where: { id: plan.id },
+          include: {
+            officeLocation: {
+              select: { id: true, label: true, city: true, state: true },
+            },
+            prices: {
+              where: { isActive: true, isDeleted: false },
+              orderBy: { amount: 'asc' },
+            },
+            features: {
+              where: { isActive: true, isDeleted: false },
+              include: {
+                feature: true,
+              },
+            },
+          },
+        });
+      });
+    } catch (error) {
+      this.logger.error(error.message);
+      if (error instanceof NotFoundException || error instanceof ConflictException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to create plan from template');
+    }
+  }
+
   // =====================
   // PLAN PRICE OPERATIONS
   // =====================
@@ -241,7 +394,7 @@ console.log(where);
       where,
       include: {
         plan: {
-          select: { id: true, name: true, description: true },
+          select: { id: true, name: true, description: true, slug: true },
         },
       },
       orderBy: { amount: 'asc' },
@@ -252,7 +405,13 @@ console.log(where);
     const planPrice = await this.prisma.planPrice.findFirst({
       where: { id, isDeleted: false },
       include: {
-        plan: true,
+        plan: {
+          include: {
+            officeLocation: {
+              select: { id: true, label: true, city: true, state: true },
+            },
+          },
+        },
       },
     });
 
@@ -290,7 +449,13 @@ console.log(where);
       return await this.prisma.planPrice.create({
         data,
         include: {
-          plan: true,
+          plan: {
+            include: {
+              officeLocation: {
+                select: { id: true, label: true, city: true, state: true },
+              },
+            },
+          },
         },
       });
     } catch (error) {
@@ -323,7 +488,13 @@ console.log(where);
           updatedAt: new Date(),
         },
         include: {
-          plan: true,
+          plan: {
+            include: {
+              officeLocation: {
+                select: { id: true, label: true, city: true, state: true },
+              },
+            },
+          },
         },
       });
     } catch (error) {
@@ -350,5 +521,4 @@ console.log(where);
       throw new BadRequestException('Failed to delete plan price');
     }
   }
-
 }
