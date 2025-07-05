@@ -27,13 +27,6 @@ export class LocationService {
       limit = 10,
     } = query || {};
     const skip = (page - 1) * limit;
-    // Helper function to convert string/boolean to boolean
-    const toBool = (value: any): boolean => {
-      if (typeof value === 'boolean') return value;
-      if (typeof value === 'string') return value.toLowerCase() === 'true';
-      return Boolean(value);
-    };
-
     const where: Prisma.OfficeLocationWhereInput = {
       isActive: true,
       isDeleted: false,

@@ -26,19 +26,11 @@ import { FeaturesService } from './features.service';
 import { PlansService } from './plans.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
-  CreateWorkspaceFeatureUsageDto,
-  UpdateWorkspaceFeatureUsageDto,
   CreatePlanFeatureDto,
   UpdatePlanFeatureDto,
   PlanFeatureQueryDto,
   BulkCreatePlanFeaturesDto,
   BulkUpdatePlanFeaturesDto,
-  CreatePlanDto,
-  UpdatePlanDto,
-  PlanQueryDto,
-  CreatePlanPriceDto,
-  UpdatePlanPriceDto,
-  PlanPriceQueryDto,
   FeatureQueryDto,
   CreateFeatureDto,
   UpdateFeatureDto,
@@ -191,7 +183,7 @@ export class FeaturesController {
   // FEATURES ENDPOINTS
   // =====================
 
-  @Get('features')
+  @Get('all')
   @ApiOperation({ 
     summary: 'Get all features',
     description: 'Retrieve a paginated list of all features with optional filtering and search capabilities'
@@ -223,7 +215,7 @@ export class FeaturesController {
     return this.featuresService.getFeatures(query);
   }
 
-  @Get('features/:id')
+  @Get('/:id')
   @ApiOperation({ 
     summary: 'Get feature by ID',
     description: 'Retrieve detailed information about a specific feature'
@@ -235,7 +227,7 @@ export class FeaturesController {
     return this.featuresService.getFeatureById(id);
   }
 
-  @Post('features/create')
+  @Post('create')
   @ApiOperation({ 
     summary: 'Create a new feature',
     description: 'Create a new feature with name, description and other properties'
@@ -248,7 +240,7 @@ export class FeaturesController {
     return this.featuresService.createFeature(data);
   }
 
-  @Put('features/:id/update')
+  @Put(':id/update')
   @ApiOperation({ 
     summary: 'Update an existing feature',
     description: 'Update feature properties such as name, description, or active status'
@@ -263,7 +255,7 @@ export class FeaturesController {
     return this.featuresService.updateFeature(id, data);
   }
 
-  @Delete('features/:id/delete')
+  @Delete(':id/delete')
   @ApiOperation({ 
     summary: 'Delete a feature',
     description: 'Soft delete a feature and all its associated plan features'
@@ -276,7 +268,7 @@ export class FeaturesController {
     return this.featuresService.deleteFeature(id);
   }
 
-  @Get('features/:id/usage-in-plans')
+  @Get(':id/usage-in-plans')
   @ApiOperation({ 
     summary: 'Get feature usage in plans',
     description: 'Retrieve all plans that use a specific feature'

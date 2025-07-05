@@ -14,6 +14,7 @@ import { SchedulerModule } from './scheduler/scheduler.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { ReportModule } from './report/report.module';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { WorkspaceModule } from './workspace/workspace.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
     CatalogModule,
     ReportModule,
     SubscriptionModule,
+    WorkspaceModule,
   ],
   exports: [
     AuthModule,
@@ -44,7 +46,8 @@ import { SubscriptionModule } from './subscription/subscription.module';
     SchedulerModule,
     CatalogModule,
     ReportModule,
-    SubscriptionModule
+    SubscriptionModule,
+    WorkspaceModule,
   ],
 })
 export class MainModule {}

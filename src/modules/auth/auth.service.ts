@@ -13,6 +13,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Events } from 'src/common/enums/event.enum';
 import { JwtService } from '@nestjs/jwt';
 import { EmailVerifyService } from './verify.service';
+import { WorkspaceService } from '../workspace/workspace.service';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +22,7 @@ export class AuthService {
     private readonly userService: UserService,
     private tokenService: TokenService,
     private eventEmitter: EventEmitter2,
+    private readonly workspaceService: WorkspaceService,
     private readonly jwtService: JwtService,
     private readonly verifyService:EmailVerifyService,
   ) {
@@ -29,6 +31,7 @@ export class AuthService {
 
   async signUp(credentials: RegisterDto) {
     const newUser = await this.userService.createUser(credentials);
+    const newWorkspace = await this.workspaceService.createWorkspace(newUser.id,{name:credentials.firstName+' '+credentials.lastName});
     await this.verifyService.requestUserVerification(credentials.email);
     const accessToken = this.tokenService.generateAccessToken(newUser);
     const refreshToken = this.tokenService.generateRefreshToken(newUser);
@@ -36,6 +39,7 @@ export class AuthService {
 
     return {
       user: { ...newUser },
+      workspace: { ...newWorkspace },
       tokens: {
         accessToken,
         refreshToken,

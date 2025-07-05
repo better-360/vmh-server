@@ -76,6 +76,7 @@ export class UserService {
       where: { email, deletedAt: null },
       include: {
         roles: true,
+        workspaces: true,
       },
     });
   
@@ -179,7 +180,7 @@ export class UserService {
         name: user.firstName + ' ' + user.lastName,
       })
     ).id;
-    this.prismaService.user.update({
+   await this.prismaService.user.update({
       where: { email: user.email },
       data: { stripeCustomerId: customerStripeID },
     });
@@ -229,7 +230,6 @@ export class UserService {
   }
 
   async harddeleteUser(id: string): Promise<User> {
-
     try {
       return await this.prismaService.user.delete({
         where: { id },
@@ -238,6 +238,7 @@ export class UserService {
       throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
     }
   }
+  
   async setNewPassword(userId: string, newPassword: string): Promise<void> {
     const hash = await this.hashPassword(newPassword);
     await this.prismaService.user.update({

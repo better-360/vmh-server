@@ -7,9 +7,10 @@ import { PlansController } from './plans.controller';
 import { PrismaService } from 'src/prisma.service';
 import { LocationController } from './location.controller';
 import { LocationService } from './location.service';
+import { TemplatesController } from './template.controller';
 
 @Module({
-  controllers: [FeaturesController, PlansController, LocationController],
+  controllers: [FeaturesController, PlansController, LocationController,TemplatesController],
   providers: [CatalogService, FeaturesService, PlansService, PrismaService, LocationService],
   exports: [CatalogService, FeaturesService, PlansService, LocationService],
 })

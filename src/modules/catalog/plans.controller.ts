@@ -25,11 +25,6 @@ import { PlansService } from './plans.service';
 import { CatalogService } from './catalog.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
-  CreatePlanFeatureDto,
-  UpdatePlanFeatureDto,
-  PlanFeatureQueryDto,
-  BulkCreatePlanFeaturesDto,
-  BulkUpdatePlanFeaturesDto,
   CreatePlanDto,
   UpdatePlanDto,
   PlanQueryDto,
@@ -58,136 +53,10 @@ export class PlansController {
   ) {}
 
   // =====================
-  // PLAN TEMPLATE ENDPOINTS
-  // =====================
-
-  @Get('templates')
-  @ApiOperation({ 
-    summary: 'Get all plan templates',
-    description: 'Retrieve a paginated list of all plan templates with their features'
-  })
-  @ApiQuery({ name: 'isActive', required: false, type: Boolean, description: 'Filter by active status' })
-  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search in template name, slug and description' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number for pagination (default: 1)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 10)' })
-  @ApiResponse({ status: 200, description: 'Plan templates retrieved successfully' })
-  async getPlanTemplates(@Query() query: PlanTemplateQueryDto) {
-    return this.catalogService.getPlanTemplates(query);
-  }
-
-  @Get('templates/active')
-  @ApiOperation({ 
-    summary: 'Get active plan templates',
-    description: 'Retrieve all active plan templates for creating plans'
-  })
-  @ApiResponse({ status: 200, description: 'Active plan templates retrieved successfully' })
-  async getActivePlanTemplates() {
-    return this.catalogService.getActivePlanTemplates();
-  }
-
-  @Get('templates/:id')
-  @ApiOperation({ 
-    summary: 'Get plan template by ID',
-    description: 'Retrieve detailed information about a specific plan template including features'
-  })
-  @ApiParam({ name: 'id', description: 'Template ID', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Plan template retrieved successfully' })
-  @ApiNotFoundResponse({ description: 'Plan template not found' })
-  async getPlanTemplateById(@Param('id') id: string) {
-    return this.catalogService.getPlanTemplateById(id);
-  }
-
-  @Post('templates')
-  @ApiOperation({ 
-    summary: 'Create a new plan template',
-    description: 'Create a new plan template with features that can be used to generate plans'
-  })
-  @ApiBody({ type: CreatePlanTemplateDto, description: 'Plan template creation data' })
-  @ApiResponse({ status: 201, description: 'Plan template created successfully' })
-  @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiConflictResponse({ description: 'Template with this name or slug already exists' })
-  async createPlanTemplate(@Body() data: CreatePlanTemplateDto) {
-    return this.catalogService.createPlanTemplate(data);
-  }
-
-  @Put('templates/:id')
-  @ApiOperation({ 
-    summary: 'Update an existing plan template',
-    description: 'Update plan template properties such as name, description, or prices'
-  })
-  @ApiParam({ name: 'id', description: 'Template ID', type: 'string' })
-  @ApiBody({ type: UpdatePlanTemplateDto, description: 'Plan template update data' })
-  @ApiResponse({ status: 200, description: 'Plan template updated successfully' })
-  @ApiNotFoundResponse({ description: 'Plan template not found' })
-  @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiConflictResponse({ description: 'Template with this name or slug already exists' })
-  async updatePlanTemplate(@Param('id') id: string, @Body() data: UpdatePlanTemplateDto) {
-    return this.catalogService.updatePlanTemplate(id, data);
-  }
-
-  @Delete('templates/:id')
-  @ApiOperation({ 
-    summary: 'Delete a plan template',
-    description: 'Soft delete a plan template and all its associated features'
-  })
-  @ApiParam({ name: 'id', description: 'Template ID', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Plan template deleted successfully' })
-  @ApiNotFoundResponse({ description: 'Plan template not found' })
-  @ApiBadRequestResponse({ description: 'Failed to delete plan template' })
-  async deletePlanTemplate(@Param('id') id: string) {
-    return this.catalogService.deletePlanTemplate(id);
-  }
-
-  @Post('templates/:templateId/features')
-  @ApiOperation({ 
-    summary: 'Add feature to template',
-    description: 'Add a feature with limits and pricing to a plan template'
-  })
-  @ApiParam({ name: 'templateId', description: 'Template ID', type: 'string' })
-  @ApiBody({ type: CreatePlanTemplateFeatureDto, description: 'Template feature creation data' })
-  @ApiResponse({ status: 201, description: 'Feature added to template successfully' })
-  @ApiNotFoundResponse({ description: 'Template or feature not found' })
-  @ApiConflictResponse({ description: 'Feature already exists in this template' })
-  async addFeatureToTemplate(@Param('templateId') templateId: string, @Body() data: CreatePlanTemplateFeatureDto) {
-    return this.catalogService.addFeatureToTemplate(templateId, data);
-  }
-
-  @Put('templates/:templateId/features/:featureId')
-  @ApiOperation({ 
-    summary: 'Update template feature',
-    description: 'Update feature limits and pricing in a plan template'
-  })
-  @ApiParam({ name: 'templateId', description: 'Template ID', type: 'string' })
-  @ApiParam({ name: 'featureId', description: 'Feature ID', type: 'string' })
-  @ApiBody({ type: UpdatePlanTemplateFeatureDto, description: 'Template feature update data' })
-  @ApiResponse({ status: 200, description: 'Template feature updated successfully' })
-  @ApiNotFoundResponse({ description: 'Template feature not found' })
-  async updateTemplateFeature(
-    @Param('templateId') templateId: string, 
-    @Param('featureId') featureId: string, 
-    @Body() data: UpdatePlanTemplateFeatureDto
-  ) {
-    return this.catalogService.updateTemplateFeature(templateId, featureId, data);
-  }
-
-  @Delete('templates/:templateId/features/:featureId')
-  @ApiOperation({ 
-    summary: 'Remove feature from template',
-    description: 'Remove a feature from a plan template'
-  })
-  @ApiParam({ name: 'templateId', description: 'Template ID', type: 'string' })
-  @ApiParam({ name: 'featureId', description: 'Feature ID', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Feature removed from template successfully' })
-  @ApiNotFoundResponse({ description: 'Template feature not found' })
-  async removeFeatureFromTemplate(@Param('templateId') templateId: string, @Param('featureId') featureId: string) {
-    return this.catalogService.removeFeatureFromTemplate(templateId, featureId);
-  }
-
-  // =====================
   // PLANS ENDPOINTS
   // =====================
 
-  @Get('plans')
+  @Get('all')
   @ApiOperation({ 
     summary: 'Get all plans',
     description: 'Retrieve a paginated list of all plans with their prices and features'
@@ -219,7 +88,7 @@ export class PlansController {
     return this.plansService.getPlans(query);
   }
 
-  @Get('plans/active')
+  @Get('active')
   @ApiOperation({ 
     summary: 'Get active plans with prices',
     description: 'Retrieve all active plans with their associated prices and features'
@@ -245,7 +114,7 @@ export class PlansController {
     return this.plansService.getActivePlansWithPrices();
   }
 
-  @Get('plans/:id')
+  @Get('/:id')
   @ApiOperation({ 
     summary: 'Get plan by ID',
     description: 'Retrieve detailed information about a specific plan including prices and features'
@@ -257,7 +126,7 @@ export class PlansController {
     return this.plansService.getPlanById(id);
   }
 
-  @Post('plans')
+  @Post('create')
   @ApiOperation({ 
     summary: 'Create a new plan',
     description: 'Create a new subscription plan with name, description and other properties'
@@ -270,7 +139,7 @@ export class PlansController {
     return this.plansService.createPlan(data);
   }
 
-  @Post('plans/with-features')
+  @Post('create-with-features')
   @ApiOperation({ 
     summary: 'Create a complete plan with features and prices',
     description: 'Create a new subscription plan with all features and pricing options in one request'
@@ -365,7 +234,7 @@ export class PlansController {
     return this.plansService.createPlanWithFeatures(data);
   }
 
-  @Post('plans/from-template')
+  @Post('create-from-template')
   @ApiOperation({ 
     summary: 'Create plan from template',
     description: 'Create a new plan by copying from an existing template with optional overrides'
@@ -379,7 +248,7 @@ export class PlansController {
     return this.plansService.createPlanFromTemplate(data);
   }
 
-  @Put('plans/:id')
+  @Put('/:id')
   @ApiOperation({ 
     summary: 'Update an existing plan',
     description: 'Update plan properties such as name, description, or active status'
@@ -394,7 +263,7 @@ export class PlansController {
     return this.plansService.updatePlan(id, data);
   }
 
-  @Delete('plans/:id')
+  @Delete('/:id')
   @ApiOperation({ 
     summary: 'Delete a plan',
     description: 'Soft delete a plan and all its associated features and prices'
