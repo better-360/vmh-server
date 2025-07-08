@@ -41,6 +41,8 @@ model Workspace {
   isActive          Boolean                    @default(true)
   createdAt         DateTime                   @default(now())
   updatedAt         DateTime                   @updatedAt
+  deletedAt         DateTime? // Silinmişse burada tutulur
+  isDeleted         Boolean                    @default(false) // Workspace silinmiş mi?
   members           WorkspaceMember[]
   tickets           Ticket[]
   invoices          Invoice[]
@@ -49,6 +51,7 @@ model Workspace {
   subscriptions     WorkspaceSubscription[]
   featureUsages     WorkspaceFeatureUsage[]
   deliveryAddresses WorkspaceDeliveryAddress[]
+  forwardRequests   PackageForwardRequest[]
 }
 
 model WorkspaceMember {
@@ -60,8 +63,12 @@ model WorkspaceMember {
   updatedAt   DateTime      @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean       @default(false)
-  user        User          @relation(fields: [userId], references: [id])
-  workspace   Workspace     @relation(fields: [workspaceId], references: [id])
+  isDefault   Boolean       @default(false) //Kullanıcının varsayılan Workspace'i mi?
+
+  user      User      @relation(fields: [userId], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([userId, isDefault], name: "OnlyOneDefaultWorkspacePerUser")
 }
 
 model UserBalance {
@@ -98,12 +105,6 @@ model BalanceReminder {
   userBalance   UserBalance  @relation(fields: [userBalanceId], references: [id], onDelete: Cascade)
 }
 
-enum ReminderType {
-  LOW_BALANCE
-  FAILED_PAYMENT
-  FINAL_WARNING
-}
-
 model WorkspaceAddress {
   id               String @id @default(uuid()) @db.Uuid
   workspaceId      String @db.Uuid // Workspace ID'si
@@ -121,6 +122,7 @@ model WorkspaceAddress {
   packages       Package[]
 
   @@unique([workspaceId, officeLocationId]) // Aynı workspace aynı adresten sadece bir kez alabilir
+  @@index([steNumber])
 }
 
 model WorkspaceSubscription {
@@ -146,18 +148,18 @@ model WorkspaceSubscription {
 }
 
 model OfficeLocation {
-  id                     String                  @id @default(uuid()) @db.Uuid
+  id                     String                     @id @default(uuid()) @db.Uuid
   label                  String // Örn: Soho - NYC
   addressLine            String // Örn: 447 Broadway
   addressLine2           String? // Örn: 447 Broadway
   city                   String
   state                  String
   country                String
-  createdAt              DateTime                @default(now())
-  updatedAt              DateTime                @updatedAt
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
   deletedAt              DateTime? // Silinmişse burada tutulur
-  isActive               Boolean                 @default(true) // Adres aktif mi?
-  isDeleted              Boolean                 @default(false) // Adres silinmiş mi?
+  isActive               Boolean                    @default(true) // Adres aktif mi?
+  isDeleted              Boolean                    @default(false) // Adres silinmiş mi?
   latitude               Float? // Opsiyonel, harita entegrasyonu için
   longitude              Float? // Opsiyonel, harita entegrasyonu için
   zipCode                String? // Opsiyonel, posta kodu
@@ -166,6 +168,10 @@ model OfficeLocation {
   workspaceSubscriptions WorkspaceSubscription[] // Bu lokasyona ait abonelikler
   workspaceFeatureUsages WorkspaceFeatureUsage[] // Bu lokasyona ait feature kullanımları
   plans                  Plan[] // Bu lokasyondaki planlar
+  forwardRequest         PackageForwardRequest[] // Bu lokasyondaki paket yönlendirme talepleri
+  aviableCarriers        CarrierAvailability[] // Bu lokasyonda kullanılabilir kargo firmaları
+  deliverySpeedOptions   DeliverySpeedPlanMapping[] // Bu lokasyonda kullanılabilir teslimat hızları
+  packagingTypeOptions   PackagingTypePlanMapping[] // Bu lokasyonda kullanılabilir paketleme türleri
 }
 
 model Plan {
@@ -211,21 +217,20 @@ model PlanFeature {
 }
 
 model PlanTemplate {
-  id           String    @id @default(uuid()) @db.Uuid
-  name         String    @unique
-  slug         String    @unique // Template için slug
+  id           String                @id @default(uuid()) @db.Uuid
+  name         String                @unique
+  slug         String                @unique // Template için slug
   description  String?
   imageUrl     String?
   priceMonthly Int // Template varsayılan aylık fiyat
   priceYearly  Int // Template varsayılan yıllık fiyat
-  currency     String    @default("USD") // Template varsayılan para birimi
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  currency     String                @default("USD") // Template varsayılan para birimi
+  isActive     Boolean               @default(true)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
   deletedAt    DateTime? // Silinmişse burada tutulur
-  isDeleted    Boolean   @default(false)
-
-  features PlanTemplateFeature[] // Bu template'deki özellikler
+  isDeleted    Boolean               @default(false)
+  features     PlanTemplateFeature[] // Bu template'deki özellikler
 }
 
 model PlanTemplateFeature {
@@ -298,10 +303,11 @@ model WorkspaceFeatureUsage {
 }
 
 model Package {
-  id                 String   @id @default(uuid()) @db.Uuid
+  id                 String        @id @default(uuid()) @db.Uuid
   steNumber          String // Paketin üzerindeki STE numarası
-  workspaceAddressId String   @db.Uuid // Hangi workspace adresine ait
+  workspaceAddressId String        @db.Uuid // Hangi workspace adresine ait
   receivedAt         DateTime // Kargonun sisteme giriş zamanı
+  items              PackageItem[]
 
   senderName    String? // Gönderen kişi/firma adı
   senderAddress String? // Gönderen adres bilgisi
@@ -321,6 +327,28 @@ model Package {
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
   actions   PackageAction[] // Paketle ilgili aksiyonlar (forward, shred, vs.)
+
+  forwardRequests PackageForwardRequest[]
+}
+
+model PackageItem {
+  id          String    @id @default(uuid()) @db.Uuid
+  packageId   String    @db.Uuid
+  name        String // Örn: "Kargo Paketi", "Belge", "Karton"
+  description String? // Opsiyonel, ürün açıklaması
+  quantity    Int       @default(1) // Kaç adet bu üründen var
+  weightKg    Float? // kg, opsiyonel
+  width       Float? // cm, opsiyonel
+  height      Float? // cm, opsiyonel
+  length      Float? // cm, opsiyonel
+  volumeDesi  Float? // opsiyonel, istersen otomatik hesaplatabilirsin
+  photoUrls   String[] // Fotoğraf linkleri (S3 URL'leri)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime? // Silinmişse burada tutulur
+  isDeleted   Boolean   @default(false)
+
+  package Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
 }
 
 model PackageAction {
@@ -335,19 +363,156 @@ model PackageAction {
   package     Package           @relation(fields: [packageId], references: [id], onDelete: Cascade)
 }
 
+model PackageForwardRequest {
+  id               String @id @default(uuid()) @db.Uuid
+  packageId        String @db.Uuid
+  workspaceId      String @db.Uuid
+  officeLocationId String @db.Uuid
+  deliveryAddressId     String   @db.Uuid // Kullanıcının paketin gönderilmesini istediği adres
+  deliverySpeedOptionId String   @db.Uuid
+  packagingTypeOptionId String   @db.Uuid
+  carrierId             String?  @db.Uuid // Kargo firması (opsiyonel, kullanıcı seçebilir)
+  carrier               Carrier? @relation(fields: [carrierId], references: [id])
+  trackingCode          String? // Kargo firmasından alınan kod
+
+  shippingCost  Int // kuruş cinsinden (örnek: 1200 = 12.00 USD)
+  packagingCost Int // kuruş cinsinden
+  totalCost     Int // shippingCost + packagingCost
+
+  status ForwardRequestStatus @default(PENDING) // Talep durumu
+  paymentStatus PaymentStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  completedAt DateTime? // Talep tamamlandığında set edilecek
+  cancelledAt DateTime? // Kullanıcı tarafından iptal edildiğinde set edilecek
+
+  package         Package                  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  workspace       Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  officeLocation  OfficeLocation           @relation(fields: [officeLocationId], references: [id], onDelete: Cascade)
+  deliveryAddress WorkspaceDeliveryAddress @relation(fields: [deliveryAddressId], references: [id], onDelete: Cascade)
+
+  deliverySpeedOption DeliverySpeedOption @relation(fields: [deliverySpeedOptionId], references: [id])
+  packagingTypeOption PackagingTypeOption @relation(fields: [packagingTypeOptionId], references: [id])
+}
+
+enum ForwardRequestStatus {
+  PENDING // Yeni talep, henüz işlenmedi
+  IN_PROGRESS // İşlemde, kargo firması ile iletişimde
+  COMPLETED // Paket başarıyla yönlendirildi
+  CANCELLED // Kullanıcı tarafından iptal edildi
+  FAILED // Bir hata nedeniyle yönlendirme başarısız oldu
+}
+
+model Carrier {
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String // Örn: UPS, DHL, FedEx
+  description String?
+  logoUrl     String? // UI için opsiyonel
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime? // Silinmişse burada tutulur
+  isDeleted Boolean @default(false) // Carrier silinmiş mi?
+  availableInStates CarrierAvailability[] // Bu carrier'ın kullanılabileceği lokasyonlar
+  forwardRequest    PackageForwardRequest[] // Bu carrierın kullanıldığı yönlendirme talepleri
+}
+
+model CarrierAvailability {
+  id               String @id @default(uuid()) @db.Uuid
+  carrierId        String @db.Uuid
+  officeLocationId String @db.Uuid // Hangi lokasyonda bu kargo aktif?
+
+  carrier        Carrier        @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+  officeLocation OfficeLocation @relation(fields: [officeLocationId], references: [id], onDelete: Cascade)
+
+  isDefault Boolean @default(false) // Önerilen carrier olabilir
+  isActive  Boolean @default(true)
+
+  @@unique([carrierId, officeLocationId])
+  @@index([officeLocationId])
+}
+
+model DeliverySpeedOption {
+  id          String  @id @default(uuid()) @db.Uuid
+  label       String  @unique // Örn: SAME_DAY, NEXT_DAY
+  title       String // Örn: Aynı Gün Teslimat
+  description String?
+  price       Int // Kuruş cinsinden
+  isActive    Boolean @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Silinmişse burada tutulur
+  isDeleted Boolean   @default(false)
+
+  forwardRequests PackageForwardRequest[]
+
+  aviableLocations DeliverySpeedPlanMapping[]
+}
+
+model PackagingTypeOption {
+  id          String  @id @default(uuid()) @db.Uuid
+  label       String  @unique // Örn: STANDARD_BOX
+  title       String // Örn: Standart Kutu
+  description String?
+  isActive    Boolean @default(true)
+
+  createdAt DateTime  @default(now())
+  deletedAt DateTime? // Silinmişse burada tutulur
+  isDeleted Boolean   @default(false)
+  updatedAt DateTime  @updatedAt
+
+  forwardRequests  PackageForwardRequest[]
+  aviableLocations PackagingTypePlanMapping[]
+}
+
+model DeliverySpeedPlanMapping {
+  id               String              @id @default(uuid()) @db.Uuid
+  deliverySpeedId  String              @db.Uuid
+  officeLocationId String              @db.Uuid
+  price            Int // kuruş olarak
+  isActive         Boolean             @default(true)
+  deletedAt        DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  deliverySpeed    DeliverySpeedOption @relation(fields: [deliverySpeedId], references: [id])
+  officeLocation   OfficeLocation      @relation(fields: [officeLocationId], references: [id])
+  @@unique([deliverySpeedId, officeLocationId])
+}
+
+model PackagingTypePlanMapping {
+  id               String @id @default(uuid()) @db.Uuid
+  packagingTypeId  String @db.Uuid
+  officeLocationId String @db.Uuid
+  price            Int
+  isActive         Boolean @default(true)
+  deletedAt        DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  packagingType  PackagingTypeOption @relation(fields: [packagingTypeId], references: [id])
+  officeLocation OfficeLocation      @relation(fields: [officeLocationId], references: [id])
+
+  @@unique([packagingTypeId, officeLocationId])
+}
+
 model WorkspaceDeliveryAddress {
-  id          String              @id @default(uuid()) @db.Uuid
-  type        DeliveryAddressType @default(DELIVERY)
-  workspaceId String              @db.Uuid
-  label       String // Örn: Ev, Ofis, Yazlık
-  addressLine String
-  city        String
-  state       String
-  country     String
-  zipCode     String?
-  isDefault   Boolean             @default(false)
-  workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  createdAt   DateTime            @default(now())
+  id              String                  @id @default(uuid()) @db.Uuid
+  type            DeliveryAddressType     @default(DELIVERY)
+  workspaceId     String                  @db.Uuid
+  label           String // Örn: Ev, Ofis, Yazlık
+  addressLine     String
+  city            String
+  state           String
+  country         String
+  zipCode         String?
+  isDefault       Boolean                 @default(false)
+  workspace       Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt       DateTime                @default(now())
+  forwardRequests PackageForwardRequest[]
 
   @@unique([workspaceId, isDefault], name: "OnlyOneDefaultPerWorkspace") // sadece 1 default adres per workspace
 }
@@ -562,6 +727,12 @@ enum RoleType {
   CUSTOMER
 }
 
+enum ReminderType {
+  LOW_BALANCE
+  FAILED_PAYMENT
+  FINAL_WARNING
+}
+
 enum TaskStatus {
   OPEN
   IN_PROGRESS
@@ -606,6 +777,19 @@ enum PermissionAction {
   UPDATE
   DELETE
   MANAGE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  CHARGEBACK
+  CANCELLED
+  IN_PROGRESS
+  COMPLETED
+  ERROR
 }
 
 model UserRole {

@@ -15,6 +15,7 @@ import { CatalogModule } from './catalog/catalog.module';
 import { ReportModule } from './report/report.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { WorkspaceModule } from './workspace/workspace.module';
+import { ShippingModule } from './shipping/shipping.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { WorkspaceModule } from './workspace/workspace.module';
     CatalogModule,
     ReportModule,
     SubscriptionModule,
+    ShippingModule,
     WorkspaceModule,
   ],
   exports: [
@@ -47,6 +49,7 @@ import { WorkspaceModule } from './workspace/workspace.module';
     CatalogModule,
     ReportModule,
     SubscriptionModule,
+    ShippingModule,
     WorkspaceModule,
   ],
 })

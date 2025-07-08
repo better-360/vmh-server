@@ -1,8 +1,26 @@
-import { Module } from "@nestjs/common";
+import { Module } from '@nestjs/common';
+import {
+  PackagingOptionService,
+  ShippingSpeedService,
+  CarrierService,
+} from './shipping.service';
+import {
+  CarrierController,
+  PackagingOptionController,
+  ShippingSpeedController,
+} from './shipping.controller';
 
 @Module({
-  imports: [],
-    controllers: [],
-    providers :[]
+controllers: [
+    ShippingSpeedController,
+    PackagingOptionController,
+    CarrierController,
+  ],
+  providers: [
+    PackagingOptionService,
+    ShippingSpeedService,
+    CarrierService,
+    PackagingOptionService,
+  ]
 })
 export class ShippingModule {}
