@@ -11,7 +11,7 @@ git pull origin main
 
 # 2. Bağımlılıkları yükle
 echo "📦 Bağımlılıklar yükleniyor..."
-yarn install --frozen-lockfile
+pnpm install
 
 # 3. Prisma Generate Çalıştır
 echo "🔄 Prisma şemaları oluşturuluyor..."
@@ -19,7 +19,7 @@ npx prisma generate
 
 # 4. Build al
 echo "🛠️ Proje derleniyor..."
-yarn build
+pnpm run build
 
 # 5. PM2 işlemlerini yönet
 echo "🔄 PM2 uygulaması güncelleniyor..."
