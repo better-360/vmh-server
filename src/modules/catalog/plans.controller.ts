@@ -7,7 +7,8 @@ import {
   Body, 
   Param, 
   Query, 
-  UseGuards 
+  UseGuards,
+  HttpStatus
 } from '@nestjs/common';
 import { 
   ApiTags, 
@@ -19,10 +20,11 @@ import {
   ApiBearerAuth,
   ApiNotFoundResponse,
   ApiBadRequestResponse,
-  ApiConflictResponse
+  ApiConflictResponse,
+  ApiOkResponse
 } from '@nestjs/swagger';
 import { PlansService } from './plans.service';
-import { CatalogService } from './catalog.service';
+import { AddonsService } from './addons.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   CreatePlanDto,
@@ -32,12 +34,8 @@ import {
   UpdatePlanPriceDto,
   PlanPriceQueryDto,
   CreatePlanFromTemplateDto,
-  CreatePlanTemplateDto,
-  UpdatePlanTemplateDto,
-  PlanTemplateQueryDto,
-  CreatePlanTemplateFeatureDto,
-  UpdatePlanTemplateFeatureDto,
   CreatePlanWithFeaturesDto,
+  FormattedPlanResponseDto,
 } from 'src/dtos/plan.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 
@@ -49,7 +47,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 export class PlansController {
   constructor(
     private readonly plansService: PlansService,
-    private readonly catalogService: CatalogService,
+    private readonly addonsService: AddonsService,
   ) {}
 
   // =====================
@@ -120,7 +118,7 @@ export class PlansController {
     description: 'Retrieve detailed information about a specific plan including prices and features'
   })
   @ApiParam({ name: 'id', description: 'Plan ID', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Plan retrieved successfully' })
+  @ApiOkResponse({ type: FormattedPlanResponseDto, description: 'Plan retrieved successfully' })
   @ApiNotFoundResponse({ description: 'Plan not found' })
   async getPlanById(@Param('id') id: string) {
     return this.plansService.getPlanById(id);
@@ -363,4 +361,43 @@ export class PlansController {
   async deletePlanPrice(@Param('id') id: string) {
     return this.plansService.deletePlanPrice(id);
   }
+
+
+  @Get(':planId/addons')
+  @ApiOperation({ 
+    summary: 'Get addons for a specific plan',
+    description: 'Retrieve all addons associated with a specific plan, formatted for easy consumption'
+  })
+  @ApiParam({ name: 'planId', description: 'Plan ID', example: '123e4567-e89b-12d3-a456-426614174000' })
+  @ApiResponse({ 
+    status: HttpStatus.OK, 
+    description: 'Plan addons retrieved successfully',
+    schema: {
+      type: 'array',
+      items: {
+        allOf: [
+          { $ref: '#/components/schemas/AddonResponseDto' },
+          {
+            type: 'object',
+            properties: {
+              planAddonConfig: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  isIncludedInPlan: { type: 'boolean' },
+                  discountPercent: { type: 'number' },
+                  isRequired: { type: 'boolean' },
+                  displayOrder: { type: 'number' }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  })
+  async getAddonsByPlanId(@Param('planId') planId: string) {
+    return this.addonsService.getAddonsByPlanId(planId);
+  }
+
 }

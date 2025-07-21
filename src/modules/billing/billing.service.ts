@@ -7,7 +7,6 @@ import {
 import { PrismaService } from 'src/prisma.service';
 import Stripe from 'stripe';
 import { StripeService } from '../stripe/stripe.service';
-import { AddonDto } from 'src/dtos/check-out.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { CreateOrderDto, CreateOrderItemDto, OrderItemType, OrderResponseDto, OrderStatus } from 'src/dtos/checkout.dto';
@@ -19,68 +18,7 @@ export class BillingService {
     private readonly stripeService: StripeService,
     private readonly eventEmitter: EventEmitter2,
     private readonly subscriptionService: SubscriptionService,
-  ) {}
-
-  async handleCheckOutSessionCompleted(sessionId: string) {
-    // 1. Stripe'dan Checkout Session verilerini al
-    const session = await this.stripeService.retrieveCheckoutSession(sessionId);
-    if (session.metadata.paymentType === 'singleItemPurchase') {
-      console.log('Single item purchase detected');
-     // return this.handleSingleItemPurchaseCheckoutCompleted(session);
-    }
-  }
-
-  async createOrder(createOrderDto: CreateOrderDto): Promise<OrderResponseDto> {
-    try {
-      let totalAmount = 0;
-      const orderItems = [];
-
-      // Calculate each item and prepare order items
-      for (const item of createOrderDto.items) {
-        const itemData = await this.calculateOrderItem(item);
-        totalAmount += itemData.totalPrice;
-        orderItems.push(itemData);
-      }
-
-      // Create Stripe Payment Intent
-       const paymentIntent = await this.stripeService.createPaymentIntentForOrder({
-         amount: totalAmount,
-         currency: createOrderDto.currency || 'USD',
-         metadata: {
-           orderType: 'subscription',
-           customerEmail: createOrderDto.email,
-           itemCount: createOrderDto.items.length.toString(),
-         },
-       });
-
-       // Create Order in database
-       const order = await this.prismaService.order.create({
-         data: {
-           email: createOrderDto.email,
-           totalAmount,
-           currency: createOrderDto.currency || 'USD',
-           stripePaymentIntentId: paymentIntent.id,
-           stripeClientSecret: paymentIntent.client_secret,
-          userId: createOrderDto.userId,
-          metadata: createOrderDto.metadata,
-          items: {
-            create: orderItems,
-          },
-        },
-        include: {
-          items: true,
-          user: true,
-        },
-      });
-
-      return this.mapOrderToResponseDto(order);
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Failed to create order',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
+  ) { }
 
   private async calculateOrderItem(item: CreateOrderItemDto) {
     const quantity = item.quantity || 1;
@@ -105,20 +43,16 @@ export class BillingService {
         };
 
       case OrderItemType.ADDON:
-        if (!item.variantId) {
-          throw new HttpException('Variant ID is required for addon items', HttpStatus.BAD_REQUEST);
-        }
         const addonVariant = await this.prismaService.addonVariant.findUnique({
-          where: { id: item.variantId },
+          where: { id: item.itemId },
           include: { addon: true },
         });
         if (!addonVariant) {
-          throw new NotFoundException(`Addon variant with id ${item.variantId} not found`);
+          throw new NotFoundException(`Addon variant with id ${item.itemId} not found`);
         }
         return {
           itemType: item.itemType,
           itemId: item.itemId,
-          variantId: item.variantId,
           quantity,
           unitPrice: addonVariant.price,
           totalPrice: addonVariant.price * quantity,
@@ -128,11 +62,60 @@ export class BillingService {
         };
 
       case OrderItemType.PRODUCT:
-        // Implement product logic here if needed
+        // Implement product logic here needed
         throw new HttpException('Product type not implemented yet', HttpStatus.NOT_IMPLEMENTED);
-
       default:
         throw new HttpException('Invalid item type', HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async createInitialSubscriptionOrder(createOrderDto: CreateOrderDto): Promise<OrderResponseDto> {
+    try {
+      let totalAmount = 0;
+      const orderItems = [];
+      // Calculate each item and prepare order items
+      for (const item of createOrderDto.items) {
+        const itemData = await this.calculateOrderItem(item);
+        totalAmount += itemData.totalPrice;
+        orderItems.push(itemData);
+      }
+      // Create Stripe Payment Intent
+      const customerId = await this.stripeService.findOrCreateStripeCustomer(createOrderDto.email);
+      const paymentIntent = await this.stripeService.createPaymentIntentForOrder({
+        amount: totalAmount,
+        currency: 'USD',
+        customer: customerId,
+        metadata: {
+          orderType: 'initialSubscription',
+          customerEmail: createOrderDto.email,
+          itemCount: createOrderDto.items.length.toString(),
+          cart: JSON.stringify(createOrderDto.items),
+        }
+      });
+      // Create Order in database
+      const order = await this.prismaService.order.create({
+        data: {
+          email: createOrderDto.email,
+          totalAmount,
+          currency: 'USD',
+          stripePaymentIntentId: paymentIntent.id,
+          stripeClientSecret: paymentIntent.client_secret,
+          stripeCustomerId: customerId,
+          items: {
+            create: orderItems,
+          },
+        },
+        include: {
+          items: true,
+          user: true,
+        },
+      });
+      return this.mapOrderToResponseDto(order);
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to create order',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -159,6 +142,10 @@ export class BillingService {
 
     return this.mapOrderToResponseDto(order);
   }
+
+
+
+
 
   async getOrderByPaymentIntentId(paymentIntentId: string): Promise<OrderResponseDto | null> {
     const order = await this.prismaService.order.findFirst({
@@ -191,7 +178,6 @@ export class BillingService {
         id: item.id,
         itemType: item.itemType,
         itemId: item.itemId,
-        variantId: item.variantId,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         totalPrice: item.totalPrice,
@@ -213,7 +199,7 @@ export class BillingService {
       const order = await this.getOrderByPaymentIntentId(paymentIntent.id);
       if (order) {
         await this.updateOrderStatus(order.id, OrderStatus.PAYMENT_SUCCEEDED);
-        
+
         // Process order completion (create subscriptions, etc.)
         await this.processOrderCompletion(order);
       }
@@ -238,107 +224,73 @@ export class BillingService {
     for (const item of order.items) {
       if (item.itemType === OrderItemType.PLAN) {
         // Create workspace subscription for plan
-                 if (order.userId) {
-           // TODO: Update createWorkspaceSubscription to accept these parameters
-           // await this.subscriptionService.createWorkspaceSubscription();
-           console.log(`Creating subscription for user ${order.userId} with plan ${item.itemId}`);
-         }
+        if (order.userId) {
+          // TODO: Update createWorkspaceSubscription to accept these parameters
+          // await this.subscriptionService.createWorkspaceSubscription();
+          console.log(`Creating subscription for user ${order.userId} with plan ${item.itemId}`);
+        }
       }
       // Handle other item types as needed
     }
   }
 
-  // =====================
-  // LEGACY COMPATIBILITY
-  // =====================
 
-  async calculateCheckout(planPriceId: string, addons: AddonDto[] = []) {
+  async handleCheckOutSessionCompleted(sessionId: string) {
+    // 1. Stripe'dan Checkout Session verilerini al
+    const session = await this.stripeService.retrieveCheckoutSession(sessionId);
+    if (session.metadata.paymentType === 'singleItemPurchase') {
+      console.log('Single item purchase detected');
+      // return this.handleSingleItemPurchaseCheckoutCompleted(session);
+    }
+  }
+
+
+  async createOrder(createOrderDto: CreateOrderDto, userId: string, workspaceId: string): Promise<OrderResponseDto> {
     try {
-      //Check if the plan price exists
-      const planPrice = await this.prismaService.planPrice.findUnique({
-        where: { id: planPriceId },
-        include: { plan: true },
-      });
-      if (!planPrice) {
-        throw new NotFoundException('Plan price not found');
+      let totalAmount = 0;
+      const orderItems = [];
+      // Calculate each item and prepare order items
+      for (const item of createOrderDto.items) {
+        const itemData = await this.calculateOrderItem(item);
+        totalAmount += itemData.totalPrice;
+        orderItems.push(itemData);
       }
-
-      let totalAmount = planPrice.amount; // Plan fiyatını başlangıç olarak al
-      const calculatedAddons = [];
-
-      // Check all addons are valid and calculate prices
-      if (addons && addons.length > 0) {
-        for (const addon of addons) {
-          // Addon'ın varlığını kontrol et
-          const validAddon = await this.prismaService.addon.findUnique({
-            where: { id: addon.productId },
-            include: { variants: true },
-          });
-
-          if (!validAddon) {
-            throw new NotFoundException(`Addon with id ${addon.productId} not found`);
-          }
-
-          // Eğer selectedPriceId varsa, o variant'ı bul
-          if (addon.selectedPriceId) {
-            const selectedVariant = validAddon.variants.find(
-              variant => variant.id === addon.selectedPriceId && !variant.isDeleted
-            );
-            
-            if (!selectedVariant) {
-              throw new NotFoundException(
-                `Variant with id ${addon.selectedPriceId} not found for addon ${validAddon.name}`
-              );
-            }
-
-            totalAmount += selectedVariant.price;
-            calculatedAddons.push({
-              addonId: validAddon.id,
-              addonName: validAddon.name,
-              variantId: selectedVariant.id,
-              variantName: selectedVariant.name,
-              price: selectedVariant.price,
-              currency: selectedVariant.currency,
-            });
-          } else {
-            // Eğer selectedPriceId yoksa, default variant'ı kullan (ilk aktif variant)
-            const defaultVariant = validAddon.variants.find(variant => !variant.isDeleted);
-            
-            if (!defaultVariant) {
-              throw new NotFoundException(`No active variant found for addon ${validAddon.name}`);
-            }
-
-            totalAmount += defaultVariant.price;
-            calculatedAddons.push({
-              addonId: validAddon.id,
-              addonName: validAddon.name,
-              variantId: defaultVariant.id,
-              variantName: defaultVariant.name,
-              price: defaultVariant.price,
-              currency: defaultVariant.currency,
-            });
-          }
-        }
-      }
-
-      return {
+      // Create Stripe Payment Intent
+      const paymentIntent = await this.stripeService.createPaymentIntentForOrder({
         amount: totalAmount,
-        currency: planPrice.currency || 'USD',
-        planDetails: {
-          id: planPrice.id,
-          name: planPrice.plan.name,
-          price: planPrice.amount,
+        currency: 'USD',
+        metadata: {
+          orderType: 'initialSubscription',
+          customerEmail: createOrderDto.email,
+          itemCount: createOrderDto.items.length.toString(),
+          cart: JSON.stringify(createOrderDto.items),
+        }
+      });
+      // Create Order in database
+      const order = await this.prismaService.order.create({
+        data: {
+          email: createOrderDto.email,
+          totalAmount,
+          currency: 'USD',
+          stripePaymentIntentId: paymentIntent.id,
+          stripeClientSecret: paymentIntent.client_secret,
+          items: {
+            create: orderItems,
+          },
         },
-        addons: calculatedAddons,
-        totalAmount,
-      };
-
+        include: {
+          items: true,
+          user: true,
+        },
+      });
+      return this.mapOrderToResponseDto(order);
     } catch (error) {
       throw new HttpException(
-        error.message || 'Failed to calculate checkout',
+        error.message || 'Failed to create order',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
+
 
 }

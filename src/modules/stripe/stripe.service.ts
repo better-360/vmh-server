@@ -664,16 +664,37 @@ export class StripeService {
   }
 
   async createPaymentIntentForOrder(params: Stripe.PaymentIntentCreateParams, options?: Stripe.RequestOptions): Promise<Stripe.PaymentIntent> {
-    const { amount, currency, metadata } = params;
-    const paymentIntent = await this.stripe.paymentIntents.create({
-      amount,    
-      currency,       
-      metadata, 
-      automatic_payment_methods: { enabled: true },
-      setup_future_usage: 'off_session',
-      confirm: true,
-    });
-    this.logger.log('Payment intent created successfully for order');
-    return paymentIntent;
+    const { amount, currency, customer, metadata } = params;
+  try {
+  const paymentIntent = await this.stripe.paymentIntents.create({
+    amount,    
+    currency,       
+    customer,
+    metadata, 
+    automatic_payment_methods: { enabled: true },
+    setup_future_usage: 'off_session',
+  });
+  this.logger.log('Payment intent created successfully for order');
+  return paymentIntent;
+} catch (error) {
+  this.logger.error('Failed to create payment intent on Stripe', error.stack);
+  throw new HttpException(
+    `Unable to create payment intent on Stripe ${error.message}`,
+    500,
+  );
+  }
+}
+
+
+  async findOrCreateStripeCustomer(email: string): Promise<string> {
+    let customerId: string;
+    let customer = await this.stripe.customers.search({ query: `email:'${email}'` });
+    if (customer.data.length > 0) {
+      customerId = customer.data[0].id;
+    } else {
+      const created = await this.stripe.customers.create({ email });
+      customerId = created.id;
+    }
+    return customerId;
   }
 }

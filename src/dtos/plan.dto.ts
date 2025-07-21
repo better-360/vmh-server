@@ -279,6 +279,100 @@ export class UpdatePlanDto extends PartialType(CreatePlanDto) {
   isDeleted?: boolean;
 }
 
+export class FormattedOfficeLocationDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  label: string;
+
+  @ApiProperty()
+  city: string;
+
+  @ApiProperty()
+  state: string;
+}
+
+export class FormattedPlanPriceDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  billingCycle: string;
+
+  @ApiProperty()
+  amount: number;
+
+  @ApiProperty()
+  currency: string;
+
+  @ApiProperty()
+  description: string;
+
+  @ApiProperty()
+  stripePriceId: string;
+}
+
+export class FormattedPlanFeatureDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  description: string;
+
+  @ApiProperty()
+  imageUrl: string;
+
+  @ApiProperty()
+  includedLimit: number;
+
+  @ApiProperty()
+  unitPrice: number;
+
+  @ApiProperty()
+  displayOrder: number;
+}
+
+export class FormattedPlanResponseDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  slug: string;
+
+  @ApiProperty()
+  description: string;
+
+  @ApiProperty()
+  imageUrl: string;
+
+  @ApiProperty()
+  isActive: boolean;
+
+  @ApiProperty()
+  createdAt: Date;
+
+  @ApiProperty()
+  updatedAt: Date;
+
+  @ApiProperty({ type: FormattedOfficeLocationDto })
+  officeLocation: FormattedOfficeLocationDto;
+
+  @ApiProperty({ type: [FormattedPlanPriceDto] })
+  prices: FormattedPlanPriceDto[];
+
+  @ApiProperty({ type: [FormattedPlanFeatureDto] })
+  features: FormattedPlanFeatureDto[];
+}
+
+
+
 export class PlanResponseDto {
   @ApiProperty({
     description: 'Plan ID',

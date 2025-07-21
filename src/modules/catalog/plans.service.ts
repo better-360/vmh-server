@@ -378,6 +378,43 @@ export class PlansService {
     }
   }
 
+
+   /**
+   * Get addons for a specific plan
+   */
+   async getPlanAddonsByPlanId(planId: string) {
+    const planAddons = await this.prisma.planAddon.findMany({
+      where: {
+        planId,
+        isActive: true,
+        isDeleted: false,
+      },
+      include: {
+        addon: {
+          include: {
+            variants: {
+              where: { isDeleted: false },
+              orderBy: { price: 'asc' },
+            },
+          },
+        },
+      },
+      orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
+    });
+
+    return planAddons.map(planAddon => ({
+      ...planAddon.addon,
+      planAddonConfig: {
+        id: planAddon.id,
+        isIncludedInPlan: planAddon.isIncludedInPlan,
+        discountPercent: planAddon.discountPercent,
+        isRequired: planAddon.isRequired,
+        displayOrder: planAddon.displayOrder,
+      },
+    }));
+  }
+
+
   async deletePlan(id: string) {
     await this.getPlanById(id); // Check if exists
 

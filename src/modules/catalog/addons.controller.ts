@@ -368,43 +368,6 @@ export class AddonsController {
     return this.addonsService.getPlanAddons(query);
   }
 
-  @Get('plans/:planId/addons')
-  @ApiOperation({ 
-    summary: 'Get addons for a specific plan',
-    description: 'Retrieve all addons associated with a specific plan, formatted for easy consumption'
-  })
-  @ApiParam({ name: 'planId', description: 'Plan ID', example: '123e4567-e89b-12d3-a456-426614174000' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
-    description: 'Plan addons retrieved successfully',
-    schema: {
-      type: 'array',
-      items: {
-        allOf: [
-          { $ref: '#/components/schemas/AddonResponseDto' },
-          {
-            type: 'object',
-            properties: {
-              planAddonConfig: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string' },
-                  isIncludedInPlan: { type: 'boolean' },
-                  discountPercent: { type: 'number' },
-                  isRequired: { type: 'boolean' },
-                  displayOrder: { type: 'number' }
-                }
-              }
-            }
-          }
-        ]
-      }
-    }
-  })
-  async getAddonsByPlanId(@Param('planId') planId: string) {
-    return this.addonsService.getAddonsByPlanId(planId);
-  }
-
   @Get('plan-addons/:id')
   @ApiOperation({ 
     summary: 'Get plan addon by ID',

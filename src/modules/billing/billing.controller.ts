@@ -15,7 +15,7 @@ import {
 import { Public } from 'src/common/decorators/public.decorator';
 import { BillingService } from './billing.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { PurchareSingleItemDataDto } from 'src/dtos/check-out.dto';
+import { CreateOrderDto } from 'src/dtos/checkout.dto';
 
 @ApiTags('Billing')
 @Controller('billing')
@@ -24,6 +24,13 @@ export class BillingController {
     private readonly billingService: BillingService,
   ) {}
 
+
+  @ApiOperation({ summary: 'Create initial subscription order' })
+  @Public()
+  @Post('create-initial-subscription-order')
+  async createInitialSubscriptionOrder(@Body() createOrderDto: CreateOrderDto) {
+    return await this.billingService.createInitialSubscriptionOrder(createOrderDto);
+  }
 
   @ApiOperation({ summary: 'Stripe Checkout Session tamamlanınca gelir' })
   @Public()

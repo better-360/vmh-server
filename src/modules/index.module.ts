@@ -17,6 +17,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
 import { WorkspaceModule } from './workspace/workspace.module';
 import { ShippingModule } from './shipping/shipping.module';
 import { PackageModule } from './package/package.module';
+import { BillingModule } from './billing/billing.module';
 
 @Module({
   imports: [
@@ -37,7 +38,8 @@ import { PackageModule } from './package/package.module';
     SubscriptionModule,
     ShippingModule,
     WorkspaceModule,
-    PackageModule
+    PackageModule,
+    BillingModule
   ],
   exports: [
     AuthModule,
@@ -53,7 +55,8 @@ import { PackageModule } from './package/package.module';
     SubscriptionModule,
     ShippingModule,
     WorkspaceModule,
-    PackageModule
+    PackageModule,
+    BillingModule
   ],
 })
 export class MainModule {}

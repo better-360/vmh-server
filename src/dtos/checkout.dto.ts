@@ -110,14 +110,6 @@ export class CreateOrderItemDto {
   itemId: string;
 
   @ApiPropertyOptional({
-    description: 'Variant ID (for addon variants)',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsOptional()
-  @IsUUID()
-  variantId?: string;
-
-  @ApiPropertyOptional({
     description: 'Quantity',
     example: 1,
     minimum: 1,
@@ -136,22 +128,6 @@ export class CreateOrderDto {
   @IsEmail()
   email: string;
 
-  @ApiPropertyOptional({
-    description: 'User ID (for registered users)',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsOptional()
-  @IsUUID()
-  userId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Currency',
-    example: 'USD',
-  })
-  @IsOptional()
-  @IsString()
-  currency?: string;
-
   @ApiProperty({
     description: 'Order items',
     type: [CreateOrderItemDto],
@@ -161,12 +137,6 @@ export class CreateOrderDto {
   @Type(() => CreateOrderItemDto)
   items: CreateOrderItemDto[];
 
-  @ApiPropertyOptional({
-    description: 'Additional metadata',
-    example: { source: 'web', campaign: 'summer2024' },
-  })
-  @IsOptional()
-  metadata?: any;
 }
 
 export class OrderItemResponseDto {
