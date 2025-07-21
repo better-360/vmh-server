@@ -64,13 +64,6 @@ export class LocationService {
               },
             },
           },
-          _count: {
-            select: {
-              plans: { where: { isActive: true, isDeleted: false } },
-              workspaceAddresses: { where: { isActive: true } },
-              workspaceSubscriptions: { where: { isActive: true } },
-            },
-          },
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -98,12 +91,6 @@ export class LocationService {
         plans: {
           where: { isActive: true, isDeleted: false },
           select: { id: true, name: true, slug: true },
-        },
-        _count: {
-          select: {
-            plans: { where: { isActive: true, isDeleted: false } },
-            workspaceAddresses: { where: { isActive: true } },
-          },
         },
       },
       orderBy: [
@@ -263,6 +250,7 @@ export class LocationService {
         where: { id },
         data: {
           isActive: false,
+          isDeleted: true,
           deletedAt: new Date(),
         },
       });

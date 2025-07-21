@@ -116,17 +116,59 @@ export class PlansService {
         features: {
           where: { isActive: true, isDeleted: false },
           include: {
-            feature: true,
+            feature: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                imageUrl: true,
+              },
+            },
           },
         },
       },
     });
-
+  
     if (!plan) {
       throw new NotFoundException('Plan not found');
     }
-    return plan;
+  
+    // Formatla ve dön
+    return {
+      id: plan.id,
+      name: plan.name,
+      slug: plan.slug,
+      description: plan.description,
+      imageUrl: plan.imageUrl,
+      isActive: plan.isActive,
+      createdAt: plan.createdAt,
+      updatedAt: plan.updatedAt,
+      officeLocation: {
+        id: plan.officeLocation.id,
+        label: plan.officeLocation.label,
+        city: plan.officeLocation.city,
+        state: plan.officeLocation.state,
+      },
+      prices: plan.prices.map(price => ({
+        id: price.id,
+        billingCycle: price.billingCycle,
+        amount: price.amount,
+        currency: price.currency,
+        description: price.description,
+        stripePriceId: price.stripePriceId,
+      })),
+      features: plan.features.map(pf => ({
+        id: pf.feature.id,
+        name: pf.feature.name,
+        description: pf.feature.description,
+        imageUrl: pf.feature.imageUrl,
+        includedLimit: pf.includedLimit,
+        unitPrice: pf.unitPrice,
+        displayOrder: pf.displayOrder,
+      })),
+    };
   }
+  
 
   async createPlan(data: CreatePlanDto) {
     try {

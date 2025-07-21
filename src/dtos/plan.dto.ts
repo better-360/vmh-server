@@ -662,6 +662,14 @@ export class CreatePlanFeatureDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Display order',
+    example: 1,
+  })
+  @IsNumber()
+  @IsOptional()
+  displayOrder?: number;
 }
 
 export class UpdatePlanFeatureDto extends PartialType(CreatePlanFeatureDto) {
@@ -1706,6 +1714,16 @@ export class CreatePlanTemplateDto {
   @IsString()
   @IsOptional()
   currency?: string;
+
+
+  @ApiPropertyOptional({
+    description: 'Is template active',
+    example: true,
+    default: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 
   @ApiPropertyOptional({
     description: 'Template features',

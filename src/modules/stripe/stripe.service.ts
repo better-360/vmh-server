@@ -5,6 +5,7 @@ import {
   HttpException,
   InternalServerErrorException,
   HttpStatus,
+  NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
@@ -18,13 +19,6 @@ interface SubscriptionItemDto {
     interval_count: number; // Örneğin, 1
   } | null;
 }
-
-interface OrderIntentDto {
-  amount: number; // Kuruş cinsinden
-  currency: string; // Örneğin, "usd" veya "try"
-  metadata?: JSON; // Opsiyonel: siparişId, userId vb.
-} 
-
 
 @Injectable()
 export class StripeService {
@@ -434,15 +428,35 @@ export class StripeService {
       );
     }
   }
-  async getCustomer(id): Promise<Stripe.Customer> {
+
+  async retrieveCustomer(id: string): Promise<Stripe.Customer> {
     try {
       const customer = await this.stripe.customers.retrieve(id);
-      this.logger.log('Customer created successfully');
+      this.logger.log('Customer retrieved successfully');
       return customer as Stripe.Customer;
     } catch (error) {
-      this.logger.error('Failed to create customer on Stripe', error.stack);
+      this.logger.error('Failed to retrieve customer on Stripe', error.stack);
       throw new HttpException(
-        `Unable to create customer on Stripe ${error.message}`,
+        `Unable to retrieve customer on Stripe ${error.message}`,
+        500,
+      );
+    }
+  }
+
+  async searchCustomer(email: string): Promise<Stripe.Customer> {
+    try {
+      const customer = await this.stripe.customers.search({
+        query: `email:'${email}'`,
+      });
+      if (customer.data.length === 0) {
+        throw new NotFoundException('Customer not found');
+      }
+      this.logger.log('Customer retrieved successfully');
+      return customer.data[0] as Stripe.Customer;
+    } catch (error) {
+      this.logger.error('Failed to retrieve customer on Stripe', error.stack);
+      throw new HttpException(
+        `Unable to retrieve customer on Stripe ${error.message}`,
         500,
       );
     }
@@ -632,7 +646,6 @@ export class StripeService {
       );
     }
   }
-
 
   async retrieveCheckoutSession(
     sessionId: string,

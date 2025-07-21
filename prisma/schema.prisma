@@ -156,6 +156,10 @@ model OfficeLocation {
   city                   String
   state                  String
   country                String
+  phone                  String?
+  email                  String?
+  workingHours           String?
+  timezone               String?
   createdAt              DateTime                   @default(now())
   updatedAt              DateTime                   @updatedAt
   deletedAt              DateTime? // Silinmişse burada tutulur
@@ -210,7 +214,7 @@ model PlanFeature {
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime? // Silinmişse burada tutulur
   isDeleted     Boolean   @default(false)
-
+  displayOrder  Int? // Plan içindeki gösterim sırası
   plan    Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
   feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
 

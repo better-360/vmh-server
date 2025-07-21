@@ -106,6 +106,38 @@ export class CreateOfficeLocationDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Phone number',
+    example: '+1-555-0456',
+  })
+  @IsString()
+  @IsOptional()
+  phone?: string;
+
+  @ApiPropertyOptional({
+    description: 'Email',
+    example: 'new@example.com',
+  })
+  @IsString()
+  @IsOptional()
+  email?: string;
+
+  @ApiPropertyOptional({
+    description: 'Working hours',
+    example: '8 AM - 6 PM',
+  })
+  @IsString()
+  @IsOptional()
+  workingHours?: string;
+
+  @ApiPropertyOptional({
+    description: 'Timezone',
+    example: 'America/New_York',
+  })
+  @IsString()
+  @IsOptional()
+  timezone?: string;
 }
 
 export class UpdateOfficeLocationDto extends PartialType(CreateOfficeLocationDto) {
