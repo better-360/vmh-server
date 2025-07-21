@@ -15,7 +15,6 @@ import { AuthService } from './auth.service';
 import { ChangePasswordDto, CheckEmailisExistDto, LoginDto, RegisterDto } from 'src/dtos/user.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { TokenDto } from 'src/dtos/token.dto';
-import { GoogleSignInDto } from 'src/dtos/auth.dto';
 import { PasswordResetService } from './reset.service';
 import { EmailVerifyService } from './verify.service';
 import { TokenService } from './token.service';
@@ -47,14 +46,6 @@ export class AuthController {
 
   }
 
-  @ApiOperation({ summary: 'Kullanıcı kaydı oluşturur' })
-  @Public()
-  @Post('sign-up')
-  @HttpCode(HttpStatus.CREATED)
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  async signUp(@Body() credentials: RegisterDto) {
-    return this.authService.signUp({ ...credentials });
-  }
 
   @ApiOperation({ summary: 'Kullanıcı giriş yapar ve token alır' })
   @Public()
@@ -83,16 +74,6 @@ export class AuthController {
     };
   }
 
-  @ApiOperation({ summary: 'Google hesabı ile giriş yapar' })
-  @Public()
-  @Post('sign-in-google')
-  @HttpCode(HttpStatus.OK)
-  async signInGoogle(@Body() data: GoogleSignInDto) {
-    const userData = await this.authService.signInWithGoogle(data.idToken);
-    return {
-      ...userData,
-    };
-  }
 
   @ApiOperation({ summary: 'Şifre sıfırlama talebi gönderir' })
   @Public()

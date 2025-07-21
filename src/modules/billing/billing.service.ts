@@ -80,12 +80,13 @@ export class BillingService {
         orderItems.push(itemData);
       }
       // Create Stripe Payment Intent
-      const customerId = await this.stripeService.findOrCreateStripeCustomer(createOrderDto.email);
+      const customerId = await this.stripeService.findOrCreateStripeCustomer(createOrderDto.email,createOrderDto.name);
       const paymentIntent = await this.stripeService.createPaymentIntentForOrder({
         amount: totalAmount,
         currency: 'USD',
         customer: customerId,
         metadata: {
+          customerName: createOrderDto.name,
           orderType: 'initialSubscription',
           customerEmail: createOrderDto.email,
           itemCount: createOrderDto.items.length.toString(),
@@ -237,6 +238,16 @@ export class BillingService {
 
   async handleCheckOutSessionCompleted(sessionId: string) {
     // 1. Stripe'dan Checkout Session verilerini al
+    const session = await this.stripeService.retrieveCheckoutSession(sessionId);
+    if (session.metadata.paymentType === 'singleItemPurchase') {
+      console.log('Single item purchase detected');
+      // return this.handleSingleItemPurchaseCheckoutCompleted(session);
+    }
+  }
+
+
+
+  async handleInitialSubscriptionOrder(id) {
     const session = await this.stripeService.retrieveCheckoutSession(sessionId);
     if (session.metadata.paymentType === 'singleItemPurchase') {
       console.log('Single item purchase detected');

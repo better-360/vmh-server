@@ -686,15 +686,70 @@ export class StripeService {
 }
 
 
-  async findOrCreateStripeCustomer(email: string): Promise<string> {
+async retrievePaymentIntent(paymentIntentId: string): Promise<Stripe.PaymentIntent> {
+  try {
+    const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
+    this.logger.log('Payment intent retrieved successfully');
+    return paymentIntent;
+  } catch (error) {
+    this.logger.error('Failed to retrieve payment intent from Stripe', error.stack);
+    throw new HttpException(
+      `Unable to retrieve payment intent from Stripe ${error.message}`,
+      500,
+    );
+  }
+}
+  async findOrCreateStripeCustomer(email: string,name:string): Promise<string> {
     let customerId: string;
     let customer = await this.stripe.customers.search({ query: `email:'${email}'` });
     if (customer.data.length > 0) {
       customerId = customer.data[0].id;
     } else {
-      const created = await this.stripe.customers.create({ email });
+      const created = await this.stripe.customers.create({ email,name });
       customerId = created.id;
     }
     return customerId;
   }
+
+
+  async stripeWebhookHandler(event: Stripe.Event): Promise<void> {
+  try {
+    switch (event.type) {
+      case 'invoice.payment_succeeded':
+        const invoice = event.data.object as Stripe.Invoice;
+        this.logger.log(`Payment succeeded for invoice ${invoice.id}`);
+        // İşlem sonrası yapılacaklar (örn. veritabanı güncelleme)
+        break;
+      case 'invoice.payment_failed':
+        const failedInvoice = event.data.object as Stripe.Invoice;
+        this.logger.error(`Payment failed for invoice ${failedInvoice.id}`);
+        // İşlem sonrası yapılacaklar (örn. kullanıcı bilgilendirme)
+        break;
+      case 'customer.subscription.created':
+        const subscription = event.data.object as Stripe.Subscription;
+        this.logger.log(`Subscription created: ${subscription.id}`);
+        // İşlem sonrası yapılacaklar (örn. veritabanı güncelleme)
+        break;
+      case 'customer.subscription.updated':
+        const updatedSubscription = event.data.object as Stripe.Subscription;
+        this.logger.log(`Subscription updated: ${updatedSubscription.id}`);
+        // İşlem sonrası yapılacaklar (örn. veritabanı güncelleme)
+        break;
+      case 'customer.subscription.deleted':
+        const deletedSubscription = event.data.object as Stripe.Subscription;
+        this.logger.log(`Subscription deleted: ${deletedSubscription.id}`);
+        // İşlem sonrası yapılacaklar (örn. veritabanı güncelleme)
+        break;
+      default:
+        this.logger.warn(`Unhandled event type: ${event.type}`);
+        break;
+    }
+  } catch (error) {
+    this.logger.error('Error handling Stripe webhook event', error.stack);
+    throw new InternalServerErrorException(
+      `Error handling Stripe webhook event: ${error.message}`,
+    );
+  }
+}
+
 }

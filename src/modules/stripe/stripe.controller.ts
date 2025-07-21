@@ -198,6 +198,12 @@ console.log('Webhook Request:', req);
   }
 
   @Public()
+  @Get('customer/:id')
+  async getCustomer(@Param('id') id: string) {
+    return this.stripeService.retrieveCustomer(id);
+  }
+
+  @Public()
   @Delete('product/:id')
   async deleteProduct(@Param('id') id: string) {
     return await this.stripeService.deleteProduct(id);

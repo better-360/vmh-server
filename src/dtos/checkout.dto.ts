@@ -122,6 +122,13 @@ export class CreateOrderItemDto {
 
 export class CreateOrderDto {
   @ApiProperty({
+    description: 'Customer name',
+    example: 'John Doe',
+  })
+  @IsString()
+  name: string;
+
+  @ApiProperty({
     description: 'Customer email',
     example: 'customer@example.com',
   })

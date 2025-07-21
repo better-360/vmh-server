@@ -17,12 +17,20 @@ import {
 import { IUser } from 'src/common/interfaces/user.interface';
 import { StripeService } from '../stripe/stripe.service';
 import { randomBytes } from 'crypto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Events } from 'src/common/enums/event.enum';
+import { TokenService } from '../auth/token.service';
+import { WorkspaceService } from '../workspace/workspace.service';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly stripeService: StripeService,
+    private eventEmitter: EventEmitter2,
+    private readonly tokenService: TokenService,
+    private readonly workspaceService: WorkspaceService,
+    
   ) {}
 
   private generateRandomPassword(length: number = 20): string {
@@ -126,21 +134,23 @@ export class UserService {
     return safeUsers;
   }
 
-  async createUser(email:string): Promise<IUser> {
+  async createUser(email:string,firstName:string,lastName:string,stripeCustomerId:string): Promise<IUser> {
     const user = await this.findOne(email);
     if (user) {
       throw new HttpException('User already exists', HttpStatus.CONFLICT);
     }
     const password = this.generateRandomPassword();
     const hash = await this.hashPassword(password);
-    const customerStripeID = (await this.stripeService.createCustomer({ email: email })).id;
     const newUser = await this.prismaService.user.create({
-      data: {password: hash, customerStripeID } as any,
+      data: {password: hash,stripeCustomerId,firstName,lastName } as any,
       select: {
         email: true,
         id: true,
+        firstName: true,
+        lastName: true,
       },
     });
+    const newWorkspace = await this.workspaceService.createWorkspace(newUser.id,{ name: `${newUser.firstName} ${newUser.lastName || ''}`.trim() });
 
     await this.prismaService.userRole.create({
       data: {
@@ -148,7 +158,10 @@ export class UserService {
         role: RoleType.CUSTOMER,
       },
     });
-
+    this.eventEmitter.emit(Events.USER_REGISTERED, {
+      email: newUser.email,
+      name: `${newUser.firstName} ${newUser.lastName || ''}`.trim(),
+    });
     return await this.findUserByEmail(newUser.email);
   }
 
