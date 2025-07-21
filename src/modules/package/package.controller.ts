@@ -100,39 +100,4 @@ export class PackageController {
     return this.packageService.getPackageById(id);
   }
 
-  // =====================
-  // PACKAGE ITEM ENDPOINTS
-  // =====================
-
-  @Get('items/:id')
-  @ApiOperation({ 
-    summary: 'Get package item by ID',
-    description: 'Retrieve a specific package item with its package details'
-  })
-  @ApiParam({ name: 'id', description: 'Package item ID', example: '123e4567-e89b-12d3-a456-426614174000' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
-    description: 'Package item found',
-    type: PackageItemResponseDto
-  })
-  @ApiNotFoundResponse({ description: 'Package item not found' })
-  async getPackageItemById(@Param('id') id: string) {
-    return this.packageService.getPackageItemById(id);
-  }
-
-  @Get(':packageId/items')
-  @ApiOperation({ 
-    summary: 'Get items by package ID',
-    description: 'Retrieve all items belonging to a specific package'
-  })
-  @ApiParam({ name: 'packageId', description: 'Package ID', example: '123e4567-e89b-12d3-a456-426614174000' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
-    description: 'Package items retrieved successfully',
-    type: [PackageItemResponseDto]
-  })
-  async getItemsByPackageId(@Param('packageId') packageId: string) {
-    return this.packageService.getItemsByPackageId(packageId);
-  }
-
 } 

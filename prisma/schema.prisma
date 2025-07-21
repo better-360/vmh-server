@@ -322,7 +322,6 @@ model Package {
   isShereded         Boolean       @default(false) // Paket bu ürün için imha edildi mi?
   isForwarded        Boolean       @default(false) // Paket bu ürün için yönlendirildi mi?
   currentStatus      PackageStatus @default(PENDING) // Paketin mevcut durumu
-  items              PackageItem[]
   type               PackageType
 
   senderName    String? // Gönderen kişi/firma adı
@@ -347,28 +346,6 @@ model Package {
 
   @@unique([steNumber, officeLocationId])
   @@index([officeLocationId])
-}
-
-model PackageItem {
-  id          String  @id @default(uuid()) @db.Uuid
-  packageId   String  @db.Uuid
-  name        String // Örn: "Kargo Paketi", "Belge", "Karton"
-  description String? // Opsiyonel, ürün açıklaması
-  quantity    Int     @default(1) // Kaç adet bu üründen var
-  weightKg    Float? // kg, opsiyonel
-  width       Float? // cm, opsiyonel
-  height      Float? // cm, opsiyonel
-  length      Float? // cm, opsiyonel
-  isShereded  Boolean @default(false) // Paket bu ürün için imha edildi mi?
-  isForwarded Boolean @default(false) // Paket bu ürün için yönlendirildi mi?
-
-  volumeDesi Float? // opsiyonel, istersen otomatik hesaplatabilirsin
-  photoUrls  String[] // Fotoğraf linkleri (S3 URL'leri)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  deletedAt  DateTime? // Silinmişse burada tutulur
-  isDeleted  Boolean   @default(false)
-  package    Package   @relation(fields: [packageId], references: [id], onDelete: Cascade)
 }
 
 model PackageAction {
@@ -492,7 +469,7 @@ model DeliverySpeedPlanMapping {
   id               String    @id @default(uuid()) @db.Uuid
   deliverySpeedId  String    @db.Uuid
   officeLocationId String    @db.Uuid
-  price            Int // kuruş olarak
+  price            Int
   isActive         Boolean   @default(true)
   deletedAt        DateTime?
   createdAt        DateTime  @default(now())

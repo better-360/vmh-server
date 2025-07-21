@@ -71,10 +71,6 @@ export class PackageService {
                 skip,
                 take: limit,
                 include: {
-                    items: {
-                        where: { isDeleted: false },
-                        orderBy: { createdAt: 'asc' },
-                    },
                     workspaceAddress: {
                         select: { 
                             id: true, 
@@ -123,10 +119,6 @@ export class PackageService {
         const package_ = await this.prisma.package.findUnique({
             where: { id },
             include: {
-                items: {
-                    where: { isDeleted: false },
-                    orderBy: { createdAt: 'asc' },
-                },
                 actions: {
                     orderBy: { requestedAt: 'desc' },
                 },
@@ -169,10 +161,6 @@ export class PackageService {
                 },
             },
             include: {
-                items: {
-                    where: { isDeleted: false },
-                    orderBy: { createdAt: 'asc' },
-                },
                 workspaceAddress: {
                     include: {
                         workspace: {
@@ -232,7 +220,6 @@ export class PackageService {
                     receivedAt: new Date(createPackageDto.receivedAt),
                 },
                 include: {
-                    items: true,
                     workspaceAddress: {
                         include: {
                             workspace: {
@@ -275,10 +262,6 @@ export class PackageService {
                     updatedAt: new Date(),
                 },
                 include: {
-                    items: {
-                        where: { isDeleted: false },
-                        orderBy: { createdAt: 'asc' },
-                    },
                     workspaceAddress: {
                         include: {
                             workspace: {
@@ -347,321 +330,5 @@ export class PackageService {
      */
     async getPackagesByOfficeLocationId(officeLocationId: string, query?: PackageQueryDto) {
         return this.getPackages({ ...query, officeLocationId });
-    }
-
-    // =====================
-    // PACKAGE ITEM OPERATIONS
-    // =====================
-
-    /**
-     * Get package items with filtering
-     */
-    async getPackageItems(query?: PackageItemQueryDto) {
-        const {
-            packageId,
-            search,
-            isShereded,
-            isForwarded,
-            isDeleted = false,
-            page = 1,
-            limit = 10,
-        } = query || {};
-
-        const skip = (page - 1) * limit;
-        const where: Prisma.PackageItemWhereInput = {
-            isDeleted,
-            ...(packageId && { packageId }),
-            ...(isShereded !== undefined && { isShereded }),
-            ...(isForwarded !== undefined && { isForwarded }),
-            ...(search && {
-                OR: [
-                    { name: { contains: search, mode: 'insensitive' } },
-                    { description: { contains: search, mode: 'insensitive' } },
-                ],
-            }),
-        };
-
-        const [items, total] = await Promise.all([
-            this.prisma.packageItem.findMany({
-                where,
-                skip,
-                take: limit,
-                include: {
-                    package: {
-                        select: { 
-                            id: true, 
-                            steNumber: true, 
-                            type: true, 
-                            status: true,
-                            workspaceAddress: {
-                                select: {
-                                    steNumber: true,
-                                    workspace: {
-                                        select: { name: true }
-                                    }
-                                }
-                            }
-                        },
-                    },
-                },
-                orderBy: { createdAt: 'desc' },
-            }),
-            this.prisma.packageItem.count({ where }),
-        ]);
-
-        return {
-            data: items,
-            meta: {
-                total,
-                page,
-                limit,
-                totalPages: Math.ceil(total / limit),
-            },
-        };
-    }
-
-    /**
-     * Get package item by ID
-     */
-     // TODO:Add User and Workspace control for this function
-    async getPackageItemById(id: string) {
-        
-        const item = await this.prisma.packageItem.findUnique({
-            where: { id },
-            include: {
-                package: {
-                    include: {
-                        workspaceAddress: {
-                            include: {
-                                workspace: {
-                                    select: { id: true, name: true }
-                                }
-                            }
-                        },
-                        officeLocation: true,
-                    },
-                },
-            },
-        });
-
-        if (!item) {
-            throw new NotFoundException('Package item not found');
-        }
-
-        return item;
-    }
-
-    /**
-     * Get items by package ID
-     */
-    async getItemsByPackageId(packageId: string) {
-        // TODO:Add User and Workspace control for this function
-        const items = await this.prisma.packageItem.findMany({
-            where: {
-                packageId,
-                isDeleted: false,
-            },
-            orderBy: { createdAt: 'asc' },
-        });
-
-        return items;
-    }
-
-    /**
-     * Create package item
-     */
-    async createPackageItem(createPackageItemDto: CreatePackageItemDto) {
-        try {
-            // Check if package exists
-            const package_ = await this.prisma.package.findUnique({
-                where: { id: createPackageItemDto.packageId },
-            });
-            if (!package_) {
-                throw new NotFoundException('Package not found');
-            }
-
-            const item = await this.prisma.packageItem.create({
-                data: createPackageItemDto,
-                include: {
-                    package: {
-                        select: { 
-                            id: true, 
-                            steNumber: true, 
-                            type: true, 
-                            status: true 
-                        },
-                    },
-                },
-            });
-
-            this.logger.log(`Created package item: ${item.name} (${item.id})`);
-            return item;
-        } catch (error) {
-            if (error instanceof NotFoundException) {
-                throw error;
-            }
-            this.logger.error('Failed to create package item', error);
-            throw new BadRequestException('Failed to create package item');
-        }
-    }
-
-    /**
-     * Bulk create package items
-     */
-    async bulkCreatePackageItems(bulkCreatePackageItemsDto: BulkCreatePackageItemsDto) {
-        try {
-            const { packageId, items } = bulkCreatePackageItemsDto;
-
-            // Check if package exists
-            const package_ = await this.prisma.package.findUnique({
-                where: { id: packageId },
-            });
-            if (!package_) {
-                throw new NotFoundException('Package not found');
-            }
-
-            const itemsData = items.map(item => ({
-                ...item,
-                packageId,
-            }));
-
-            const createdItems = await this.prisma.packageItem.createMany({
-                data: itemsData,
-            });
-
-            this.logger.log(`Bulk created ${createdItems.count} package items for package ${packageId}`);
-            
-            // Return the created items with full details
-            return await this.getItemsByPackageId(packageId);
-        } catch (error) {
-            if (error instanceof NotFoundException) {
-                throw error;
-            }
-            this.logger.error('Failed to bulk create package items', error);
-            throw new BadRequestException('Failed to bulk create package items');
-        }
-    }
-
-    /**
-     * Update package item
-     */
-    async updatePackageItem(id: string, updatePackageItemDto: UpdatePackageItemDto) {
-        try {
-            await this.getPackageItemById(id); // Check if exists
-
-            const item = await this.prisma.packageItem.update({
-                where: { id },
-                data: {
-                    ...updatePackageItemDto,
-                    updatedAt: new Date(),
-                },
-                include: {
-                    package: {
-                        select: { 
-                            id: true, 
-                            steNumber: true, 
-                            type: true, 
-                            status: true 
-                        },
-                    },
-                },
-            });
-
-            this.logger.log(`Updated package item: ${item.name} (${item.id})`);
-            return item;
-        } catch (error) {
-            if (error instanceof NotFoundException) {
-                throw error;
-            }
-            this.logger.error('Failed to update package item', error);
-            throw new BadRequestException('Failed to update package item');
-        }
-    }
-
-    /**
-     * Bulk update package items
-     */
-    async bulkUpdatePackageItems(bulkUpdatePackageItemsDto: BulkUpdatePackageItemsDto) {
-        try {
-            const { items } = bulkUpdatePackageItemsDto;
-
-            const updatePromises = items.map(item => {
-                const { id, ...updateData } = item;
-                return this.prisma.packageItem.update({
-                    where: { id },
-                    data: {
-                        ...updateData,
-                        updatedAt: new Date(),
-                    },
-                });
-            });
-
-            const updatedItems = await Promise.all(updatePromises);
-
-            this.logger.log(`Bulk updated ${updatedItems.length} package items`);
-            return updatedItems;
-        } catch (error) {
-            this.logger.error('Failed to bulk update package items', error);
-            throw new BadRequestException('Failed to bulk update package items');
-        }
-    }
-
-    /**
-     * Soft delete package item
-     */
-    async deletePackageItem(id: string) {
-        try {
-            await this.getPackageItemById(id); // Check if exists
-
-            const item = await this.prisma.packageItem.update({
-                where: { id },
-                data: {
-                    isDeleted: true,
-                    deletedAt: new Date(),
-                    updatedAt: new Date(),
-                },
-            });
-
-            this.logger.log(`Deleted package item: ${item.name} (${item.id})`);
-            return { message: 'Package item deleted successfully' };
-        } catch (error) {
-            if (error instanceof NotFoundException) {
-                throw error;
-            }
-            this.logger.error('Failed to delete package item', error);
-            throw new BadRequestException('Failed to delete package item');
-        }
-    }
-
-    /**
-     * Mark package item as shredded
-     */
-    async markPackageItemAsShredded(id: string) {
-        try {
-            const item = await this.updatePackageItem(id, { 
-                isShereded: true 
-            });
-
-            this.logger.log(`Marked package item as shredded: ${item.name} (${item.id})`);
-            return item;
-        } catch (error) {
-            throw error;
-        }
-    }
-
-    /**
-     * Mark package item as forwarded
-     */
-    async markPackageItemAsForwarded(id: string) {
-        try {
-            const item = await this.updatePackageItem(id, { 
-                isForwarded: true 
-            });
-
-            this.logger.log(`Marked package item as forwarded: ${item.name} (${item.id})`);
-            return item;
-        } catch (error) {
-            throw error;
-        }
     }
 }

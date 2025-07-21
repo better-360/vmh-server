@@ -6,64 +6,16 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import Stripe from 'stripe';
-import { ConfigService } from '@nestjs/config';
 import { StripeService } from '../stripe/stripe.service';
 import { AddonDto } from 'src/dtos/check-out.dto';
-
-// Temporary types until DTO exports are fixed
-enum OrderStatus {
-  PAYMENT_PENDING = 'PAYMENT_PENDING',
-  PAYMENT_PROCESSING = 'PAYMENT_PROCESSING', 
-  PAYMENT_SUCCEEDED = 'PAYMENT_SUCCEEDED',
-  PAYMENT_FAILED = 'PAYMENT_FAILED',
-  PAYMENT_CANCELLED = 'PAYMENT_CANCELLED',
-}
-
-enum OrderItemType {
-  PLAN = 'PLAN',
-  ADDON = 'ADDON',
-  PRODUCT = 'PRODUCT',
-}
-
-interface CreateOrderItemDto {
-  itemType: OrderItemType;
-  itemId: string;
-  variantId?: string;
-  quantity?: number;
-}
-
-interface CreateOrderDto {
-  email: string;
-  userId?: string;
-  currency?: string;
-  items: CreateOrderItemDto[];
-  metadata?: any;
-}
-
-interface OrderResponseDto {
-  id: string;
-  email: string;
-  totalAmount: number;
-  currency: string;
-  status: OrderStatus;
-  stripePaymentIntentId?: string;
-  stripeCustomerId?: string;
-  stripeClientSecret?: string;
-  userId?: string;
-  metadata?: any;
-  createdAt: Date;
-  updatedAt: Date;
-  completedAt?: Date;
-  items: any[];
-}
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SubscriptionService } from '../subscription/subscription.service';
+import { CreateOrderDto, CreateOrderItemDto, OrderItemType, OrderResponseDto, OrderStatus } from 'src/dtos/checkout.dto';
 
 @Injectable()
 export class BillingService {
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly configService: ConfigService,
     private readonly stripeService: StripeService,
     private readonly eventEmitter: EventEmitter2,
     private readonly subscriptionService: SubscriptionService,
@@ -78,10 +30,6 @@ export class BillingService {
     }
   }
 
-  // =====================
-  // ORDER MANAGEMENT
-  // =====================
-
   async createOrder(createOrderDto: CreateOrderDto): Promise<OrderResponseDto> {
     try {
       let totalAmount = 0;
@@ -94,7 +42,7 @@ export class BillingService {
         orderItems.push(itemData);
       }
 
-             // Create Stripe Payment Intent
+      // Create Stripe Payment Intent
        const paymentIntent = await this.stripeService.createPaymentIntentForOrder({
          amount: totalAmount,
          currency: createOrderDto.currency || 'USD',
@@ -393,7 +341,4 @@ export class BillingService {
     }
   }
 
-  // async handleComplete(){
-  //   await this.subscriptionService.createWorkspaceSubscription();
-  // }
 }
