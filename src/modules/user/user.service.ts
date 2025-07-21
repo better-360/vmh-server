@@ -16,6 +16,7 @@ import {
 } from 'src/dtos/user.dto';
 import { IUser } from 'src/common/interfaces/user.interface';
 import { StripeService } from '../stripe/stripe.service';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class UserService {
@@ -24,12 +25,23 @@ export class UserService {
     private readonly stripeService: StripeService,
   ) {}
 
-  private formatUser( user: User & { roles: { role: RoleType }[] } & { workspaces: WorkspaceMember[] }): IUser {
+  private generateRandomPassword(length: number = 20): string {
+    return randomBytes(Math.ceil((length * 3) / 4))
+      .toString('base64')
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .slice(0, length);
+  }
+
+  private formatUser(
+    user: User & { roles: { role: RoleType }[] } & {
+      workspaces: WorkspaceMember[];
+    },
+  ): IUser {
     return {
       id: user.id,
       email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
       profileImage: user.profileImage,
       emailConfirmed: user.emailConfirmed,
       telephoneConfirmed: user.telephoneConfirmed,
@@ -38,27 +50,29 @@ export class UserService {
       createdAt: user.createdAt,
       telephone: user.telephone,
       roles: user.roles.map((role) => role.role),
-      workspaces: user.workspaces? user.workspaces.map((workspace) => ({
-        workspaceId: workspace.workspaceId,
-        role: workspace.role,
-        joinedAt: new Date(workspace.joinedAt).toLocaleString(),
-      })) : null,
+      workspaces: user.workspaces
+        ? user.workspaces.map((workspace) => ({
+            workspaceId: workspace.workspaceId,
+            role: workspace.role,
+            joinedAt: new Date(workspace.joinedAt).toLocaleString(),
+          }))
+        : null,
     };
   }
-  
+
   async findOne(email: string): Promise<User | undefined> {
     return this.prismaService.user.findUnique({
       where: { email },
       include: {
         roles: true,
-        workspaces:true
+        workspaces: true,
       },
     });
   }
 
   async findUserByEmail(email: string): Promise<IUser> {
     const user = await this.prismaService.user.findUnique({
-      where: { email , deletedAt: null},
+      where: { email, deletedAt: null },
       include: {
         roles: true,
         workspaces: true,
@@ -70,8 +84,9 @@ export class UserService {
     return user ? this.formatUser(user) : null;
   }
 
-
-  async checkUserByEmail(email: string): Promise< Omit<User, 'password'>| null> {
+  async checkUserByEmail(
+    email: string,
+  ): Promise<Omit<User, 'password'> | null> {
     const user = await this.prismaService.user.findUnique({
       where: { email, deletedAt: null },
       include: {
@@ -79,10 +94,9 @@ export class UserService {
         workspaces: true,
       },
     });
-  
+
     return user;
   }
-  
 
   async findUserById(id: string): Promise<IUser> {
     const user = await this.prismaService.user.findUnique({
@@ -99,11 +113,10 @@ export class UserService {
     return this.formatUser(user);
   }
 
-
   async getAllUsers(): Promise<IUser[]> {
-  const users = await this.prismaService.user.findMany({
+    const users = await this.prismaService.user.findMany({
       where: { deletedAt: null },
-      include: {roles: true,workspaces: true},
+      include: { roles: true, workspaces: true },
     });
     const safeUsers = users.map((user) =>
       this.formatUser(
@@ -113,24 +126,18 @@ export class UserService {
     return safeUsers;
   }
 
-  async createUser(userData: RegisterDto): Promise<IUser> {
-    const user = await this.findOne(userData.email);
+  async createUser(email:string): Promise<IUser> {
+    const user = await this.findOne(email);
     if (user) {
       throw new HttpException('User already exists', HttpStatus.CONFLICT);
     }
-    const hash = await this.hashPassword(userData.password);
-    const customerStripeID = (
-      await this.stripeService.createCustomer({
-        email: userData.email,
-        name: userData.firstName + ' ' + userData.lastName,
-      })
-    ).id;
+    const password = this.generateRandomPassword();
+    const hash = await this.hashPassword(password);
+    const customerStripeID = (await this.stripeService.createCustomer({ email: email })).id;
     const newUser = await this.prismaService.user.create({
-      data: { ...userData, id: v4(), password: hash, customerStripeID } as any,
+      data: {password: hash, customerStripeID } as any,
       select: {
         email: true,
-        firstName: true,
-        lastName: true,
         id: true,
       },
     });
@@ -152,7 +159,7 @@ export class UserService {
     if (!user) {
       throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
     }
-    const newEmail=await this.findOne(data.newEmail);
+    const newEmail = await this.findOne(data.newEmail);
 
     const compare = await bcrypt.compare(data.currentPassword, user.password);
     if (!compare) {
@@ -173,14 +180,14 @@ export class UserService {
     return HttpStatus.OK;
   }
 
-  async createCustomerId(user) {
+  async createStripeCustomerId(user) {
     const customerStripeID = (
       await this.stripeService.createCustomer({
         email: user.email,
         name: user.firstName + ' ' + user.lastName,
       })
     ).id;
-   await this.prismaService.user.update({
+    await this.prismaService.user.update({
       where: { email: user.email },
       data: { stripeCustomerId: customerStripeID },
     });
@@ -238,7 +245,7 @@ export class UserService {
       throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
     }
   }
-  
+
   async setNewPassword(userId: string, newPassword: string): Promise<void> {
     const hash = await this.hashPassword(newPassword);
     await this.prismaService.user.update({

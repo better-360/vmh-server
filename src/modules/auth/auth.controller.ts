@@ -123,7 +123,7 @@ export class AuthController {
   @Public()
   @Post('verify-email-token')
   async verifyEmailToken(@Body() body: { token: string }) {
-    return await this.emailVerifyService.verificationEmail(body.token);
+    return await this.emailVerifyService.verifyEmailToken(body.token);
   }
 
   @ApiOperation({ summary: 'Yeni şifre belirleyerek şifre sıfırlama işlemini tamamlar' })

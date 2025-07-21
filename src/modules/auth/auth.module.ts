@@ -9,6 +9,7 @@ import { EmailVerifyService } from './verify.service';
 import { PasswordResetService } from './reset.service';
 import { StripeService } from '../stripe/stripe.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { BillingService } from '../billing/billing.service';
 
 @Module({
   imports: [
@@ -23,7 +24,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       }),
     }),
   ],
-  providers: [AuthService, TokenService,JwtStrategy,EmailVerifyService,PasswordResetService,StripeService],
+  providers: [AuthService, TokenService,JwtStrategy,EmailVerifyService,PasswordResetService,StripeService,BillingService],
   controllers: [AuthController],
 })
 export class AuthModule {}

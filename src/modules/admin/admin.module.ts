@@ -6,6 +6,8 @@ import { AdminSupportController } from './support/support.admin.controller';
 import { AdminMainController } from './admin.controller';
 import { SupportService } from '../support/support.service';
 import { StripeService } from '../stripe/stripe.service';
+import { AdminPackageController } from './package.controller';
+import { PackageService } from '../package/package.service';
 
 
 @Module({
@@ -17,12 +19,14 @@ import { StripeService } from '../stripe/stripe.service';
     UserService,
     SupportService,
     StripeService,
+    PackageService,
   ],
 
   exports: [AdminService],
   controllers: [
     AdminSupportController,
     AdminMainController,
+    AdminPackageController,
   ],
 })
 export class AdminModule {}

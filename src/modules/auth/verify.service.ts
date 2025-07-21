@@ -116,6 +116,9 @@ export class EmailVerifyService {
 
   // Doğrulama kodu geçerliliğini kontrol etme
   async verifyToken(token: string): Promise<string> {
+    if (token.length < 4) {
+      throw new HttpException('Invalid Token', HttpStatus.BAD_REQUEST);
+    }
     const verificationToken = await this.prismaService.token.findFirst({
       where: {
         token: token,
@@ -148,10 +151,7 @@ export class EmailVerifyService {
   }
 
   // E-posta doğrulama
-  async verificationEmail(token: string): Promise<any> {
-    if (token.length < 1) {
-      throw new HttpException('Geçersiz token', HttpStatus.BAD_REQUEST);
-    }
+  async verifyEmailToken(token: string): Promise<any> {
     const tokenEmail = await this.verifyToken(token);
     if (tokenEmail) {
       await this.userService.verifyUserEmail(tokenEmail);

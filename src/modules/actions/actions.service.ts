@@ -8,8 +8,6 @@ export class PackageActionService {
     private readonly prismaService: PrismaService,
   ) {}
 
-
-
   async markPackageAsJunk(packageId: string) {
 
    }

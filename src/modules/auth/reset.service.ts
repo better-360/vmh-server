@@ -31,7 +31,7 @@ export class PasswordResetService {
     if (user) {
       const resetToken = uuidv4();
       const resetLink = `${process.env.APP_URL}/reset-password?token=${resetToken}`;
-      const fullName = user.firstName + ' ' + user.lastName;
+      const fullName = `${user.firstName} ${user.lastName || ''}`.trim();;
       await this.prismaService.token.create({
         data: {
           id: uuidv4(),

@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { IUser } from 'src/common/interfaces/user.interface';
 import { PrismaService } from 'src/prisma.service';
@@ -14,7 +14,7 @@ export class TokenService {
   ) {}
 
   private generateToken(user: Partial<IUser>, expiresIn: string) {
-    const payload = { email: user.email, sub: user.id, roles: user.roles }; // 'sub' olarak kullanıcı ID'sini kullanıyoruz
+    const payload = { email: user.email, sub: user.id, roles: user.roles,workspace:user.workspaces };
     return this.jwtService.sign(payload, { expiresIn });
   }
 
@@ -35,6 +35,7 @@ export class TokenService {
         email: decoded.email,
         id: decoded.sub,
         roles: decoded.roles,
+        workspaces: decoded.workspace,
       });
     } catch (e) {
       throw new HttpException('Refresh token is invalid or expired', 403);
@@ -74,8 +75,6 @@ export class TokenService {
   }
 
  
-
-
   async cretePasswordResetToken(email: string): Promise<string> {
     const resetToken = uuidv4();
     await this.prismaService.token.create({

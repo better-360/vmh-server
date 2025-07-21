@@ -11,8 +11,8 @@ model User {
   id                 String            @id @default(uuid()) @db.Uuid
   email              String            @unique
   password           String
-  firstName          String
-  lastName           String
+  firstName          String?
+  lastName           String?
   telephone          String?
   profileImage       String?
   notifications      Boolean           @default(true)
@@ -33,6 +33,7 @@ model User {
   ticketMessages     TicketMessage[]
   balance            UserBalance?
   workspaces         WorkspaceMember[]
+  orders             Order[]
 }
 
 model Workspace {
@@ -172,6 +173,7 @@ model OfficeLocation {
   aviableCarriers        CarrierAvailability[] // Bu lokasyonda kullanılabilir kargo firmaları
   deliverySpeedOptions   DeliverySpeedPlanMapping[] // Bu lokasyonda kullanılabilir teslimat hızları
   packagingTypeOptions   PackagingTypePlanMapping[] // Bu lokasyonda kullanılabilir paketleme türleri
+  packages               Package[] // Bu lokasyondaki paketler
 }
 
 model Plan {
@@ -191,6 +193,7 @@ model Plan {
   features               PlanFeature[] // Bu planda mevcut özellikler
   prices                 PlanPrice[] // Bu planın fiyat alternatifleri
   workspaceSubscriptions WorkspaceSubscription[]
+  planAddons             PlanAddon[] // Bu planda bulunan addonlar
 
   @@unique([slug, officeLocationId]) // Aynı lokasyonda aynı slug olamaz
   @@index([officeLocationId])
@@ -302,12 +305,25 @@ model WorkspaceFeatureUsage {
   @@index([officeLocationId, featureId])
 }
 
+enum PackageType {
+  BANK_CHECK // Banka kontrol
+  LEGAL_DOCUMENT // Hukuki belge
+  ENVELOPE // Zarf
+  PACKAGE // Paket (kargo)
+  OTHER // Diğer
+}
+
 model Package {
   id                 String        @id @default(uuid()) @db.Uuid
   steNumber          String // Paketin üzerindeki STE numarası
   workspaceAddressId String        @db.Uuid // Hangi workspace adresine ait
+  officeLocationId   String        @db.Uuid // Hangi ofis lokasyonuna ait
   receivedAt         DateTime // Kargonun sisteme giriş zamanı
+  isShereded         Boolean       @default(false) // Paket bu ürün için imha edildi mi?
+  isForwarded        Boolean       @default(false) // Paket bu ürün için yönlendirildi mi?
+  currentStatus      PackageStatus @default(PENDING) // Paketin mevcut durumu
   items              PackageItem[]
+  type               PackageType
 
   senderName    String? // Gönderen kişi/firma adı
   senderAddress String? // Gönderen adres bilgisi
@@ -320,35 +336,39 @@ model Package {
   volumeDesi Float? // opsiyonel, istersen otomatik hesaplatabilirsin
 
   photoUrls String[] // Fotoğraf linkleri (örn: S3 URL'leri)
-  status    PackageStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  workspaceAddress WorkspaceAddress @relation(fields: [workspaceAddressId], references: [id], onDelete: Cascade)
+  status           PackageStatus           @default(PENDING)
+  workspaceAddress WorkspaceAddress        @relation(fields: [workspaceAddressId], references: [id], onDelete: Cascade)
+  officeLocation   OfficeLocation          @relation(fields: [officeLocationId], references: [id], onDelete: Cascade)
+  actions          PackageAction[] // Paketle ilgili aksiyonlar (forward, shred, vs.)
+  forwardRequests  PackageForwardRequest[]
 
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  actions   PackageAction[] // Paketle ilgili aksiyonlar (forward, shred, vs.)
-
-  forwardRequests PackageForwardRequest[]
+  @@unique([steNumber, officeLocationId])
+  @@index([officeLocationId])
 }
 
 model PackageItem {
-  id          String    @id @default(uuid()) @db.Uuid
-  packageId   String    @db.Uuid
+  id          String  @id @default(uuid()) @db.Uuid
+  packageId   String  @db.Uuid
   name        String // Örn: "Kargo Paketi", "Belge", "Karton"
   description String? // Opsiyonel, ürün açıklaması
-  quantity    Int       @default(1) // Kaç adet bu üründen var
+  quantity    Int     @default(1) // Kaç adet bu üründen var
   weightKg    Float? // kg, opsiyonel
   width       Float? // cm, opsiyonel
   height      Float? // cm, opsiyonel
   length      Float? // cm, opsiyonel
-  volumeDesi  Float? // opsiyonel, istersen otomatik hesaplatabilirsin
-  photoUrls   String[] // Fotoğraf linkleri (S3 URL'leri)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime? // Silinmişse burada tutulur
-  isDeleted   Boolean   @default(false)
+  isShereded  Boolean @default(false) // Paket bu ürün için imha edildi mi?
+  isForwarded Boolean @default(false) // Paket bu ürün için yönlendirildi mi?
 
-  package Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  volumeDesi Float? // opsiyonel, istersen otomatik hesaplatabilirsin
+  photoUrls  String[] // Fotoğraf linkleri (S3 URL'leri)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime? // Silinmişse burada tutulur
+  isDeleted  Boolean   @default(false)
+  package    Package   @relation(fields: [packageId], references: [id], onDelete: Cascade)
 }
 
 model PackageAction {
@@ -364,10 +384,10 @@ model PackageAction {
 }
 
 model PackageForwardRequest {
-  id               String @id @default(uuid()) @db.Uuid
-  packageId        String @db.Uuid
-  workspaceId      String @db.Uuid
-  officeLocationId String @db.Uuid
+  id                    String   @id @default(uuid()) @db.Uuid
+  packageId             String   @db.Uuid
+  workspaceId           String   @db.Uuid
+  officeLocationId      String   @db.Uuid
   deliveryAddressId     String   @db.Uuid // Kullanıcının paketin gönderilmesini istediği adres
   deliverySpeedOptionId String   @db.Uuid
   packagingTypeOptionId String   @db.Uuid
@@ -379,11 +399,11 @@ model PackageForwardRequest {
   packagingCost Int // kuruş cinsinden
   totalCost     Int // shippingCost + packagingCost
 
-  status ForwardRequestStatus @default(PENDING) // Talep durumu
-  paymentStatus PaymentStatus @default(PENDING)
+  status        ForwardRequestStatus @default(PENDING) // Talep durumu
+  paymentStatus PaymentStatus        @default(PENDING)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   completedAt DateTime? // Talep tamamlandığında set edilecek
   cancelledAt DateTime? // Kullanıcı tarafından iptal edildiğinde set edilecek
 
@@ -410,11 +430,11 @@ model Carrier {
   description String?
   logoUrl     String? // UI için opsiyonel
 
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime? // Silinmişse burada tutulur
-  isDeleted Boolean @default(false) // Carrier silinmiş mi?
+  isActive          Boolean                 @default(true)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  deletedAt         DateTime? // Silinmişse burada tutulur
+  isDeleted         Boolean                 @default(false) // Carrier silinmiş mi?
   availableInStates CarrierAvailability[] // Bu carrier'ın kullanılabileceği lokasyonlar
   forwardRequest    PackageForwardRequest[] // Bu carrierın kullanıldığı yönlendirme talepleri
 }
@@ -469,29 +489,30 @@ model PackagingTypeOption {
 }
 
 model DeliverySpeedPlanMapping {
-  id               String              @id @default(uuid()) @db.Uuid
-  deliverySpeedId  String              @db.Uuid
-  officeLocationId String              @db.Uuid
+  id               String    @id @default(uuid()) @db.Uuid
+  deliverySpeedId  String    @db.Uuid
+  officeLocationId String    @db.Uuid
   price            Int // kuruş olarak
-  isActive         Boolean             @default(true)
+  isActive         Boolean   @default(true)
   deletedAt        DateTime?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  deliverySpeed    DeliverySpeedOption @relation(fields: [deliverySpeedId], references: [id])
-  officeLocation   OfficeLocation      @relation(fields: [officeLocationId], references: [id])
+  deliverySpeed  DeliverySpeedOption @relation(fields: [deliverySpeedId], references: [id])
+  officeLocation OfficeLocation      @relation(fields: [officeLocationId], references: [id])
+
   @@unique([deliverySpeedId, officeLocationId])
 }
 
 model PackagingTypePlanMapping {
-  id               String @id @default(uuid()) @db.Uuid
-  packagingTypeId  String @db.Uuid
-  officeLocationId String @db.Uuid
+  id               String    @id @default(uuid()) @db.Uuid
+  packagingTypeId  String    @db.Uuid
+  officeLocationId String    @db.Uuid
   price            Int
-  isActive         Boolean @default(true)
+  isActive         Boolean   @default(true)
   deletedAt        DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   packagingType  PackagingTypeOption @relation(fields: [packagingTypeId], references: [id])
   officeLocation OfficeLocation      @relation(fields: [officeLocationId], references: [id])
@@ -561,6 +582,7 @@ model Addon {
   deletedAt       DateTime?
   isDeleted       Boolean        @default(false)
   variants        AddonVariant[]
+  planAddons      PlanAddon[] // Bu addon'ı kullanan planlar
 }
 
 model AddonVariant {
@@ -577,6 +599,28 @@ model AddonVariant {
   deletedAt     DateTime? // Silinmişse burada tutulur
   isDeleted     Boolean   @default(false)
   addon         Addon     @relation(fields: [addonId], references: [id], onDelete: Cascade)
+}
+
+model PlanAddon {
+  id               String    @id @default(uuid()) @db.Uuid
+  planId           String    @db.Uuid
+  addonId          String    @db.Uuid
+  isIncludedInPlan Boolean   @default(false) // Plan içinde dahil mi yoksa ekstra satın alınıyor mu?
+  discountPercent  Int? // Plan sahipleri için indirim yüzdesi (0-100)
+  isRequired       Boolean   @default(false) // Bu addon plan için zorunlu mu?
+  displayOrder     Int? // Gösterim sırası
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime? // Silinmişse burada tutulur
+  isDeleted        Boolean   @default(false)
+
+  plan  Plan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  addon Addon @relation(fields: [addonId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, addonId])
+  @@index([planId])
+  @@index([addonId])
 }
 
 model Forms {
@@ -681,9 +725,11 @@ enum DeliveryAddressType {
 
 enum PackageStatus {
   PENDING // Yeni geldi, işlenmeyi bekliyor
-  IN_PROCESS // Aksiyon bekliyor (forward, shred, vs.)
+  FORWARDED // Paket yönlendirildi
+  SHREDDED // Paket imha edildi
   COMPLETED // Aksiyonlar tamamlandı
   CANCELLED // İptal edildi / yanlış eşleştirme
+  IN_PROCESS // Aksiyon bekliyor (forward, shred, vs.)
 }
 
 enum TicketStatus {
@@ -709,6 +755,10 @@ enum TicketPriority {
 
 enum OrderStatus {
   PAYMENT_PENDING
+  PAYMENT_PROCESSING
+  PAYMENT_SUCCEEDED
+  PAYMENT_FAILED
+  PAYMENT_CANCELLED
   PENDING
   IN_PROGRESS
   COMPLETED
@@ -875,4 +925,74 @@ model Token {
   expires   DateTime
 
   @@unique([email, type], name: "unique_email_token_type")
+}
+
+model Order {
+  id          String      @id @default(uuid()) @db.Uuid
+  email       String
+  totalAmount Int // Total amount in cents
+  currency    String      @default("USD")
+  status      OrderStatus @default(PAYMENT_PENDING)
+
+  // Stripe Integration
+  stripePaymentIntentId String? // Stripe Payment Intent ID
+  stripeCustomerId      String? // Stripe Customer ID  
+  stripeSessionId       String? // Checkout Session ID (if used)
+  stripeClientSecret    String? // Payment Intent client secret
+
+  // Optional user reference (for registered users)
+  userId String? @db.Uuid
+
+  // Metadata
+  metadata Json? // Additional order metadata
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime? // When payment was completed
+
+  // Relations
+  user  User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items OrderItem[]
+
+  @@index([email])
+  @@index([stripePaymentIntentId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id      String @id @default(uuid()) @db.Uuid
+  orderId String @db.Uuid
+
+  // Item Type
+  itemType  OrderItemType
+  itemId    String        @db.Uuid // Plan, Addon, or Product ID
+  variantId String?       @db.Uuid // For addon variants
+
+  // Pricing
+  quantity   Int    @default(1)
+  unitPrice  Int // Price per unit in cents
+  totalPrice Int // quantity * unitPrice
+  currency   String @default("USD")
+
+  // Item Details (for reference)
+  itemName        String
+  itemDescription String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([itemType])
+}
+
+enum OrderItemType {
+  PLAN
+  ADDON
+  PRODUCT
 }

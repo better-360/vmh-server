@@ -16,6 +16,7 @@ import { ReportModule } from './report/report.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { WorkspaceModule } from './workspace/workspace.module';
 import { ShippingModule } from './shipping/shipping.module';
+import { PackageModule } from './package/package.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ShippingModule } from './shipping/shipping.module';
     SubscriptionModule,
     ShippingModule,
     WorkspaceModule,
+    PackageModule
   ],
   exports: [
     AuthModule,
@@ -51,6 +53,7 @@ import { ShippingModule } from './shipping/shipping.module';
     SubscriptionModule,
     ShippingModule,
     WorkspaceModule,
+    PackageModule
   ],
 })
 export class MainModule {}

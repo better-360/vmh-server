@@ -22,7 +22,7 @@ export class WorkspaceService {
         private readonly prisma: PrismaService,
     ) {}    
 
-    // Workspace CRUD operasyonları
+    // Workspace CRUD
     async createWorkspace(userId: string, createWorkspaceDto: CreateWorkspaceDto) {
         const workspace = await this.prisma.workspace.create({
             data: {
@@ -41,8 +41,6 @@ export class WorkspaceService {
                             select: {
                                 id: true,
                                 email: true,
-                                firstName: true,
-                                lastName: true
                             }
                         }
                     }
@@ -99,14 +97,14 @@ export class WorkspaceService {
         });
 
         if (!workspace) {
-            throw new NotFoundException('Workspace bulunamadı');
+            throw new NotFoundException('Workspace cannot be found');
         }
 
         // Kullanıcının bu workspace'e erişimi var mı kontrol et
         if (userId) {
             const userMembership = workspace.members.find(m => m.userId === userId);
             if (!userMembership) {
-                throw new ForbiddenException('Bu workspace\'e erişim yetkiniz yok');
+                throw new ForbiddenException('You have no access to this workspace');
             }
         }
 
@@ -223,7 +221,7 @@ export class WorkspaceService {
             }
         });
 
-        return { message: 'Workspace başarıyla silindi' };
+        return { message: 'Workspace deleted succesfuly' };
     }
 
     // Workspace üye yönetimi
@@ -237,7 +235,7 @@ export class WorkspaceService {
         });
 
         if (!user) {
-            throw new NotFoundException('Kullanıcı bulunamadı');
+            throw new NotFoundException('User not found');
         }
 
         // Zaten üye mi kontrol et
@@ -250,7 +248,7 @@ export class WorkspaceService {
         });
 
         if (existingMember) {
-            throw new BadRequestException('Kullanıcı zaten bu workspace\'in üyesi');
+            throw new BadRequestException('User is already a member of this workspace');
         }
 
         const member = await this.prisma.workspaceMember.create({

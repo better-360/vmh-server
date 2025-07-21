@@ -13,14 +13,14 @@ import {
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class CheckoutAddonDto {
+export class AddonDto {
   @IsUUID()
   productId: string;
 
   // Eğer ürünün varyasyonları varsa, seçilen fiyatın ID'si
   @IsOptional()
   @IsUUID()
-  selectedPriceId?: string;
+  selectedPriceId: string;
 }
 
 export class CheckoutDto {
@@ -63,7 +63,7 @@ export class CheckoutDto {
   expeditedFeeId: string;
 
   @ApiProperty({
-    type: [CheckoutAddonDto], // Array olduğu için köşeli parantez içinde veriyoruz
+    type: [AddonDto], // Array olduğu için köşeli parantez içinde veriyoruz
     description: 'Seçilen Addonların listesi',
     example: [
       {
@@ -78,8 +78,8 @@ export class CheckoutDto {
   })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CheckoutAddonDto)
-  addons: CheckoutAddonDto[];
+  @Type(() => AddonDto)
+  addons: AddonDto[];
 }
 
 

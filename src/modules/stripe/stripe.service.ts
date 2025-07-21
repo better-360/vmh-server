@@ -19,6 +19,12 @@ interface SubscriptionItemDto {
   } | null;
 }
 
+interface OrderIntentDto {
+  amount: number; // Kuruş cinsinden
+  currency: string; // Örneğin, "usd" veya "try"
+  metadata?: JSON; // Opsiyonel: siparişId, userId vb.
+} 
+
 
 @Injectable()
 export class StripeService {
@@ -428,7 +434,19 @@ export class StripeService {
       );
     }
   }
-
+  async getCustomer(id): Promise<Stripe.Customer> {
+    try {
+      const customer = await this.stripe.customers.retrieve(id);
+      this.logger.log('Customer created successfully');
+      return customer as Stripe.Customer;
+    } catch (error) {
+      this.logger.error('Failed to create customer on Stripe', error.stack);
+      throw new HttpException(
+        `Unable to create customer on Stripe ${error.message}`,
+        500,
+      );
+    }
+  }
   async createSubscription(
     data: Stripe.SubscriptionCreateParams,
   ): Promise<Stripe.Subscription> {
@@ -630,5 +648,19 @@ export class StripeService {
         500,
       );
     }
+  }
+
+  async createPaymentIntentForOrder(params: Stripe.PaymentIntentCreateParams, options?: Stripe.RequestOptions): Promise<Stripe.PaymentIntent> {
+    const { amount, currency, metadata } = params;
+    const paymentIntent = await this.stripe.paymentIntents.create({
+      amount,    
+      currency,       
+      metadata, 
+      automatic_payment_methods: { enabled: true },
+      setup_future_usage: 'off_session',
+      confirm: true,
+    });
+    this.logger.log('Payment intent created successfully for order');
+    return paymentIntent;
   }
 }
