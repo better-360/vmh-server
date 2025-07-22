@@ -34,44 +34,6 @@ export class StripeController {
     );
   }
 
-  @Post('/webhooks')
-  async webhooks(
-    @Headers('stripe-signature') sig: string,
-    @Req() req: RawBodyRequest<Request>,
-    @Res() res: Response,
-  ) {
-    let event: Stripe.Event;
-    try {
-      event = this.stripe.webhooks.constructEvent(
-        req.rawBody,
-        sig,
-        this.configService.get<string>('STRIPE_WEBHOOK_SECRET_KEY'),
-      );
-    } catch (err) {
-      // On error, log and return the error message
-      console.log(`Error message: ${err.message}`);
-      res.status(400).send(`Webhook Error: ${err.message}`);
-      return;
-    }
-    // Successfully constructed event
-    console.log('Success:', event.id);
-    // Cast event data to Stripe object
-    if (event.type === 'payment_intent.succeeded') {
-      const stripeObject: Stripe.PaymentIntent = event.data
-        .object as Stripe.PaymentIntent;
-      console.log(`💰 PaymentIntent status: ${stripeObject.status}`);
-    } else if (event.type === 'charge.succeeded') {
-      const charge = event.data.object as Stripe.Charge;
-      console.log(`💵 Charge id: ${charge.id}`);
-    } else {
-      console.warn(`🤷‍♀️ Unhandled event type: ${event.type}`);
-    }
-    // Return a response to acknowledge receipt of the event
-    res.status(200).json({ received: true });
-  }
-
-
-
 @Public()
 @Get('stripe-success')
 async handleStripeSuccess(@Query('session_id') sessionId: string) {

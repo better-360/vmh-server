@@ -14,7 +14,18 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AddonDto } from './check-out.dto';
+import { OrderType } from '@prisma/client';
+import { CreateWorkspaceSubscriptionItemDto } from './plan.dto';
+
+export class AddonDto {
+  @IsUUID()
+  productId: string;
+
+  // Eğer ürünün varyasyonları varsa, seçilen fiyatın ID'si
+  @IsOptional()
+  @IsUUID()
+  selectedPriceId: string;
+}
 
 export interface CheckoutAddon{
     productId: string;
@@ -119,27 +130,59 @@ export class CreateOrderItemDto {
   @Min(1)
   quantity?: number;
 }
-
-export class CreateOrderDto {
+export class CreateInitialSubscriptionOrderDto {
   @ApiProperty({
     description: 'Customer name',
-    example: 'John Doe',
+    example: 'John',
   })
   @IsString()
-  name: string;
+  firstName: string;
+
+    @ApiProperty({
+    description: 'Customer last name',
+    example: 'Doe',
+  })
+  @IsString()
+  lastName: string;
 
   @ApiProperty({
     description: 'Customer email',
-    example: 'customer@example.com',
+    example: 'atakan@thedice.ai',
   })
   @IsEmail()
   email: string;
+
+  @ApiProperty({
+    description: 'Office location ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsString()
+  officeLocationId: string;
 
   @ApiProperty({
     description: 'Order items',
     type: [CreateOrderItemDto],
   })
   @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateOrderItemDto)
+  items: CreateOrderItemDto[];
+}
+
+
+export class CreateOrderDto {
+  @ApiProperty({
+    description: 'Subscription ID to add item to',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  subscriptionId: string;
+
+  @ApiProperty({
+    description: 'Item',
+    type: CreateOrderItemDto,
+  })
   @ValidateNested({ each: true })
   @Type(() => CreateOrderItemDto)
   items: CreateOrderItemDto[];
@@ -203,8 +246,8 @@ export class OrderResponseDto {
   @ApiPropertyOptional()
   stripePaymentIntentId?: string;
 
-  @ApiPropertyOptional()
-  stripeCustomerId?: string;
+  @ApiProperty()
+  stripeCustomerId: string;
 
   @ApiPropertyOptional()
   stripeClientSecret?: string;
@@ -224,8 +267,27 @@ export class OrderResponseDto {
   @ApiPropertyOptional()
   completedAt?: Date;
 
+  @ApiProperty({ enum: OrderType })
+  type: OrderType;
+
   @ApiProperty({ type: [OrderItemResponseDto] })
   items: OrderItemResponseDto[];
+}
+
+export class InitialSubscriptionOrderResponseDto extends OrderResponseDto {
+  @ApiProperty({
+    description: 'Customer name',
+    example: 'John Doe',
+  })
+  @IsString()
+  firstName: string;
+
+    @ApiProperty({
+    description: 'Customer last name',
+    example: 'John Doe',
+  })
+  @IsString()
+  lastName: string;
 }
 
 export class CheckoutCalculationDto {

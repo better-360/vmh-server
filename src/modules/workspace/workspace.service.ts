@@ -9,10 +9,8 @@ import {
   UpdateWorkspaceAddressDto,
   CreateWorkspaceDeliveryAddressDto,
   UpdateWorkspaceDeliveryAddressDto,
-  InviteToWorkspaceDto,
   CreateWorkspaceSubscriptionDto,
   WorkspaceQueryDto,
-  WorkspaceRole
 } from "src/dtos/workspace.dto";
 import { WorkspaceRole as PrismaWorkspaceRole } from "@prisma/client";
 
@@ -41,6 +39,8 @@ export class WorkspaceService {
                             select: {
                                 id: true,
                                 email: true,
+                                firstName: true,
+                                lastName: true,
                             }
                         }
                     }
@@ -78,12 +78,10 @@ export class WorkspaceService {
                 deliveryAddresses: true,
                 subscriptions: {
                     where: { isActive: true },
-                    include: {
-                        plan: {
-                            include: {
-                                officeLocation: true
-                            }
-                        }
+                    select: { 
+                        id: true, 
+                        startDate: true, 
+                        endDate: true 
                     }
                 },
                 _count: {
@@ -343,12 +341,12 @@ export class WorkspaceService {
                 data: { isDefault: false }
             });
         }
-
+        const steNumber = await this.generateUniqueSteNumber();
         const address = await this.prisma.workspaceAddress.create({
             data: {
                 workspaceId,
                 officeLocationId: createAddressDto.officeLocationId,
-                steNumber: createAddressDto.steNumber,
+                steNumber: steNumber,
                 isDefault: createAddressDto.isDefault || false
             },
             include: {
@@ -483,24 +481,8 @@ export class WorkspaceService {
             throw new BadRequestException('Bu lokasyon için zaten aktif bir abonelik var');
         }
 
-        const subscription = await this.prisma.workspaceSubscription.create({
-            data: {
-                workspaceId,
-                officeLocationId: createSubscriptionDto.officeLocationId,
-                planId: createSubscriptionDto.planId,
-                billingCycle: createSubscriptionDto.billingCycle as any,
-                startDate: new Date()
-            },
-            include: {
-                plan: {
-                    include: {
-                        officeLocation: true
-                    }
-                }
-            }
-        });
-
-        return subscription;
+        // TODO: Update to use new subscription service
+        throw new BadRequestException('Subscription creation temporarily disabled during migration');
     }
 
     // Yardımcı metodlar
@@ -583,15 +565,8 @@ export class WorkspaceService {
         const subscriptions = await this.prisma.workspaceSubscription.findMany({
             where: { workspaceId },
             include: {
-                plan: {
-                    include: {
-                        officeLocation: true,
-                        features: {
-                            include: {
-                                feature: true
-                            }
-                        }
-                    }
+                officeLocation: {
+                    select: { id: true, label: true, city: true, state: true }
                 }
             },
             orderBy: { createdAt: 'desc' }
@@ -599,4 +574,26 @@ export class WorkspaceService {
 
         return subscriptions;
     }
+
+    private async generateUniqueSteNumber(): Promise<string> {
+        let steNumber: string;
+        let isUnique = false;
+        
+        while (!isUnique) {
+          // Generate 6-digit random number
+          steNumber = Math.floor(100000 + Math.random() * 900000).toString();
+          
+          // Check if it already exists
+          const existing = await this.prisma.workspaceAddress.findUnique({
+            where: { steNumber }
+          });
+          
+          if (!existing) {
+            isUnique = true;
+          }
+        }
+        
+        return steNumber;
+      }
+   
 }

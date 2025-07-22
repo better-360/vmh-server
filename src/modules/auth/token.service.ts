@@ -67,7 +67,7 @@ export class TokenService {
 
     if (!resetToken || moment().isAfter(resetToken.expires)) {
       throw new HttpException(
-        'Geçersiz veya süresi dolmuş token',
+        'Invalid or expired token',
         HttpStatus.BAD_REQUEST,
       );
     }

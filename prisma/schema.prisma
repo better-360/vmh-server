@@ -130,22 +130,56 @@ model WorkspaceSubscription {
   id                   String       @id @default(uuid()) @db.Uuid
   workspaceId          String       @db.Uuid
   officeLocationId     String       @db.Uuid // Her ofis lokasyonu için ayrı abonelik
-  planId               String       @db.Uuid
+  
+  planId               String       @db.Uuid 
+  planPriceId          String       @db.Uuid 
   billingCycle         BillingCycle
+  
   stripeSubscriptionId String?
+  status               SubscriptionStatus @default(ACTIVE)
   startDate            DateTime
   endDate              DateTime?
   isActive             Boolean      @default(true)
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
-
-  plan           Plan           @relation(fields: [planId], references: [id])
+  
   workspace      Workspace      @relation(fields: [workspaceId], references: [id])
   officeLocation OfficeLocation @relation(fields: [officeLocationId], references: [id], onDelete: Cascade)
+  plan           Plan           @relation(fields: [planId], references: [id])
+  planPrice      PlanPrice      @relation(fields: [planPriceId], references: [id])
+  items          WorkspaceSubscriptionItem[] // Sadece addon ve product'lar
 
   @@unique([workspaceId, officeLocationId, isActive], name: "OneActiveSubscriptionPerOffice")
   @@index([workspaceId, isActive])
   @@index([officeLocationId, isActive])
+}
+
+model WorkspaceSubscriptionItem {
+  id                 String                    @id @default(uuid()) @db.Uuid
+  subscriptionId     String                    @db.Uuid
+  itemType           SubscriptionItemType      // PRODUCT, ADDON (Plan artık ayrı tutuldu)
+  itemId             String                    @db.Uuid // Product veya Addon ID'si
+  variantId          String?                   @db.Uuid // Product ve Addon variantları için
+  billingCycle       BillingCycle              @default(MONTHLY)
+  quantity           Int                       @default(1)
+  unitPrice          Int                       // Birim fiyat (cents)
+  totalPrice         Int                       // quantity * unitPrice
+  currency           String                    @default("USD")
+  startDate          DateTime
+  endDate            DateTime?                 // Tek seferlik ödemeler için null olabilir
+  status             SubscriptionItemStatus    @default(ACTIVE)
+  isActive           Boolean                   @default(true)
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  
+  // Item Details (for reference)
+  itemName           String
+  itemDescription    String?
+  
+  subscription WorkspaceSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@index([itemId])
 }
 
 model OfficeLocation {
@@ -192,12 +226,11 @@ model Plan {
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime? // Silinmişse burada tutulur
   isDeleted        Boolean   @default(false)
-
   officeLocation         OfficeLocation          @relation(fields: [officeLocationId], references: [id], onDelete: Cascade)
   features               PlanFeature[] // Bu planda mevcut özellikler
   prices                 PlanPrice[] // Bu planın fiyat alternatifleri
-  workspaceSubscriptions WorkspaceSubscription[]
   planAddons             PlanAddon[] // Bu planda bulunan addonlar
+  workspaceSubscriptions WorkspaceSubscription[] // Bu planı kullanan abonelikler
 
   @@unique([slug, officeLocationId]) // Aynı lokasyonda aynı slug olamaz
   @@index([officeLocationId])
@@ -277,7 +310,7 @@ model Feature {
 model PlanPrice {
   id            String       @id @default(uuid()) @db.Uuid
   planId        String       @db.Uuid
-  billingCycle  BillingCycle
+  billingCycle  BillingCycle @default(MONTHLY)
   amount        Int // Fiyat miktarı (örn: 9999 = 99.99 USD)
   currency      String // Örn: "USD", "EUR"
   description   String? // Opsiyonel, fiyat açıklaması
@@ -289,6 +322,7 @@ model PlanPrice {
   deletedAt     DateTime? // Silinmişse burada tutulur
 
   plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  workspaceSubscriptions WorkspaceSubscription[] // Bu plan fiyatını kullanan abonelikler
 
   @@unique([planId, billingCycle]) // Aynı plan için aynı dönem sadece bir kez tanımlanır
 }
@@ -525,8 +559,6 @@ model Product {
   description     String?
   stripeProductId String? // Stripe tarafındaki Product ID
   type            ProductType
-  amount          Int
-  currency        String
   imageUrl        String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
@@ -542,6 +574,7 @@ model ProductVariant {
   name          String
   description   String?
   amount        Int
+  billingCycle  BillingCycle @default(MONTHLY)
   currency      String
   imageUrl      String?
   createdAt     DateTime  @default(now())
@@ -573,6 +606,7 @@ model AddonVariant {
   description   String?
   stripePriceId String? // Stripe tarafındaki Price ID
   price         Int // Fiyat miktarı (örn: 9999 = 99.99 USD)
+  billingCycle  BillingCycle  @default(MONTHLY)
   currency      String // Örn: "USD", "EUR"
   imageUrl      String?
   createdAt     DateTime  @default(now())
@@ -859,6 +893,7 @@ enum BillingCycle {
   YEARLY
   WEEKLY
   QUARTERLY
+  ONE_TIME
 }
 
 enum TokenType {
@@ -914,9 +949,9 @@ model Order {
   totalAmount Int // Total amount in cents
   currency    String      @default("USD")
   status      OrderStatus @default(PAYMENT_PENDING)
-
+  type        OrderType   @default(SINGLE)
   // Stripe Integration
-  stripePaymentIntentId String? // Stripe Payment Intent ID
+  stripePaymentIntentId String @unique // Stripe Payment Intent ID 
   stripeCustomerId      String? // Stripe Customer ID  
   stripeSessionId       String? // Checkout Session ID (if used)
   stripeClientSecret    String? // Payment Intent client secret
@@ -940,6 +975,18 @@ model Order {
   @@index([stripePaymentIntentId])
   @@index([status])
   @@index([createdAt])
+}
+
+enum OrderType {
+  SINGLE
+  SUBSCRIPTION
+  INITIAL_SUBSCRIPTION
+  UPGRADE
+  DOWNGRADE
+  CHANGE_PLAN
+  CHANGE_ADDON
+  CHANGE_PRODUCT
+  CHANGE_QUANTITY
 }
 
 model OrderItem {
@@ -976,4 +1023,27 @@ enum OrderItemType {
   PLAN
   ADDON
   PRODUCT
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  CANCELLED
+  EXPIRED
+  SUSPENDED
+}
+
+enum SubscriptionItemType {
+  PRODUCT
+  ADDON
+}
+
+enum SubscriptionItemStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  CANCELLED
+  EXPIRED
+  SUSPENDED
 }

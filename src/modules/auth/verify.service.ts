@@ -6,16 +6,20 @@ import { UserService } from '../user/user.service';
 import { PrismaService } from 'src/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Events } from 'src/common/enums/event.enum';
+import { OAuth2Client } from 'google-auth-library';
 
 @Injectable()
 export class EmailVerifyService {
+  private oAuth2Client: OAuth2Client;
   constructor(
     private readonly userService: UserService,
     private readonly prismaService: PrismaService,
     private readonly eventEmitter: EventEmitter2,
-  ) {}
+  ) {
+  this.oAuth2Client = new OAuth2Client(process.env.WEB_CLIENT_ID);
+  }
 
-  // E-posta doğrulama isteği kontrolü
+ 
   async checkVerifyRequestExist(email: string): Promise<any> {
     const verifyRequest = await this.prismaService.token.findFirst({
       where: {
@@ -29,7 +33,6 @@ export class EmailVerifyService {
     }
   }
 
-  // E-posta doğrulama isteği gönderme
   async requestUserVerification(email: string): Promise<any> {
     try {
       // Validate email parameter
@@ -40,7 +43,7 @@ export class EmailVerifyService {
         );
       }
 
-      // Early return: Check if user exists first
+      //Check if user exists first
       const user = await this.userService.findOne(email);
       if (!user) {
         throw new HttpException(
@@ -49,7 +52,7 @@ export class EmailVerifyService {
         );
       }
 
-      // Early return: Check if user is already verified
+      //Check if user is already verified
       if (user.emailConfirmed) {
         throw new HttpException(
           'User already verified',
@@ -57,7 +60,7 @@ export class EmailVerifyService {
         );
       }
 
-      // Early return: Check if verification request already exists
+      // Check if verification request already exists
       const existingVerifyRequest = await this.checkVerifyRequestExist(email);
       if (existingVerifyRequest) {
         throw new HttpException(
@@ -88,25 +91,16 @@ export class EmailVerifyService {
         fullName,
         verifyLink,
       });
-
-      // Log successful verification request
-      console.log(`Verification email sent to: ${email}`);
-
+      
       return {
-        message: 'Doğrulama e-postası başarıyla gönderildi',
+        message: 'Email verification request sent successfully. Please check your inbox.',
         status: HttpStatus.OK,
       };
 
     } catch (error) {
-      // Log error for debugging
-      console.error('Error in requestUserVerification:', error);
-
-      // Re-throw HttpExceptions as they are
       if (error instanceof HttpException) {
         throw error;
       }
-
-      // Handle unexpected errors
       throw new HttpException(
         'An error occurred while processing the email verification request',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -114,7 +108,6 @@ export class EmailVerifyService {
     }
   }
 
-  // Doğrulama kodu geçerliliğini kontrol etme
   async verifyToken(token: string): Promise<string> {
     if (token.length < 4) {
       throw new HttpException('Invalid Token', HttpStatus.BAD_REQUEST);
@@ -133,7 +126,7 @@ export class EmailVerifyService {
     }
     return verificationToken.email;
   }
-  // Doğrulama kodunu silme
+
   async deleteVerifyToken(token: string): Promise<void> {
     const resetToken = await this.prismaService.token.findFirst({
       where: {
@@ -150,7 +143,7 @@ export class EmailVerifyService {
     }
   }
 
-  // E-posta doğrulama
+
   async verifyEmailToken(token: string): Promise<any> {
     const tokenEmail = await this.verifyToken(token);
     if (tokenEmail) {
@@ -165,14 +158,21 @@ export class EmailVerifyService {
     }
   }
 
-  async checkEmailisExist(
-    email: string,
-  ): Promise<{ exists: boolean; message: string }> {
-    const user = await this.userService.findOne(email);
-    if (user) {
-      return { exists: true, message: 'Email is already registered.' };
-    } else {
-      return { exists: false, message: 'Email is available.' };
+
+   async verifyGoogleIDToken(idToken: string) {
+    if (!idToken || typeof idToken !== 'string') {
+      throw new HttpException('Invalid Token', HttpStatus.UNAUTHORIZED);
+    }
+    try {
+      const ticket = await this.oAuth2Client.verifyIdToken({
+        idToken: idToken,
+        audience: process.env.WEB_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      return payload;
+    } catch (error) {
+      throw new HttpException('Invalid Token', HttpStatus.UNAUTHORIZED);
     }
   }
+  
 }

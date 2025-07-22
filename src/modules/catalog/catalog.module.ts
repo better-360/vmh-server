@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { CatalogService } from './catalog.service';
 import { FeaturesService } from './features.service';
 import { PlansService } from './plans.service';
@@ -10,6 +10,8 @@ import { LocationService } from './location.service';
 import { TemplatesController } from './template.controller';
 import { AddonsService } from './addons.service';
 import { AddonsController } from './addons.controller';
+
+@Global() 
 @Module({
   controllers: [FeaturesController, PlansController, LocationController,TemplatesController, AddonsController],
   providers: [CatalogService, FeaturesService, PlansService, PrismaService, LocationService, AddonsService],

@@ -59,11 +59,6 @@ export class CreateWorkspaceAddressDto {
   @IsUUID()
   officeLocationId: string;
 
-  @ApiProperty({ description: 'STE numarası', example: '004712' })
-  @IsString()
-  @IsNotEmpty()
-  steNumber: string;
-
   @ApiProperty({ description: 'Varsayılan adres mi?', required: false })
   @IsOptional()
   @IsBoolean()

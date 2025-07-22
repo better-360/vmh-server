@@ -6,29 +6,23 @@ import {
 } from '@nestjs/common';
 import { RoleType, User, WorkspaceMember } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
-import { v4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 import {
   ChangeEmailDto,
   LoginDto,
-  RegisterDto,
   UpdateUserDto,
 } from 'src/dtos/user.dto';
 import { IUser } from 'src/common/interfaces/user.interface';
-import { StripeService } from '../stripe/stripe.service';
 import { randomBytes } from 'crypto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Events } from 'src/common/enums/event.enum';
-import { TokenService } from '../auth/token.service';
 import { WorkspaceService } from '../workspace/workspace.service';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly stripeService: StripeService,
     private eventEmitter: EventEmitter2,
-    private readonly tokenService: TokenService,
     private readonly workspaceService: WorkspaceService,
     
   ) {}
@@ -150,8 +144,7 @@ export class UserService {
         lastName: true,
       },
     });
-    const newWorkspace = await this.workspaceService.createWorkspace(newUser.id,{ name: `${newUser.firstName} ${newUser.lastName || ''}`.trim() });
-
+    await this.workspaceService.createWorkspace(newUser.id,{ name: `${newUser.firstName} ${newUser.lastName || ''}`.trim() });
     await this.prismaService.userRole.create({
       data: {
         userId: newUser.id,
@@ -165,7 +158,7 @@ export class UserService {
     return await this.findUserByEmail(newUser.email);
   }
 
-  async changeUserEmail(userId: string, data: ChangeEmailDto) {
+async changeUserEmail(userId: string, data: ChangeEmailDto) {
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },
     });
@@ -191,20 +184,6 @@ export class UserService {
       throw new InternalServerErrorException('Email could not be updated');
     }
     return HttpStatus.OK;
-  }
-
-  async createStripeCustomerId(user) {
-    const customerStripeID = (
-      await this.stripeService.createCustomer({
-        email: user.email,
-        name: user.firstName + ' ' + user.lastName,
-      })
-    ).id;
-    await this.prismaService.user.update({
-      where: { email: user.email },
-      data: { stripeCustomerId: customerStripeID },
-    });
-    return customerStripeID;
   }
 
   async updateUser(userId: string, updateUserDto: UpdateUserDto) {

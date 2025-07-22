@@ -12,7 +12,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ChangePasswordDto, CheckEmailisExistDto, LoginDto, RegisterDto } from 'src/dtos/user.dto';
+import { ChangePasswordDto, CheckEmailisExistDto, LoginDto } from 'src/dtos/user.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { TokenDto } from 'src/dtos/token.dto';
 import { PasswordResetService } from './reset.service';
@@ -47,7 +47,7 @@ export class AuthController {
   }
 
 
-  @ApiOperation({ summary: 'Kullanıcı giriş yapar ve token alır' })
+  @ApiOperation({ summary: 'Sign in' })
   @Public()
   @Post('sign-in')
   @HttpCode(HttpStatus.OK)
@@ -59,7 +59,7 @@ export class AuthController {
     };
   }
 
-  @ApiOperation({ summary: 'Refresh token ile yeni erişim tokeni alır' })
+  @ApiOperation({ summary: 'Generate new acces token with using refresh token' })
   @Public()
   @Post('refresh-token')
   @HttpCode(HttpStatus.OK)
@@ -75,14 +75,14 @@ export class AuthController {
   }
 
 
-  @ApiOperation({ summary: 'Şifre sıfırlama talebi gönderir' })
+  @ApiOperation({ summary: 'Create pasword reset request' })
   @Public()
   @Post('request-reset-password')
   requestPasswordReset(@Body() body: { email: string }) {
     return this.passwordResetService.requestPasswordReset(body.email);
   }
 
-  @ApiOperation({ summary: 'Şifre sıfırlama tokenini doğrular' })
+  @ApiOperation({ summary: 'Verify password reset token' })
   @Public()
   @Post('verify-reset-token')
   async VerifyResetToken(@Body() body: { token: string }) {
@@ -93,35 +93,35 @@ export class AuthController {
     };
   }
   
-  @ApiOperation({ summary: 'E posta doğrulama talebi gönderir' })
+  @ApiOperation({ summary: 'Create email verify request' })
   @Public()
   @Post('request-email-verify')
   async requestEmailVerify(@Body() body: { email: string }) {
   return await this.emailVerifyService.requestUserVerification(body.email);
   }
 
-  @ApiOperation({ summary: 'Şifre sıfırlama tokenini doğrular' })
+  @ApiOperation({ summary: 'Verify email  verify token' })
   @Public()
   @Post('verify-email-token')
   async verifyEmailToken(@Body() body: { token: string }) {
     return await this.emailVerifyService.verifyEmailToken(body.token);
   }
 
-  @ApiOperation({ summary: 'Yeni şifre belirleyerek şifre sıfırlama işlemini tamamlar' })
+  @ApiOperation({ summary: 'Completes the password reset process by setting a new password.' })
   @Public()
   @Post('reset-password')
   ResetPasswordConfirm(@Body() body: { password: string; token: string }): Promise<void> {
     return this.passwordResetService.resetPassword(body.token, body.password);
   }
 
-  @ApiOperation({ summary: 'Belirtilen e-posta adresinin var olup olmadığını kontrol eder' })
+  @ApiOperation({ summary: 'Checks email address exists' })
   @Public()
   @Post('check-email')
   async checkEmail(@Body() body: CheckEmailisExistDto) {
-    return await this.emailVerifyService.checkEmailisExist(body.email);
+    return await this.authService.checkEmailisExist(body.email);
   }
 
-  @ApiOperation({ summary: 'Şifre değiştirme' })
+  @ApiOperation({ summary: 'Change Password' })
   @Post('change-my-password')
   async changePassword(@Req() req:any,@Body() data: ChangePasswordDto) {
     return this.authService.changeUserpassword(req.user.id,data);

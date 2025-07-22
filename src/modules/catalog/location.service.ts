@@ -6,6 +6,7 @@ import {
   OfficeLocationQueryDto,
 } from 'src/dtos/location.dto';
 import { Prisma } from '@prisma/client';
+import { isValidUUID } from 'src/utils/validate';
 
 @Injectable()
 export class LocationService {
@@ -101,6 +102,10 @@ export class LocationService {
   }
 
   async getOfficeLocationById(id: string) {
+    const isValid = isValidUUID(id);
+    if (!isValid) {
+      throw new BadRequestException('Invalid office location id');
+    }
     const location = await this.prisma.officeLocation.findFirst({
       where: { id },
       include: {
@@ -133,9 +138,6 @@ export class LocationService {
           include: {
             workspace: {
               select: { id: true, name: true },
-            },
-            plan: {
-              select: { id: true, name: true, slug: true },
             },
           },
         },

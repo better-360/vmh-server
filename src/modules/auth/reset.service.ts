@@ -2,7 +2,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import * as moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
-import { MailService } from '../mail/mail.service';
 import { UserService } from '../user/user.service';
 import { PrismaService } from 'src/prisma.service';
 import { TokenService } from './token.service';
@@ -12,7 +11,6 @@ import { Events } from 'src/common/enums/event.enum';
 @Injectable()
 export class PasswordResetService {
   constructor(
-    private readonly mailService: MailService,
     private readonly userService: UserService,
     private readonly prismaService: PrismaService,
     private readonly tokenService: TokenService,
@@ -24,7 +22,7 @@ export class PasswordResetService {
     const checkResetRequest = await this.checkResetRequest(email);
     if (checkResetRequest) {
       throw new HttpException(
-        'Şifre sıfırlama isteği zaten gönderildi',
+        'Password reset request already exists',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -51,17 +49,17 @@ export class PasswordResetService {
       
       throw new HttpException('OK', HttpStatus.OK);
     } else {
-      throw new HttpException('Kullanıcı bulunamadı', HttpStatus.NOT_FOUND);
+      throw new HttpException('User cannot found', HttpStatus.NOT_FOUND);
     }
   }
 
   
   async resetPassword(token: string, newPassword: string): Promise<any> {
     if (token.length < 4) {
-      throw new HttpException('Geçersiz token', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Invalid token', HttpStatus.BAD_REQUEST);
     }
     if (newPassword.length < 6) {
-      throw new HttpException('Geçersiz şifre', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Invalid password', HttpStatus.BAD_REQUEST);
     }
     const email = await this.tokenService.verifyPasswordResetToken(token);
     const user = await this.userService.findOne(email);
@@ -69,11 +67,11 @@ export class PasswordResetService {
       await this.userService.setNewPassword(user.id, newPassword);
       await this.tokenService.deletePasswordResetToken(token);
       const response = {
-        message: 'Şifre başarıyla değiştirildi',
+        message: 'Password reset successfully',
       };
       return response;
     } else {
-      throw new HttpException('Kullanıcı bulunamadı', HttpStatus.NOT_FOUND);
+      throw new HttpException('User cannot found', HttpStatus.NOT_FOUND);
     }
   }
 

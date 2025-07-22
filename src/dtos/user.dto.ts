@@ -11,8 +11,8 @@ import {
   IsEmail,
   ValidateNested,
 } from 'class-validator';
-import { AddonDto } from './check-out.dto';
 import { Type } from 'class-transformer';
+import { AddonDto } from './checkout.dto';
 
 export class LoginDto {
   @ApiProperty({

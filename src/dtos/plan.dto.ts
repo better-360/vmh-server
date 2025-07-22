@@ -10,17 +10,13 @@ import {
   Min,
   IsNotEmpty,
   ValidateNested,
+  IsInt,
+  Max,
+  ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-
-// Enums
-export enum BillingCycle {
-  MONTHLY = 'MONTHLY',
-  YEARLY = 'YEARLY',
-  WEEKLY = 'WEEKLY',
-  QUARTERLY = 'QUARTERLY',
-}
-
+import { BillingCycle } from '@prisma/client'; 
+import { OrderItemResponseDto } from './checkout.dto';
 // =====================
 // PLAN DTOs
 // =====================
@@ -1083,7 +1079,106 @@ export class OfficeSubscriptionQueryDto {
 // WORKSPACE SUBSCRIPTION DTOs
 // =====================
 
-export class CreateWorkspaceSubscriptionDto {
+export class CreateWorkspaceSubscriptionItemDto {
+  @ApiProperty({
+    description: 'Item type (PRODUCT, ADDON)',
+    enum: ['PRODUCT', 'ADDON'],
+    example: 'ADDON',
+  })
+  @IsEnum(['PRODUCT', 'ADDON'])
+  @IsNotEmpty()
+  itemType: 'PRODUCT' | 'ADDON';
+
+  @ApiProperty({
+    description: 'Product or Addon ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  itemId: string;
+
+  @ApiPropertyOptional({
+    description: 'Variant ID for Product or Addon variants',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsOptional()
+  variantId?: string;
+
+  @ApiProperty({
+    description: 'Billing cycle',
+    enum: BillingCycle,
+    example: BillingCycle.MONTHLY,
+  })
+  @IsEnum(BillingCycle)
+  billingCycle: BillingCycle;
+
+  @ApiProperty({
+    description: 'Quantity',
+    example: 1,
+  })
+  @IsInt()
+  @Min(1)
+  quantity: number;
+
+  @ApiProperty({
+    description: 'Unit price in cents',
+    example: 9999,
+  })
+  @IsInt()
+  @Min(0)
+  unitPrice: number;
+
+  @ApiProperty({
+    description: 'Total price in cents',
+    example: 9999,
+  })
+  @IsInt()
+  @Min(0)
+  totalPrice: number;
+
+  @ApiPropertyOptional({
+    description: 'Currency',
+    example: 'USD',
+    default: 'USD',
+  })
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  @ApiProperty({
+    description: 'Item start date',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  @Type(() => Date)
+  startDate: Date;
+
+  @ApiPropertyOptional({
+    description: 'Item end date (null for one-time payments)',
+    example: '2024-12-31T23:59:59.999Z',
+  })
+  @Type(() => Date)
+  @IsOptional()
+  endDate?: Date;
+
+  @ApiProperty({
+    description: 'Item name',
+    example: 'Premium Addon',
+  })
+  @IsString()
+  @IsNotEmpty()
+  itemName: string;
+
+  @ApiPropertyOptional({
+    description: 'Item description',
+    example: 'Premium addon with unlimited features',
+  })
+  @IsString()
+  @IsOptional()
+  itemDescription?: string;
+}
+
+export class CreateInitialSubscriptionDto {
   @ApiProperty({
     description: 'Workspace ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
@@ -1101,20 +1196,12 @@ export class CreateWorkspaceSubscriptionDto {
   officeLocationId: string;
 
   @ApiProperty({
-    description: 'Plan Price ID',
+    description: 'Plan Price ID (ana abonelik)',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @IsUUID()
   @IsNotEmpty()
-  planId: string;
-
-  @ApiProperty({
-    description: 'Billing cycle',
-    enum: BillingCycle,
-    example: BillingCycle.MONTHLY,
-  })
-  @IsEnum(BillingCycle)
-  billingCycle: BillingCycle;
+  planPriceId: string;
 
   @ApiPropertyOptional({
     description: 'Stripe subscription ID',
@@ -1132,17 +1219,132 @@ export class CreateWorkspaceSubscriptionDto {
   startDate: Date;
 
   @ApiPropertyOptional({
+    description: 'Additional items (products, addons)',
+    type: [CreateWorkspaceSubscriptionItemDto],
+  })
+  @ValidateNested({ each: true })
+  @Type(() => CreateWorkspaceSubscriptionItemDto)
+  @IsArray()
+  @IsOptional()
+  items?: CreateWorkspaceSubscriptionItemDto[];
+}
+
+export class AddItemToSubscriptionDto {
+  @ApiProperty({
+    description: 'Subscription ID to add item to',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  subscriptionId: string;
+
+  @ApiProperty({
+    description: 'Subscription item to add',
+    type: CreateWorkspaceSubscriptionItemDto,
+  })
+  @ValidateNested()
+  @Type(() => CreateWorkspaceSubscriptionItemDto)
+  item: CreateWorkspaceSubscriptionItemDto;
+}
+
+export class UpdateWorkspaceSubscriptionDto {
+  @ApiPropertyOptional({
+    description: 'Stripe subscription ID',
+    example: 'sub_1234567890',
+  })
+  @IsString()
+  @IsOptional()
+  stripeSubscriptionId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Subscription status',
+    enum: ['ACTIVE', 'INACTIVE', 'PENDING', 'CANCELLED', 'EXPIRED', 'SUSPENDED'],
+    example: 'ACTIVE',
+  })
+  @IsEnum(['ACTIVE', 'INACTIVE', 'PENDING', 'CANCELLED', 'EXPIRED', 'SUSPENDED'])
+  @IsOptional()
+  status?: 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'CANCELLED' | 'EXPIRED' | 'SUSPENDED';
+
+  @ApiPropertyOptional({
+    description: 'Subscription start date',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  @Type(() => Date)
+  @IsOptional()
+  startDate?: Date;
+
+  @ApiPropertyOptional({
     description: 'Subscription end date',
     example: '2024-12-31T23:59:59.999Z',
   })
   @Type(() => Date)
   @IsOptional()
   endDate?: Date;
-}
 
-export class UpdateWorkspaceSubscriptionDto extends PartialType(CreateWorkspaceSubscriptionDto) {
   @ApiPropertyOptional({
     description: 'Is subscription active',
+    example: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+}
+
+export class UpdateWorkspaceSubscriptionItemDto {
+  @ApiPropertyOptional({
+    description: 'Quantity',
+    example: 2,
+  })
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  quantity?: number;
+
+  @ApiPropertyOptional({
+    description: 'Unit price in cents',
+    example: 9999,
+  })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  unitPrice?: number;
+
+  @ApiPropertyOptional({
+    description: 'Total price in cents',
+    example: 19998,
+  })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  totalPrice?: number;
+
+  @ApiPropertyOptional({
+    description: 'Item start date',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  @Type(() => Date)
+  @IsOptional()
+  startDate?: Date;
+
+  @ApiPropertyOptional({
+    description: 'Item end date',
+    example: '2024-12-31T23:59:59.999Z',
+  })
+  @Type(() => Date)
+  @IsOptional()
+  endDate?: Date;
+
+  @ApiPropertyOptional({
+    description: 'Item status',
+    enum: ['ACTIVE', 'INACTIVE', 'PENDING', 'CANCELLED', 'EXPIRED', 'SUSPENDED'],
+    example: 'ACTIVE',
+  })
+  @IsEnum(['ACTIVE', 'INACTIVE', 'PENDING', 'CANCELLED', 'EXPIRED', 'SUSPENDED'])
+  @IsOptional()
+  status?: 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'CANCELLED' | 'EXPIRED' | 'SUSPENDED';
+
+  @ApiPropertyOptional({
+    description: 'Is item active',
     example: true,
   })
   @IsBoolean()
@@ -1168,21 +1370,13 @@ export class WorkspaceSubscriptionQueryDto {
   officeLocationId?: string;
 
   @ApiPropertyOptional({
-    description: 'Filter by plan ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    description: 'Filter by subscription status',
+    enum: ['ACTIVE', 'INACTIVE', 'PENDING', 'CANCELLED', 'EXPIRED', 'SUSPENDED'],
+    example: 'ACTIVE',
   })
-  @IsUUID()
+  @IsEnum(['ACTIVE', 'INACTIVE', 'PENDING', 'CANCELLED', 'EXPIRED', 'SUSPENDED'])
   @IsOptional()
-  planId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by billing cycle',
-    enum: BillingCycle,
-    example: BillingCycle.MONTHLY,
-  })
-  @IsEnum(BillingCycle)
-  @IsOptional()
-  billingCycle?: BillingCycle;
+  status?: 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'CANCELLED' | 'EXPIRED' | 'SUSPENDED';
 
   @ApiPropertyOptional({
     description: 'Filter by active status',
@@ -1196,22 +1390,22 @@ export class WorkspaceSubscriptionQueryDto {
   @ApiPropertyOptional({
     description: 'Page number',
     example: 1,
-    minimum: 1,
+    default: 1,
   })
-  @IsNumber()
+  @IsInt()
   @Min(1)
   @IsOptional()
   @Type(() => Number)
   page?: number;
 
   @ApiPropertyOptional({
-    description: 'Items per page',
+    description: 'Number of items per page',
     example: 10,
-    minimum: 1,
-    maximum: 100,
+    default: 10,
   })
-  @IsNumber()
+  @IsInt()
   @Min(1)
+  @Max(100)
   @IsOptional()
   @Type(() => Number)
   limit?: number;

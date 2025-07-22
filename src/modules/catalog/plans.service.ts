@@ -611,7 +611,6 @@ export class PlansService {
     if (!planPrice) {
       throw new NotFoundException('Plan price not found');
     }
-
     return planPrice;
   }
 
@@ -714,4 +713,7 @@ export class PlansService {
       throw new BadRequestException('Failed to delete plan price');
     }
   }
+
+
+
 }

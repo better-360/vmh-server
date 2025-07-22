@@ -5,25 +5,20 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { UserService } from '../user/user.service';
-import { ChangePasswordDto, LoginDto, RegisterDto } from 'src/dtos/user.dto';
+import { ChangePasswordDto, LoginDto } from 'src/dtos/user.dto';
 import { TokenService } from './token.service';
-import { OAuth2Client } from 'google-auth-library';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Events } from 'src/common/enums/event.enum';
 import { JwtService } from '@nestjs/jwt';
-import { EmailVerifyService } from './verify.service';
 
 @Injectable()
 export class AuthService {
-  private oAuth2Client: OAuth2Client;
   constructor(
     private readonly userService: UserService,
     private tokenService: TokenService,
     private eventEmitter: EventEmitter2,
     private readonly jwtService: JwtService,
-    private readonly verifyService: EmailVerifyService,
   ) {
-    this.oAuth2Client = new OAuth2Client(process.env.WEB_CLIENT_ID);
   }
 
 
@@ -32,22 +27,14 @@ export class AuthService {
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
-
     const isPasswordValid = await this.userService.checkPassword(credentials);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
-
-    // Kullanıcı bilgilerini kopyala
     const { ...rest } = user;
     const accessToken = this.tokenService.generateAccessToken(user);
     const refreshToken = this.tokenService.generateRefreshToken(user);
 
-    // Eğer müşteri kimliği yoksa oluştur
-    let customerId = user.stripeCustomerId;
-    if (!customerId) {
-      customerId = await this.userService.createStripeCustomerId(user);
-    }
 
     this.eventEmitter.emit(Events.USER_LOGIN, {
       email: user.email,
@@ -55,7 +42,7 @@ export class AuthService {
     });
 
     return {
-      user: { ...rest, customerStripeID: customerId },
+      user: { ...rest},
       tokens: {
         accessToken,
         refreshToken,
@@ -95,28 +82,6 @@ export class AuthService {
     }
   }
 
-  async validateJwtPayload(payload: any) {
-    const user = await this.userService.findUserByEmail(payload);
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-    return user;
-  }
-
-  async verifyJwtPayload(token: string) {
-    try {
-      const payload = await this.jwtService.verifyAsync(token); // Token doğrula
-      const user = await this.userService.checkUserByEmail(payload.email);
-
-      if (!user) {
-        throw new UnauthorizedException('User not found');
-      }
-      return user;
-    } catch (error) {
-      throw new UnauthorizedException('Invalid or expired token');
-    }
-  }
-
 
   async changeUserpassword(
     userId: string,
@@ -136,24 +101,42 @@ export class AuthService {
 
     await this.userService.setNewPassword(user.id, data.newPassword);
     const response = {
-      message: 'Şifre başarıyla değiştirildi',
+      message: 'Password changed successfully',
     };
     return response;
   }
 
-  async verifyGoogleIDToken(idToken: string) {
-    if (!idToken || typeof idToken !== 'string') {
-      throw new HttpException('Invalid Token', HttpStatus.UNAUTHORIZED);
+
+  async checkEmailisExist(
+    email: string,
+  ): Promise<{ exists: boolean; message: string }> {
+    const user = await this.userService.findOne(email);
+    if (user) {
+      return { exists: true, message: 'Email is already registered.' };
+    } else {
+      return { exists: false, message: 'Email is available.' };
     }
+  }
+
+    async validateJwtPayload(payload: any) {
+    const user = await this.userService.findUserByEmail(payload);
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+    return user;
+  }
+
+  async verifyJwtPayload(token: string) {
     try {
-      const ticket = await this.oAuth2Client.verifyIdToken({
-        idToken: idToken,
-        audience: process.env.WEB_CLIENT_ID, // Web Client ID
-      });
-      const payload = ticket.getPayload();
-      return payload;
+      const payload = await this.jwtService.verifyAsync(token);
+      const user = await this.userService.checkUserByEmail(payload.email);
+
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+      return user;
     } catch (error) {
-      throw new HttpException('Invalid Token', HttpStatus.UNAUTHORIZED);
+      throw new UnauthorizedException('Invalid or expired token');
     }
   }
 
