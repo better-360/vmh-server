@@ -103,6 +103,7 @@ export class PlansService {
   }
 
   async getPlanById(id: string) {
+    console.log('id',id)
     const plan = await this.prisma.plan.findFirst({
       where: { id, isDeleted: false },
       include: {
@@ -573,16 +574,13 @@ export class PlansService {
   // =====================
 
   async getPlanPrices(query?: PlanPriceQueryDto) {
-    const { planId, billingCycle, currency, isActive } = query || {};
-
+    const { planId, billingCycle, currency } = query || {};
     const where: Prisma.PlanPriceWhereInput = {
       isDeleted: false,
       ...(planId && { planId }),
       ...(billingCycle && { billingCycle }),
       ...(currency && { currency }),
-      ...(isActive !== undefined && { isActive }),
     };
-
     return await this.prisma.planPrice.findMany({
       where,
       include: {
@@ -595,7 +593,7 @@ export class PlansService {
   }
 
   async getPlanPriceById(id: string) {
-    const planPrice = await this.prisma.planPrice.findFirst({
+    const planPrice = await this.prisma.planPrice.findUnique({
       where: { id, isDeleted: false },
       include: {
         plan: {

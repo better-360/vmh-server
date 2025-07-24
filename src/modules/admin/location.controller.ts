@@ -28,7 +28,7 @@ import { LocationService } from '../catalog/location.service';
 export class AdminLocationController {
   constructor(private readonly locationService: LocationService) {}
 
-  @Get()
+  @Get('all')
   @ApiOperation({ summary: 'Get all office locations with filters and pagination' })
   @ApiResponse({
     status: 200,

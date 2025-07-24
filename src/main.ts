@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { writeFileSync } from 'fs';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -33,6 +34,7 @@ async function bootstrap() {
 
   SwaggerModule.setup(swaggerPath, app, document);
   SwaggerModule.setup('docs', app, document);
+  writeFileSync('./swagger-spec.json', JSON.stringify(document, null, 2));
   await app.listen(process.env.SERVER_PORT || 5001);
 }
 bootstrap();

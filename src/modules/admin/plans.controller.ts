@@ -39,7 +39,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { PlansService } from '../catalog/plans.service';
 import { AddonsService } from '../catalog/addons.service';
 
-@ApiTags('Plan Management')
+@ApiTags('Admin Plan Management')
 @ApiBearerAuth()
 @Controller('admin/plans')
 @UseGuards(JwtAuthGuard)
@@ -278,7 +278,7 @@ export class AdminPlansController {
   // PLAN PRICES ENDPOINTS
   // =====================
 
-  @Get('plan-prices')
+  @Get('plan-prices/all')
   @ApiOperation({ 
     summary: 'Get plan prices',
     description: 'Retrieve plan prices with optional filtering by plan, billing cycle, or currency'
@@ -286,7 +286,6 @@ export class AdminPlansController {
   @ApiQuery({ name: 'planId', required: false, type: String, description: 'Filter by plan ID' })
   @ApiQuery({ name: 'billingCycle', required: false, type: String, description: 'Filter by billing cycle (monthly, yearly, etc.)' })
   @ApiQuery({ name: 'currency', required: false, type: String, description: 'Filter by currency code' })
-  @ApiQuery({ name: 'isActive', required: false, type: Boolean, description: 'Filter by active status' })
   @ApiResponse({ 
     status: 200, 
     description: 'Plan prices retrieved successfully',
@@ -306,6 +305,7 @@ export class AdminPlansController {
     }
   })
   async getPlanPrices(@Query() query: PlanPriceQueryDto) {
+    console.log('raw',query)
     return this.plansService.getPlanPrices(query);
   }
 
