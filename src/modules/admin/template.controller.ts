@@ -21,8 +21,8 @@ import {
   ApiBadRequestResponse,
   ApiConflictResponse
 } from '@nestjs/swagger';
-import { PlansService } from './plans.service';
-import { CatalogService } from './catalog.service';
+import { PlansService } from '../catalog/plans.service';
+import { CatalogService } from '../catalog/catalog.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   CreatePlanDto,
@@ -43,7 +43,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiTags('Template Management')
 @ApiBearerAuth()
-@Controller('templates')
+@Controller('admin/catalog/templates')
 @UseGuards(JwtAuthGuard)
 @Public()
 export class TemplatesController {

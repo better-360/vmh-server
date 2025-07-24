@@ -1,6 +1,6 @@
 import { Controller, Body, Post, Get, Param, Req } from '@nestjs/common';
 import { EditTicketStatusDto, TicketMessageDto } from 'src/dtos/support.dto';
-import { SupportService } from '../../support/support.service';
+import { SupportService } from '../support/support.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/common/decorators/roles.decorator';
 

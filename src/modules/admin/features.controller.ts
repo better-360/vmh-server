@@ -21,9 +21,9 @@ import {
   ApiBadRequestResponse,
   ApiConflictResponse
 } from '@nestjs/swagger';
-import { CatalogService } from './catalog.service';
-import { FeaturesService } from './features.service';
-import { PlansService } from './plans.service';
+import { CatalogService } from '../catalog/catalog.service';
+import { FeaturesService } from '../catalog/features.service';
+import { PlansService } from '../catalog/plans.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   CreatePlanFeatureDto,
@@ -39,14 +39,12 @@ import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiTags('Feature Management')
 @ApiBearerAuth()
-@Controller('features')
+@Controller('admin/features')
 @UseGuards(JwtAuthGuard)
 @Public()
-export class FeaturesController {
+export class AdminFeaturesController {
   constructor(
-    private readonly catalogService: CatalogService,
     private readonly featuresService: FeaturesService,
-    private readonly plansService: PlansService,
   ) {}
   
   // =====================
