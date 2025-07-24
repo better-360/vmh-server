@@ -21,6 +21,7 @@ export class PlansService {
   async getPlans(query?: PlanQueryDto) {
     const {
       isActive,
+      officeLocationId,
       isDeleted = false,
       search,
       page = 1,

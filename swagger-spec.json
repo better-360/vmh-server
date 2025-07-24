@@ -2652,6 +2652,16 @@
             }
           },
           {
+            "name": "officeLocationId",
+            "required": false,
+            "in": "query",
+            "description": "Office Location ID",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          },
+          {
             "name": "isDeleted",
             "required": false,
             "in": "query",
@@ -4496,6 +4506,16 @@
             "schema": {
               "example": true,
               "type": "boolean"
+            }
+          },
+          {
+            "name": "officeLocationId",
+            "required": false,
+            "in": "query",
+            "description": "Office Location ID",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
             }
           },
           {
