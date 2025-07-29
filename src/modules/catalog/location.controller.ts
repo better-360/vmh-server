@@ -1,25 +1,32 @@
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import {
-  Controller,
-  Get,
-  Param,
-  Query,
-} from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags, ApiQuery, ApiParam } from '@nestjs/swagger';
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiQuery,
+  ApiParam,
+} from '@nestjs/swagger';
 import { LocationService } from './location.service';
 import {
   OfficeLocationResponseDto,
   OfficeLocationQueryDto,
 } from 'src/dtos/location.dto';
 import { Public } from 'src/common/decorators/public.decorator';
+import { PlansService } from './plans.service';
 
 @ApiTags('Office Locations')
 @Controller('locations')
 @Public()
 export class LocationController {
-  constructor(private readonly locationService: LocationService) {}
+  constructor(
+    private readonly locationService: LocationService,
+    private readonly plansService: PlansService,
+  ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all office locations with filters and pagination' })
+  @ApiOperation({
+    summary: 'Get all office locations with filters and pagination',
+  })
   @ApiResponse({
     status: 200,
     description: 'List of office locations retrieved successfully',
@@ -59,4 +66,8 @@ export class LocationController {
     return await this.locationService.getOfficeLocationById(id);
   }
 
+  @Get(':id/plans')
+  async getLocationPlans(@Param('id') id: string) {
+    return await this.plansService.getPlanByOfficeLocationId(id);
+  }
 }

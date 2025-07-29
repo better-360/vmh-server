@@ -4958,6 +4958,29 @@
         ]
       }
     },
+    "/api/locations/{id}/plans": {
+      "get": {
+        "operationId": "LocationController_getLocationPlans",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Office Locations"
+        ]
+      }
+    },
     "/api/admin/catalog/templates/all": {
       "get": {
         "operationId": "TemplatesController_getPlanTemplates",
@@ -6313,25 +6336,16 @@
         ]
       }
     },
-    "/api/shipping/speeds/location/{locationId}/{speedId}": {
+    "/api/shipping/speeds/remove-location/{id}": {
       "delete": {
         "operationId": "ShippingSpeedController_removeFromLocation",
         "summary": "Remove a shipping speed from a location",
         "parameters": [
           {
-            "name": "locationId",
+            "name": "id",
             "required": true,
             "in": "path",
-            "description": "Office location ID",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "speedId",
-            "required": true,
-            "in": "path",
-            "description": "Shipping speed ID",
+            "description": "RelationID",
             "schema": {
               "type": "string"
             }
@@ -6737,25 +6751,16 @@
         ]
       }
     },
-    "/api/shipping/carriers/location/{locationId}/{carrierId}": {
+    "/api/shipping/carriers/remove-location/{id}": {
       "delete": {
         "operationId": "CarrierController_removeFromLocation",
         "summary": "Remove a carrier from a location",
         "parameters": [
           {
-            "name": "locationId",
+            "name": "id",
             "required": true,
             "in": "path",
-            "description": "Office location ID",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "carrierId",
-            "required": true,
-            "in": "path",
-            "description": "Carrier ID",
+            "description": "Relation ID",
             "schema": {
               "type": "string"
             }

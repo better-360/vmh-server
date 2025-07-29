@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import {
   CreateShippingSpeedDto,
@@ -74,7 +74,19 @@ export class ShippingSpeedService {
   }
 
   async assignToLocation(dto: AssignShippingSpeedToLocationDto) {
+    const exists=await this.prisma.deliverySpeedPlanMapping.findUnique({
+      where:{
+        deliverySpeedId_officeLocationId:{
+          deliverySpeedId:dto.deliverySpeedId,
+          officeLocationId:dto.officeLocationId
+        }
+      }
+    })
+    if(exists){
+      throw new ConflictException('Delivery Speed Already Assigned')
+    }
     try {
+
       return await this.prisma.deliverySpeedPlanMapping.create({
         data: {
           deliverySpeedId: dto.deliverySpeedId,
@@ -89,19 +101,16 @@ export class ShippingSpeedService {
     }
   }
 
-  async removeFromLocation(locationId: string, speedId: string) {
-    const mapping = await this.prisma.deliverySpeedPlanMapping.findFirst({
-      where: { officeLocationId: locationId, deliverySpeedId: speedId },
+  async removeFromLocation(relationId:string) {
+    const mapping = await this.prisma.deliverySpeedPlanMapping.findUnique({
+      where: { id:relationId},
     });
+   
     if (!mapping) {
-      this.logger.warn(`Shipping speed ${speedId} not assigned to location ${locationId}`);
       throw new NotFoundException('Shipping speed not found for this location.');
     }
     try {
-      return await this.prisma.deliverySpeedPlanMapping.update({
-        where: { id: mapping.id },
-        data: { isActive: false, deletedAt: new Date() },
-      });
+      return await this.prisma.deliverySpeedPlanMapping.delete({where: { id: mapping.id }});
     } catch (error) {
       this.logger.error('Failed to remove shipping speed from location', error);
       throw new BadRequestException('Unable to remove shipping speed from location.');
@@ -110,10 +119,11 @@ export class ShippingSpeedService {
 
   async findAssigned(locationId: string) {
     try {
-      return await this.prisma.deliverySpeedPlanMapping.findMany({
+      const assigned= await this.prisma.deliverySpeedPlanMapping.findMany({
         where: { officeLocationId: locationId, isActive: true, deletedAt: null },
         include: { deliverySpeed: true },
       });
+      return assigned;
     } catch (error) {
       this.logger.error('Failed to fetch assigned shipping speeds', error);
       throw new BadRequestException('Unable to retrieve assigned shipping speeds.');
@@ -204,10 +214,7 @@ export class PackagingOptionService {
       throw new NotFoundException('Packaging option not found for this location.');
     }
     try {
-      return await this.prisma.packagingTypePlanMapping.update({
-        where: { id: mapping.id },
-        data: { isActive: false, deletedAt: new Date() },
-      });
+      return await this.prisma.packagingTypePlanMapping.delete({where: { id: mapping.id }});
     } catch (error) {
       this.logger.error('Failed to remove packaging option from location', error);
       throw new BadRequestException('Unable to remove packaging option from location.');
@@ -303,7 +310,7 @@ export class CarrierService {
     });
     if (exists) {
       this.logger.warn(`Carrier ${carrierId} already assigned to location ${locationId}`);
-      throw new BadRequestException('Carrier already assigned to this location.');
+      throw new ConflictException('Carrier already assigned to this location.');
     }
     try {
       return await this.prisma.carrierAvailability.create({ data: { officeLocationId: locationId, carrierId } });
@@ -313,12 +320,12 @@ export class CarrierService {
     }
   }
 
-  async removeFromLocation(locationId: string, carrierId: string) {
-    const mapping = await this.prisma.carrierAvailability.findFirst({
-      where: { officeLocationId: locationId, carrierId },
+  async removeFromLocation(relationId: string) {
+    const mapping = await this.prisma.carrierAvailability.findUnique({
+      where: { id:relationId },
     });
     if (!mapping) {
-      this.logger.warn(`Carrier ${carrierId} not assigned to location ${locationId}`);
+      this.logger.warn(`Carrier location not assigned`);
       throw new NotFoundException('Carrier not assigned to this location.');
     }
     try {

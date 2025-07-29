@@ -59,25 +59,23 @@ export class ShippingSpeedController {
     return this.speedService.assignToLocation(dto);
   }
 
-  @Delete('location/:locationId/:speedId')
+  @Delete('remove-location/:id')
   @ApiOperation({ summary: 'Remove a shipping speed from a location' })
-  @ApiParam({ name: 'locationId', description: 'Office location ID' })
-  @ApiParam({ name: 'speedId', description: 'Shipping speed ID' })
+  @ApiParam({ name: 'id', description: 'RelationID' })
   @ApiResponse({ status: 200, description: 'Assignment removed.' })
   @ApiNotFoundResponse({ description: 'Assignment not found.' })
   removeFromLocation(
-    @Param('locationId') locationId: string,
-    @Param('speedId') speedId: string,
+    @Param('id') relationId: string,
   ) {
-    return this.speedService.removeFromLocation(locationId, speedId);
+    return this.speedService.removeFromLocation(relationId);
   }
 
   @Get('location/:locationId')
   @ApiOperation({ summary: 'List active shipping speeds for a location' })
   @ApiParam({ name: 'locationId', description: 'Office location ID' })
   @ApiResponse({ status: 200, description: 'List of speeds.' })
-  findAssigned(@Param('locationId') locationId: string) {
-    return this.speedService.findAssigned(locationId);
+  async findAssigned(@Param('locationId') locationId: string) {
+    return await this.speedService.findAssigned(locationId);
   }
 }
 
@@ -208,16 +206,14 @@ export class CarrierController {
     return this.carrierService.assignToLocation(locationId, carrierId);
   }
 
-  @Delete('location/:locationId/:carrierId')
+  @Delete('remove-location/:id')
   @ApiOperation({ summary: 'Remove a carrier from a location' })
-  @ApiParam({ name: 'locationId', description: 'Office location ID' })
-  @ApiParam({ name: 'carrierId', description: 'Carrier ID' })
+  @ApiParam({ name: 'id', description: 'Relation ID' })
   @ApiResponse({ status: 200, description: 'Assignment removed.' })
   @ApiNotFoundResponse({ description: 'Assignment not found.' })
   removeFromLocation(
-    @Param('locationId') locationId: string,
-    @Param('carrierId') carrierId: string
+    @Param('id') relationId: string,
   ) {
-    return this.carrierService.removeFromLocation(locationId, carrierId);
+    return this.carrierService.removeFromLocation(relationId);
   }
 }

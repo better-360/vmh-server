@@ -11,6 +11,7 @@ import {
   CreatePlanWithFeaturesDto,
 } from 'src/dtos/plan.dto';
 import { Prisma } from '@prisma/client';
+import { TIMEOUT } from 'dns';
 
 @Injectable()
 export class PlansService {
@@ -77,6 +78,32 @@ export class PlansService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  async getPlanByOfficeLocationId(officeLocation:string) {
+    return await this.prisma.plan.findMany({
+      where: { isActive: true, isDeleted: false, officeLocationId:officeLocation },
+      include: {
+        prices: {
+          where: { isActive: true, isDeleted: false },
+          orderBy: { amount: 'asc' },
+        },
+        planAddons:{
+          include:{
+          addon:true,
+          }
+        },
+        features: {
+          where: { isActive: true, isDeleted: false },
+          include: {
+            feature: {
+              select: { id: true, name: true, description: true, imageUrl: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async getActivePlansWithPrices() {

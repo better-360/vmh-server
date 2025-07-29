@@ -621,7 +621,7 @@ model PlanAddon {
   planId           String    @db.Uuid
   addonId          String    @db.Uuid
   isIncludedInPlan Boolean   @default(false) // Plan içinde dahil mi yoksa ekstra satın alınıyor mu?
-  discountPercent  Int? // Plan sahipleri için indirim yüzdesi (0-100)
+  discountPercent  Int?
   isRequired       Boolean   @default(false) // Bu addon plan için zorunlu mu?
   displayOrder     Int? // Gösterim sırası
   isActive         Boolean   @default(true)
