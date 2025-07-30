@@ -44,7 +44,7 @@ async handleStripeSuccess(@Query('session_id') sessionId: string) {
   const session = await this.stripeService.retrieveCheckoutSession(sessionId);
   console.log(session.metadata.companyId);
   const invoice=await this.stripeService.getInvoice(session.invoice as string);
-  const payment_intent=await this.stripeService.getPaymentIntent(invoice.payment_intent as string);
+  const payment_intent=await this.stripeService.getPaymentIntent((invoice as any).payment_intent as string);
  console.log(payment_intent.payment_method)
   console.log('Stripe Checkout Session:', session);
   console.log('Stripe Invoice:', invoice);

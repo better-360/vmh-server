@@ -5,6 +5,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { BullModule } from '@nestjs/bull';
 import { ScheduleModule } from '@nestjs/schedule';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -15,8 +16,9 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
     }),
     BullModule.forRoot({
       redis: {
-        host: 'localhost',
-        port: 6379,
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT) || 6379,
+        password: process.env.REDIS_PASSWORD || undefined,
       },
       defaultJobOptions: {
         attempts: 3,
@@ -26,6 +28,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
       },
     })
   ],
+  controllers: [HealthController],
   providers: [
     // {
     //   provide: APP_GUARD,

@@ -1,0 +1,101 @@
+# Node modules
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store
+
+# Build outputs
+dist
+build
+.next
+out
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.docker
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# IDE and editors
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Test files
+test
+tests
+__tests__
+**/*.test.js
+**/*.test.ts
+**/*.spec.js
+**/*.spec.ts
+jest.config.js
+coverage
+
+# Documentation
+README.md
+*.md
+docs
+
+# Temporary files
+tmp
+temp
+.tmp
+
+# PM2
+ecosystem.config.js
+.pm2
+
+# Cache
+.cache
+.parcel-cache
+
+# Database
+*.sqlite
+*.db
+
+# Uploads and user content
+uploads
+public/uploads
+
+# SSL certificates
+ssl
+*.pem
+*.key
+*.crt
+
+# Deployment scripts
+deploy.sh
+deploy-docker.sh
+
+# Lock files (we copy package.json manually)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Prisma
+prisma/migrations/*.sql
