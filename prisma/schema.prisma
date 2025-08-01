@@ -546,6 +546,7 @@ model WorkspaceDeliveryAddress {
   country         String
   zipCode         String?
   isDefault       Boolean                 @default(false)
+  isConfirmed       Boolean                 @default(false)
   workspace       Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdAt       DateTime                @default(now())
   forwardRequests PackageForwardRequest[]
