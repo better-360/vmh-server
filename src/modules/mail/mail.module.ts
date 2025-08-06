@@ -1,12 +1,12 @@
-import { Global, Module } from '@nestjs/common';
-import { MailService } from './mail.service';
-import { NotificationListener } from './notification.listener';
-import { MailController } from './mail.controller';
+import { Module } from "@nestjs/common";
+import { MailService } from "./mail.service";
+import { MailController } from "./mail.controller";
+import { PrismaService } from "src/prisma.service";
 
-@Global()
 @Module({
-  providers: [MailService,NotificationListener],
-  exports: [MailService],
-  controllers: [MailController],
+    imports: [],
+    providers: [MailService, PrismaService],
+    exports: [MailService],
+    controllers: [MailController],
 })
 export class MailModule {}

@@ -3,15 +3,16 @@ import { Controller, Post, Req, Res, Headers, HttpStatus, BadRequestException } 
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { ConfigService } from '@nestjs/config';
-import { BillingService } from '../billing/billing.service';
+import { BillingService } from '../billing/billing.service'; // Disabled
 
 @Controller('webhook')
 export class WebhookController {
   private stripe: Stripe;
 
-  constructor(private configService: ConfigService,private billingService:BillingService) {
+  constructor(private configService: ConfigService,private billingService:BillingService) { 
     this.stripe = new Stripe(configService.get('STRIPE_SECRET_KEY'), {
     });
+  
   }
 
   @Post()

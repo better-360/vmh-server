@@ -1,13 +1,38 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import {
-  CreateInitialSubscriptionDto,
-  AddItemToSubscriptionDto,
-  UpdateWorkspaceSubscriptionDto,
-  UpdateWorkspaceSubscriptionItemDto,
-  WorkspaceSubscriptionQueryDto,
-} from 'src/dtos/plan.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, SubscriptionItemStatus, ProductType, BillingCycle } from '@prisma/client';
+
+export interface CreateSubscriptionItemDto {
+  mailboxId: string;
+  itemType: ProductType;
+  itemId: string;
+  priceId?: string;
+  billingCycle?: BillingCycle;
+  quantity?: number;
+  unitPrice: number;
+  currency?: string;
+  startDate: Date;
+  endDate?: Date;
+  itemName: string;
+  itemDescription?: string;
+}
+
+export interface UpdateSubscriptionItemDto {
+  quantity?: number;
+  unitPrice?: number;
+  endDate?: Date;
+  status?: SubscriptionItemStatus;
+  isActive?: boolean;
+}
+
+export interface SubscriptionItemQueryDto {
+  mailboxId?: string;
+  itemType?: ProductType;
+  status?: SubscriptionItemStatus;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+}
 
 @Injectable()
 export class SubscriptionService {
@@ -16,52 +41,52 @@ export class SubscriptionService {
   constructor(private readonly prisma: PrismaService) {}
   
   // =====================
-  // WORKSPACE SUBSCRIPTION OPERATIONS
+  // SUBSCRIPTION ITEM OPERATIONS
   // =====================
 
-  async getWorkspaceSubscriptions(query?: WorkspaceSubscriptionQueryDto) {
+  async getSubscriptionItems(query?: SubscriptionItemQueryDto) {
     const {
-      workspaceId,
-      officeLocationId,
+      mailboxId,
+      itemType,
       status,
-      isActive,
+      isActive = true,
       page = 1,
       limit = 10,
     } = query || {};
 
     const skip = (page - 1) * limit;
-    const where: Prisma.WorkspaceSubscriptionWhereInput = {
-      ...(workspaceId && { workspaceId }),
-      ...(officeLocationId && { officeLocationId }),
+    const where: Prisma.SubscriptionItemWhereInput = {
+      isActive,
+      ...(mailboxId && { mailboxId }),
+      ...(itemType && { itemType }),
       ...(status && { status }),
-      ...(isActive !== undefined && { isActive }),
     };
 
-    const [subscriptions, total] = await Promise.all([
-      this.prisma.workspaceSubscription.findMany({
+    const [items, total] = await Promise.all([
+      this.prisma.subscriptionItem.findMany({
         where,
         skip,
         take: limit,
         include: {
-          workspace: {
-            select: { id: true, name: true, isActive: true },
-          },
-          officeLocation: {
-            select: { id: true, label: true, addressLine: true, city: true, state: true },
-          },
-          items: {
-            where: { isActive: true },
-            orderBy: { createdAt: 'asc' },
+          mailbox: {
+            include: {
+              workspace: {
+                select: { id: true, name: true, isActive: true },
+              },
+              officeLocation: {
+                select: { id: true, label: true, addressLine: true, city: true, state: true },
+              },
+            },
           },
         },
         orderBy: { createdAt: 'desc' },
       }),
-      this.prisma.workspaceSubscription.count({ where }),
+      this.prisma.subscriptionItem.count({ where }),
     ]);
 
     return {
-      data: subscriptions,
-      meta: {
+      items,
+      pagination: {
         total,
         page,
         limit,
@@ -70,417 +95,310 @@ export class SubscriptionService {
     };
   }
 
-  async getWorkspaceSubscriptionById(id: string) {
-    const subscription = await this.prisma.workspaceSubscription.findFirst({
-      where: { id },
+  async getSubscriptionItemById(id: string) {
+    const item = await this.prisma.subscriptionItem.findFirst({
+      where: { id, isActive: true },
       include: {
-        workspace: {
-          select: { id: true, name: true, isActive: true },
-        },
-        officeLocation: true,
-        items: {
-          orderBy: { createdAt: 'asc' },
+        mailbox: {
+          include: {
+            workspace: {
+              select: { id: true, name: true, isActive: true },
+            },
+            officeLocation: {
+              select: { id: true, label: true, addressLine: true, city: true, state: true },
+            },
+          },
         },
       },
     });
 
-    if (!subscription) {
-      throw new NotFoundException('Workspace subscription not found');
+    if (!item) {
+      throw new NotFoundException(`Subscription item with ID ${id} not found`);
     }
 
-    return subscription;
+    return item;
   }
 
-  async createInitialSubscription(data: CreateInitialSubscriptionDto) {
+  async getSubscriptionItemsByMailbox(mailboxId: string, query?: Omit<SubscriptionItemQueryDto, 'mailboxId'>) {
+    return this.getSubscriptionItems({ ...query, mailboxId });
+  }
+
+  // =====================
+  // CREATE SUBSCRIPTION ITEM
+  // =====================
+
+  async createSubscriptionItem(createDto: CreateSubscriptionItemDto) {
     try {
-      // Check if workspace and office location exist
-      const [workspace, officeLocation] = await Promise.all([
-        this.prisma.workspace.findUnique({
-          where: { id: data.workspaceId, isActive: true, isDeleted: false },
-        }),
-        this.prisma.officeLocation.findUnique({
-          where: { id: data.officeLocationId, isActive: true, isDeleted: false },
-        }),
-      ]);
+      // Validate mailbox exists
+      const mailbox = await this.prisma.mailbox.findFirst({
+        where: { id: createDto.mailboxId, isActive: true },
+      });
 
-      if (!workspace) {
-        throw new NotFoundException('Workspace not found');
+      if (!mailbox) {
+        throw new NotFoundException(`Mailbox with ID ${createDto.mailboxId} not found`);
       }
 
-      if (!officeLocation) {
-        throw new NotFoundException('Office location not found');
-      }
+      // Calculate total price
+      const quantity = createDto.quantity || 1;
+      const totalPrice = createDto.unitPrice * quantity;
 
-      // Check if active subscription already exists for this office
-      const existingSubscription = await this.prisma.workspaceSubscription.findFirst({
-        where: {
-          workspaceId: data.workspaceId,
-          officeLocationId: data.officeLocationId,
+      const item = await this.prisma.subscriptionItem.create({
+        data: {
+          mailboxId: createDto.mailboxId,
+          itemType: createDto.itemType,
+          itemId: createDto.itemId,
+          priceId: createDto.priceId,
+          billingCycle: createDto.billingCycle || BillingCycle.MONTHLY,
+          quantity,
+          unitPrice: createDto.unitPrice,
+          totalPrice,
+          currency: createDto.currency || 'USD',
+          startDate: createDto.startDate,
+          endDate: createDto.endDate,
+          itemName: createDto.itemName,
+          itemDescription: createDto.itemDescription,
+          status: SubscriptionItemStatus.ACTIVE,
           isActive: true,
         },
-      });
-
-      if (existingSubscription) {
-        throw new ConflictException('Active subscription already exists for this office location');
-      }
-
-      // Validate plan price
-      const planPrice = await this.prisma.planPrice.findUnique({
-        where: { id: data.planPriceId },
-        include: { 
-          plan: true
-        },
-      });
-
-      if (!planPrice || !planPrice.plan) {
-        throw new NotFoundException('Plan price not found');
-      }
-
-      // Check if plan belongs to the office location
-      if (planPrice.plan.officeLocationId !== data.officeLocationId || 
-          !planPrice.plan.isActive || planPrice.plan.isDeleted) {
-        throw new NotFoundException('Plan not available for this office location');
-      }
-
-      // Calculate subscription end date based on plan's billing cycle
-      const subscriptionEndDate = this.calculateEndDate(data.startDate, planPrice.billingCycle);
-
-      // Validate additional items (addons/products)
-      if (data.items && data.items.length > 0) {
-        await this.validateSubscriptionItems(data.items, data.officeLocationId);
-      }
-
-      return await this.prisma.workspaceSubscription.create({
-        data: {
-          workspaceId: data.workspaceId,
-          officeLocationId: data.officeLocationId,
-          planId: planPrice.plan.id,
-          planPriceId: data.planPriceId,
-          billingCycle: planPrice.billingCycle,
-          stripeSubscriptionId: data.stripeSubscriptionId,
-          status: 'ACTIVE',
-          startDate: data.startDate,
-          endDate: subscriptionEndDate,
-          items: {
-            create: data.items?.map(item => ({
-              itemType: item.itemType,
-              itemId: item.itemId,
-              variantId: item.variantId,
-              billingCycle: item.billingCycle,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              totalPrice: item.totalPrice,
-              currency: item.currency || 'USD',
-              startDate: item.startDate,
-              endDate: item.endDate,
-              status: 'ACTIVE',
-              itemName: item.itemName,
-              itemDescription: item.itemDescription,
-            })) || [],
-          },
-        },
         include: {
-          workspace: {
-            select: { id: true, name: true, isActive: true },
-          },
-          officeLocation: true,
-          plan: true,
-          planPrice: true,
-          items: true,
-        },
-      });
-    } catch (error) {
-      this.logger.error(`Failed to create initial subscription: ${error.message}`);
-      if (error instanceof NotFoundException || error instanceof ConflictException || error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new BadRequestException('Failed to create initial subscription');
-    }
-  }
-
-  async addItemToSubscription(data: AddItemToSubscriptionDto) {
-    try {
-      // Check if subscription exists and is active
-      const subscription = await this.prisma.workspaceSubscription.findFirst({
-        where: { id: data.subscriptionId, isActive: true },
-        include: { officeLocation: true },
-      });
-
-      if (!subscription) {
-        throw new NotFoundException('Active subscription not found');
-      }
-
-      // Validate the item
-      await this.validateSubscriptionItems([data.item], subscription.officeLocationId);
-
-      // Add item to subscription
-      const subscriptionItem = await this.prisma.workspaceSubscriptionItem.create({
-        data: {
-          subscriptionId: data.subscriptionId,
-          itemType: data.item.itemType,
-          itemId: data.item.itemId,
-          variantId: data.item.variantId,
-          billingCycle: data.item.billingCycle,
-          quantity: data.item.quantity,
-          unitPrice: data.item.unitPrice,
-          totalPrice: data.item.totalPrice,
-          currency: data.item.currency || 'USD',
-          startDate: data.item.startDate,
-          endDate: data.item.endDate,
-          status: 'ACTIVE',
-          itemName: data.item.itemName,
-          itemDescription: data.item.itemDescription,
-        },
-      });
-
-      return subscriptionItem;
-    } catch (error) {
-      this.logger.error(`Failed to add item to subscription: ${error.message}`);
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new BadRequestException('Failed to add item to subscription');
-    }
-  }
-
-  async updateWorkspaceSubscription(id: string, data: UpdateWorkspaceSubscriptionDto) {
-    await this.getWorkspaceSubscriptionById(id); // Check if exists
-
-    try {
-      return await this.prisma.workspaceSubscription.update({
-        where: { id },
-        data: {
-          ...data,
-          updatedAt: new Date(),
-        },
-        include: {
-          workspace: {
-            select: { id: true, name: true, isActive: true },
-          },
-          officeLocation: true,
-          items: {
-            orderBy: { createdAt: 'asc' },
+          mailbox: {
+            include: {
+              workspace: true,
+              officeLocation: true,
+            },
           },
         },
       });
+
+      this.logger.log(`Created subscription item ${item.id} for mailbox ${createDto.mailboxId}`);
+      return item;
     } catch (error) {
-      this.logger.error(`Failed to update workspace subscription: ${error.message}`);
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      this.logger.error(`Failed to create subscription item: ${error.message}`);
+      if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new BadRequestException('Failed to update workspace subscription');
+      throw new BadRequestException('Failed to create subscription item');
     }
   }
 
-  async updateWorkspaceSubscriptionItem(itemId: string, data: UpdateWorkspaceSubscriptionItemDto) {
+  // =====================
+  // UPDATE SUBSCRIPTION ITEM
+  // =====================
+
+  async updateSubscriptionItem(id: string, updateDto: UpdateSubscriptionItemDto) {
     try {
-      // Check if item exists
-      const existingItem = await this.prisma.workspaceSubscriptionItem.findUnique({
-        where: { id: itemId },
+      const existingItem = await this.prisma.subscriptionItem.findFirst({
+        where: { id, isActive: true },
       });
 
       if (!existingItem) {
-        throw new NotFoundException('Subscription item not found');
+        throw new NotFoundException(`Subscription item with ID ${id} not found`);
       }
 
-      return await this.prisma.workspaceSubscriptionItem.update({
-        where: { id: itemId },
+      // Recalculate total price if quantity or unit price changed
+      const quantity = updateDto.quantity ?? existingItem.quantity;
+      const unitPrice = updateDto.unitPrice ?? existingItem.unitPrice;
+      const totalPrice = quantity * unitPrice;
+
+      const updatedItem = await this.prisma.subscriptionItem.update({
+        where: { id },
         data: {
-          ...data,
+          ...updateDto,
+          ...(updateDto.quantity !== undefined && { quantity }),
+          ...(updateDto.unitPrice !== undefined && { unitPrice }),
+          totalPrice,
           updatedAt: new Date(),
         },
+        include: {
+          mailbox: {
+            include: {
+              workspace: true,
+              officeLocation: true,
+            },
+          },
+        },
       });
+
+      this.logger.log(`Updated subscription item ${id}`);
+      return updatedItem;
     } catch (error) {
-      this.logger.error(`Failed to update subscription item: ${error.message}`);
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      this.logger.error(`Failed to update subscription item ${id}: ${error.message}`);
+      if (error instanceof NotFoundException) {
         throw error;
       }
       throw new BadRequestException('Failed to update subscription item');
     }
   }
 
-  async cancelWorkspaceSubscription(id: string) {
-    await this.getWorkspaceSubscriptionById(id); // Check if exists
+  // =====================
+  // DELETE/DEACTIVATE SUBSCRIPTION ITEM
+  // =====================
 
+  async deactivateSubscriptionItem(id: string) {
     try {
-      // Cancel subscription and all its items
-      const [subscription] = await Promise.all([
-        this.prisma.workspaceSubscription.update({
-          where: { id },
-          data: {
-            status: 'CANCELLED',
-            isActive: false,
-            endDate: new Date(),
-            updatedAt: new Date(),
-          },
-        }),
-        this.prisma.workspaceSubscriptionItem.updateMany({
-          where: { subscriptionId: id },
-          data: {
-            status: 'CANCELLED',
-            isActive: false,
-            updatedAt: new Date(),
-          },
-        }),
-      ]);
-
-      return subscription;
-    } catch (error) {
-      this.logger.error(`Failed to cancel workspace subscription: ${error.message}`);
-      throw new BadRequestException('Failed to cancel workspace subscription');
-    }
-  }
-
-  async cancelSubscriptionItem(itemId: string) {
-    try {
-      const existingItem = await this.prisma.workspaceSubscriptionItem.findUnique({
-        where: { id: itemId },
+      const existingItem = await this.prisma.subscriptionItem.findFirst({
+        where: { id, isActive: true },
       });
 
       if (!existingItem) {
-        throw new NotFoundException('Subscription item not found');
+        throw new NotFoundException(`Subscription item with ID ${id} not found`);
       }
 
-      return await this.prisma.workspaceSubscriptionItem.update({
-        where: { id: itemId },
+      const deactivatedItem = await this.prisma.subscriptionItem.update({
+        where: { id },
         data: {
-          status: 'CANCELLED',
           isActive: false,
+          status: SubscriptionItemStatus.CANCELLED,
           updatedAt: new Date(),
         },
       });
+
+      this.logger.log(`Deactivated subscription item ${id}`);
+      return deactivatedItem;
     } catch (error) {
-      this.logger.error(`Failed to cancel subscription item: ${error.message}`);
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      this.logger.error(`Failed to deactivate subscription item ${id}: ${error.message}`);
+      if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new BadRequestException('Failed to cancel subscription item');
+      throw new BadRequestException('Failed to deactivate subscription item');
     }
   }
 
-  async getActiveSubscriptionsForOffice(officeLocationId: string) {
-    return await this.prisma.workspaceSubscription.findMany({
-      where: {
-        officeLocationId,
-        isActive: true,
-      },
-      include: {
-        workspace: {
-          select: { id: true, name: true, isActive: true },
+  async deleteSubscriptionItem(id: string) {
+    try {
+      const existingItem = await this.prisma.subscriptionItem.findFirst({
+        where: { id, isActive: true },
+      });
+
+      if (!existingItem) {
+        throw new NotFoundException(`Subscription item with ID ${id} not found`);
+      }
+
+      await this.prisma.subscriptionItem.delete({
+        where: { id },
+      });
+
+      this.logger.log(`Deleted subscription item ${id}`);
+      return { message: 'Subscription item deleted successfully' };
+    } catch (error) {
+      this.logger.error(`Failed to delete subscription item ${id}: ${error.message}`);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to delete subscription item');
+    }
+  }
+
+  // =====================
+  // BULK OPERATIONS
+  // =====================
+
+  async bulkUpdateSubscriptionItems(mailboxId: string, updateDto: Partial<UpdateSubscriptionItemDto>) {
+    try {
+      const result = await this.prisma.subscriptionItem.updateMany({
+        where: { mailboxId, isActive: true },
+        data: {
+          ...updateDto,
+          updatedAt: new Date(),
         },
-        items: {
-          where: { isActive: true },
-          orderBy: { createdAt: 'asc' },
-        },
-      },
+      });
+
+      this.logger.log(`Bulk updated ${result.count} subscription items for mailbox ${mailboxId}`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to bulk update subscription items for mailbox ${mailboxId}: ${error.message}`);
+      throw new BadRequestException('Failed to bulk update subscription items');
+    }
+  }
+
+  async deactivateAllSubscriptionItems(mailboxId: string) {
+    return this.bulkUpdateSubscriptionItems(mailboxId, {
+      isActive: false,
+      status: SubscriptionItemStatus.CANCELLED,
     });
   }
 
-  async getWorkspaceActiveSubscriptions(workspaceId: string) {
-    return await this.prisma.workspaceSubscription.findMany({
-      where: {
-        workspaceId,
-        isActive: true,
-      },
-      include: {
-        officeLocation: {
-          select: { id: true, label: true, addressLine: true, city: true, state: true },
-        },
-        items: {
-          where: { isActive: true },
-          orderBy: { createdAt: 'asc' },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  // =====================
+  // STATISTICS
+  // =====================
+
+  async getSubscriptionItemStatistics(mailboxId?: string) {
+    const where: Prisma.SubscriptionItemWhereInput = {
+      isActive: true,
+      ...(mailboxId && { mailboxId }),
+    };
+
+    const [
+      totalItems,
+      activeItems,
+      inactiveItems,
+      totalRevenue,
+      itemsByType,
+      itemsByStatus,
+    ] = await Promise.all([
+      this.prisma.subscriptionItem.count({ where }),
+      this.prisma.subscriptionItem.count({ 
+        where: { ...where, status: SubscriptionItemStatus.ACTIVE } 
+      }),
+      this.prisma.subscriptionItem.count({ 
+        where: { ...where, status: SubscriptionItemStatus.INACTIVE } 
+      }),
+      this.prisma.subscriptionItem.aggregate({
+        where,
+        _sum: { totalPrice: true },
+      }),
+      this.prisma.subscriptionItem.groupBy({
+        by: ['itemType'],
+        where,
+        _count: { id: true },
+      }),
+      this.prisma.subscriptionItem.groupBy({
+        by: ['status'],
+        where,
+        _count: { id: true },
+      }),
+    ]);
+
+    return {
+      totalItems,
+      activeItems,
+      inactiveItems,
+      totalRevenue: totalRevenue._sum.totalPrice || 0,
+      itemsByType: itemsByType.map(item => ({
+        type: item.itemType,
+        count: item._count.id,
+      })),
+      itemsByStatus: itemsByStatus.map(item => ({
+        status: item.status,
+        count: item._count.id,
+      })),
+    };
   }
 
   // =====================
   // HELPER METHODS
   // =====================
 
-  private calculateEndDate(startDate: Date, billingCycle: any): Date {
-    let endDate = new Date(startDate);
-    
-    switch (billingCycle) {
-      case 'MONTHLY':
-        endDate.setMonth(endDate.getMonth() + 1);
-        break;
-      case 'YEARLY':
-        endDate.setFullYear(endDate.getFullYear() + 1);
-        break;
-      case 'QUARTERLY':
-        endDate.setMonth(endDate.getMonth() + 3);
-        break;
-      case 'WEEKLY':
-        endDate.setDate(endDate.getDate() + 7);
-        break;
-      default:
-        endDate.setFullYear(endDate.getFullYear() + 999);
+  async validateMailboxExists(mailboxId: string) {
+    const mailbox = await this.prisma.mailbox.findFirst({
+      where: { id: mailboxId, isActive: true },
+    });
+
+    if (!mailbox) {
+      throw new NotFoundException(`Mailbox with ID ${mailboxId} not found`);
     }
-    
-    return endDate;
+
+    return mailbox;
   }
 
-  private async validateSubscriptionItems(items: any[], officeLocationId: string) {
-    for (const item of items) {
-      switch (item.itemType) {
-        case 'PRODUCT':
-          const product = await this.prisma.product.findFirst({
-            where: { 
-              id: item.itemId, 
-              isDeleted: false 
-            },
-          });
-          if (!product) {
-            throw new NotFoundException(`Product not found: ${item.itemId}`);
-          }
-          
-          // If variantId is provided, validate it
-          if (item.variantId) {
-            const variant = await this.prisma.productVariant.findFirst({
-              where: { 
-                id: item.variantId, 
-                productId: item.itemId,
-                isDeleted: false 
-              },
-            });
-            if (!variant) {
-              throw new NotFoundException(`Product variant not found: ${item.variantId}`);
-            }
-          }
-          break;
-
-        case 'ADDON':
-          const addon = await this.prisma.addon.findFirst({
-            where: { 
-              id: item.itemId, 
-              isActive: true,
-              isDeleted: false 
-            },
-          });
-          if (!addon) {
-            throw new NotFoundException(`Addon not found: ${item.itemId}`);
-          }
-          
-          // If variantId is provided, validate it
-          if (item.variantId) {
-            const variant = await this.prisma.addonVariant.findFirst({
-              where: { 
-                id: item.variantId, 
-                addonId: item.itemId,
-                isDeleted: false 
-              },
-            });
-            if (!variant) {
-              throw new NotFoundException(`Addon variant not found: ${item.variantId}`);
-            }
-          }
-          break;
-
-        default:
-          throw new BadRequestException(`Invalid item type: ${item.itemType}`);
-      }
-    }
+  async getActiveSubscriptionItemsForMailbox(mailboxId: string) {
+    return this.prisma.subscriptionItem.findMany({
+      where: {
+        mailboxId,
+        isActive: true,
+        status: SubscriptionItemStatus.ACTIVE,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 }

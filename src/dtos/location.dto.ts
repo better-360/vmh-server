@@ -249,10 +249,64 @@ export class OfficeLocationResponseDto {
   plans?: any[];
 
   @ApiPropertyOptional({
-    description: 'Workspace addresses at this location',
+    description: 'Phone number',
+    example: '+1234567890',
+  })
+  phone?: string;
+
+  @ApiPropertyOptional({
+    description: 'Email address',
+    example: 'office@location.com',
+  })
+  email?: string;
+
+  @ApiPropertyOptional({
+    description: 'Working hours',
+    example: '9 AM - 6 PM EST',
+  })
+  workingHours?: string;
+
+  @ApiPropertyOptional({
+    description: 'Timezone',
+    example: 'America/New_York',
+  })
+  timezone?: string;
+
+  @ApiProperty({
+    description: 'Is location deleted',
+    example: false,
+  })
+  isDeleted: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Mailboxes at this location',
     type: [Object],
   })
-  workspaceAddresses?: any[];
+  mailboxes?: any[];
+
+  @ApiPropertyOptional({
+    description: 'Available carriers at this location',
+    type: [Object],
+  })
+  aviableCarriers?: any[];
+
+  @ApiPropertyOptional({
+    description: 'Delivery speed options at this location',
+    type: [Object],
+  })
+  deliverySpeedOptions?: any[];
+
+  @ApiPropertyOptional({
+    description: 'Packaging type options at this location',
+    type: [Object],
+  })
+  packagingTypeOptions?: any[];
+
+  @ApiPropertyOptional({
+    description: 'Forward requests from this location',
+    type: [Object],
+  })
+  forwardRequest?: any[];
 }
 
 export class OfficeLocationQueryDto {

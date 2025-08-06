@@ -32,12 +32,21 @@ export class PackageActionService {
   async holdItemForPickup(itemId: string) { }
 
 
-  private async findPackage(packageId: string) {
-    return this.prismaService.package.findUnique({
-      where: { id: packageId },
+  private async findMail(mailId: string) {
+    return this.prismaService.mail.findUnique({
+      where: { id: mailId },
       include: {
         actions: true,
       },
     });
   }
+
+  calculateVolumetricWeight(box:any, divisor = 5000): number {
+    // 5000 is the divisor for cm^3 to kg conversion
+    if (!box || !box.length || !box.width || !box.height) {
+      throw new Error('Invalid box dimensions provided');
+    }
+    return (box.length * box.width * box.height) / divisor;
+  }
+
 }

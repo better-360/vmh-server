@@ -39,7 +39,7 @@ export class LocationController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async getAllOfficeLocations(@Query() query: OfficeLocationQueryDto) {
-    return await this.locationService.getOfficeLocations(query);
+    return await this.locationService.getLocations(query);
   }
 
   @Get('active')
@@ -50,7 +50,7 @@ export class LocationController {
     type: [OfficeLocationResponseDto],
   })
   async getActiveOfficeLocations() {
-    return await this.locationService.getActiveOfficeLocations();
+    return await this.locationService.getActiveLocations();
   }
 
   @Get(':id')
@@ -63,7 +63,7 @@ export class LocationController {
   })
   @ApiResponse({ status: 404, description: 'Office location not found' })
   async getOfficeLocationById(@Param('id') id: string) {
-    return await this.locationService.getOfficeLocationById(id);
+    return await this.locationService.getLocationById(id);
   }
 
   @Get(':id/plans')

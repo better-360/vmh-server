@@ -6,14 +6,14 @@ import { PlansController } from './plans.controller';
 import { PrismaService } from 'src/prisma.service';
 import { LocationController } from './location.controller';
 import { LocationService } from './location.service';
-import { TemplatesController } from '../admin/template.controller';
-import { AddonsService } from './addons.service';
-import { AddonsController } from './addons.controller';
+// import { TemplatesController } from '../admin/template.controller'; // Disabled
+import { MarketService } from './market.service';
+import { FeatureUsageService } from './usage.service';
 
 @Global() 
 @Module({
-  controllers: [PlansController, LocationController,TemplatesController, AddonsController],
-  providers: [CatalogService, FeaturesService, PlansService, PrismaService, LocationService, AddonsService],
-  exports: [CatalogService, FeaturesService, PlansService, LocationService, AddonsService],
+  controllers: [PlansController, LocationController], // TemplatesController disabled
+  providers: [CatalogService, FeaturesService, PlansService, PrismaService, LocationService, MarketService, FeatureUsageService],
+  exports: [CatalogService, FeaturesService, PlansService, LocationService, MarketService, FeatureUsageService],
 })
 export class CatalogModule {}   

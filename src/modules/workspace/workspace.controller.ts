@@ -16,16 +16,8 @@ import { WorkspaceService } from './workspace.service';
 import {
   CreateWorkspaceDto,
   UpdateWorkspaceDto,
-  AddWorkspaceMemberDto,
+  CreateWorkspaceMemberDto,
   UpdateWorkspaceMemberDto,
-  CreateWorkspaceAddressDto,
-  UpdateWorkspaceAddressDto,
-  CreateWorkspaceDeliveryAddressDto,
-  UpdateWorkspaceDeliveryAddressDto,
-  CreateWorkspaceSubscriptionDto,
-  WorkspaceQueryDto,
-  WorkspaceResponseDto,
-  WorkspaceDetailResponseDto,
 } from 'src/dtos/workspace.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -43,7 +35,7 @@ export class WorkspaceController {
   @Post()
   async createWorkspace(@Request() req, @Body() createWorkspaceDto: CreateWorkspaceDto) {
     const dtoInstance = await validateAndTransform(CreateWorkspaceDto, createWorkspaceDto);
-    const workspace = await this.workspaceService.createWorkspace(req.user.id, dtoInstance);
+    const workspace = await this.workspaceService.createWorkspace(dtoInstance, req.user.id);
     return {
       message: 'Workspace başarıyla oluşturuldu',
       data: workspace,
@@ -53,9 +45,9 @@ export class WorkspaceController {
   @ApiOperation({ summary: 'Kullanıcının workspace\'lerini listeler' })
   @ApiResponse({ status: 200, description: 'Workspace listesi başarıyla alındı' })
   @Get()
-  async getUserWorkspaces(@Request() req, @Query() query: WorkspaceQueryDto) {
-    const queryInstance = await validateAndTransform(WorkspaceQueryDto, query);
-    const result = await this.workspaceService.getUserWorkspaces(req.user.id, queryInstance);
+  async getUserWorkspaces(@Request() req, @Query() query: any) {
+    // const queryInstance = await validateAndTransform(WorkspaceQueryDto, query);
+    const result = await this.workspaceService.getUserWorkspaces(req.user.id);
     return {
       message: 'Workspace listesi başarıyla alındı',
       data: result,
@@ -82,7 +74,7 @@ export class WorkspaceController {
     @Body() updateWorkspaceDto: UpdateWorkspaceDto,
   ) {
     const dtoInstance = await validateAndTransform(UpdateWorkspaceDto, updateWorkspaceDto);
-    const workspace = await this.workspaceService.updateWorkspace(id, req.user.id, dtoInstance);
+    const workspace = await this.workspaceService.updateWorkspace(id, dtoInstance, req.user.id);
     return {
       message: 'Workspace başarıyla güncellendi',
       data: workspace,
@@ -116,10 +108,10 @@ export class WorkspaceController {
   async addWorkspaceMember(
     @Request() req,
     @Param('id') id: string,
-    @Body() addMemberDto: AddWorkspaceMemberDto,
+    @Body() addMemberDto: CreateWorkspaceMemberDto,
   ) {
-    const dtoInstance = await validateAndTransform(AddWorkspaceMemberDto, addMemberDto);
-    const member = await this.workspaceService.addWorkspaceMember(id, req.user.id, dtoInstance);
+    const dtoInstance = await validateAndTransform(CreateWorkspaceMemberDto, addMemberDto);
+    const member = await this.workspaceService.addWorkspaceMember(id, dtoInstance, req.user.id);
     return {
       message: 'Üye başarıyla eklendi',
       data: member,
@@ -136,7 +128,7 @@ export class WorkspaceController {
     @Body() updateMemberDto: UpdateWorkspaceMemberDto,
   ) {
     const dtoInstance = await validateAndTransform(UpdateWorkspaceMemberDto, updateMemberDto);
-    const member = await this.workspaceService.updateWorkspaceMember(id, memberId, req.user.id, dtoInstance);
+    const member = await this.workspaceService.updateWorkspaceMember(id, memberId, dtoInstance, req.user.id);
     return {
       message: 'Üye başarıyla güncellendi',
       data: member,
@@ -154,154 +146,5 @@ export class WorkspaceController {
   ) {
     const result = await this.workspaceService.removeWorkspaceMember(id, memberId, req.user.id);
     return result;
-  }
-
-  // Workspace adres yönetimi
-  @ApiOperation({ summary: 'Workspace adreslerini listeler' })
-  @ApiResponse({ status: 200, description: 'Workspace adresleri başarıyla alındı' })
-  @Get(':id/addresses')
-  async getWorkspaceAddresses(@Request() req, @Param('id') id: string) {
-    const addresses = await this.workspaceService.getWorkspaceAddresses(id, req.user.id);
-    return {
-      message: 'Workspace adresleri başarıyla alındı',
-      data: addresses,
-    };
-  }
-
-  @ApiOperation({ summary: 'Workspace\'e adres ekler' })
-  @ApiResponse({ status: 201, description: 'Adres başarıyla eklendi' })
-  @Post(':id/addresses')
-  async createWorkspaceAddress(
-    @Request() req,
-    @Param('id') id: string,
-    @Body() createAddressDto: CreateWorkspaceAddressDto,
-  ) {
-    const dtoInstance = await validateAndTransform(CreateWorkspaceAddressDto, createAddressDto);
-    const address = await this.workspaceService.createWorkspaceAddress(id, req.user.id, dtoInstance);
-    return {
-      message: 'Adres başarıyla eklendi',
-      data: address,
-    };
-  }
-
-  @ApiOperation({ summary: 'Workspace adresini günceller' })
-  @ApiResponse({ status: 200, description: 'Adres başarıyla güncellendi' })
-  @Put(':id/addresses/:addressId')
-  async updateWorkspaceAddress(
-    @Request() req,
-    @Param('id') id: string,
-    @Param('addressId') addressId: string,
-    @Body() updateAddressDto: UpdateWorkspaceAddressDto,
-  ) {
-    const dtoInstance = await validateAndTransform(UpdateWorkspaceAddressDto, updateAddressDto);
-    const address = await this.workspaceService.updateWorkspaceAddress(id, addressId, req.user.id, dtoInstance);
-    return {
-      message: 'Adres başarıyla güncellendi',
-      data: address,
-    };
-  }
-
-  @ApiOperation({ summary: 'Workspace adresini siler' })
-  @ApiResponse({ status: 200, description: 'Adres başarıyla silindi' })
-  @Delete(':id/addresses/:addressId')
-  @HttpCode(HttpStatus.OK)
-  async deleteWorkspaceAddress(
-    @Request() req,
-    @Param('id') id: string,
-    @Param('addressId') addressId: string,
-  ) {
-    const result = await this.workspaceService.deleteWorkspaceAddress(id, addressId, req.user.id);
-    return result;
-  }
-
-  // Workspace teslimat adresi yönetimi
-  @ApiOperation({ summary: 'Workspace teslimat adreslerini listeler' })
-  @ApiResponse({ status: 200, description: 'Teslimat adresleri başarıyla alındı' })
-  @Get(':id/delivery-addresses')
-  async getWorkspaceDeliveryAddresses(@Request() req, @Param('id') id: string) {
-    const deliveryAddresses = await this.workspaceService.getWorkspaceDeliveryAddresses(id, req.user.id);
-    return {
-      message: 'Teslimat adresleri başarıyla alındı',
-      data: deliveryAddresses,
-    };
-  }
-
-  @ApiOperation({ summary: 'Workspace\'e teslimat adresi ekler' })
-  @ApiResponse({ status: 201, description: 'Teslimat adresi başarıyla eklendi' })
-  @Post(':id/delivery-addresses')
-  async createWorkspaceDeliveryAddress(
-    @Request() req,
-    @Param('id') id: string,
-    @Body() createDeliveryAddressDto: CreateWorkspaceDeliveryAddressDto,
-  ) {
-    const dtoInstance = await validateAndTransform(CreateWorkspaceDeliveryAddressDto, createDeliveryAddressDto);
-    const deliveryAddress = await this.workspaceService.createWorkspaceDeliveryAddress(id, req.user.id, dtoInstance);
-    return {
-      message: 'Teslimat adresi başarıyla eklendi',
-      data: deliveryAddress,
-    };
-  }
-
-  @ApiOperation({ summary: 'Workspace teslimat adresini günceller' })
-  @ApiResponse({ status: 200, description: 'Teslimat adresi başarıyla güncellendi' })
-  @Put(':id/delivery-addresses/:deliveryAddressId')
-  async updateWorkspaceDeliveryAddress(
-    @Request() req,
-    @Param('id') id: string,
-    @Param('deliveryAddressId') deliveryAddressId: string,
-    @Body() updateDeliveryAddressDto: UpdateWorkspaceDeliveryAddressDto,
-  ) {
-    const dtoInstance = await validateAndTransform(UpdateWorkspaceDeliveryAddressDto, updateDeliveryAddressDto);
-    const deliveryAddress = await this.workspaceService.updateWorkspaceDeliveryAddress(
-      id,
-      deliveryAddressId,
-      req.user.id,
-      dtoInstance,
-    );
-    return {
-      message: 'Teslimat adresi başarıyla güncellendi',
-      data: deliveryAddress,
-    };
-  }
-
-  @ApiOperation({ summary: 'Workspace teslimat adresini siler' })
-  @ApiResponse({ status: 200, description: 'Teslimat adresi başarıyla silindi' })
-  @Delete(':id/delivery-addresses/:deliveryAddressId')
-  @HttpCode(HttpStatus.OK)
-  async deleteWorkspaceDeliveryAddress(
-    @Request() req,
-    @Param('id') id: string,
-    @Param('deliveryAddressId') deliveryAddressId: string,
-  ) {
-    const result = await this.workspaceService.deleteWorkspaceDeliveryAddress(id, deliveryAddressId, req.user.id);
-    return result;
-  }
-
-  // Workspace abonelik yönetimi
-  @ApiOperation({ summary: 'Workspace aboneliklerini listeler' })
-  @ApiResponse({ status: 200, description: 'Abonelikler başarıyla alındı' })
-  @Get(':id/subscriptions')
-  async getWorkspaceSubscriptions(@Request() req, @Param('id') id: string) {
-    const subscriptions = await this.workspaceService.getWorkspaceSubscriptions(id, req.user.id);
-    return {
-      message: 'Abonelikler başarıyla alındı',
-      data: subscriptions,
-    };
-  }
-
-  @ApiOperation({ summary: 'Workspace\'e abonelik ekler' })
-  @ApiResponse({ status: 201, description: 'Abonelik başarıyla eklendi' })
-  @Post(':id/subscriptions')
-  async createWorkspaceSubscription(
-    @Request() req,
-    @Param('id') id: string,
-    @Body() createSubscriptionDto: CreateWorkspaceSubscriptionDto,
-  ) {
-    const dtoInstance = await validateAndTransform(CreateWorkspaceSubscriptionDto, createSubscriptionDto);
-    const subscription = await this.workspaceService.createWorkspaceSubscription(id, req.user.id, dtoInstance);
-    return {
-      message: 'Abonelik başarıyla eklendi',
-      data: subscription,
-    };
   }
 } 

@@ -3,7 +3,7 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { AdminModule } from './admin/admin.module';
 import { FileManagerModule } from './file-manager/file-manager.module';
-import { MailModule } from './mail/mail.module';
+import { EmailModule } from './email/email.module';
 import { HttpModule } from '@nestjs/axios';
 import { SupportModule } from './support/support.module';
 import { StripeModule } from './stripe/stripe.module';
@@ -16,8 +16,11 @@ import { ReportModule } from './report/report.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { WorkspaceModule } from './workspace/workspace.module';
 import { ShippingModule } from './shipping/shipping.module';
-import { PackageModule } from './package/package.module';
+import { MailModule } from './mail/mail.module';
 import { BillingModule } from './billing/billing.module';
+import { EasyPostModule } from './easypost/easypost.module';
+import { MailboxModule } from './mailbox/mailbox.module';
+import { ProductModule } from './product/product.module';
 
 @Module({
   imports: [
@@ -27,7 +30,7 @@ import { BillingModule } from './billing/billing.module';
     AuthModule,
     UserModule,
     FileManagerModule,
-    MailModule,
+    EmailModule,
     AdminModule,
     HttpModule,
     SupportModule,
@@ -38,14 +41,17 @@ import { BillingModule } from './billing/billing.module';
     SubscriptionModule,
     ShippingModule,
     WorkspaceModule,
-    PackageModule,
-    BillingModule
+    MailModule,
+    BillingModule,
+    EasyPostModule,
+    MailboxModule,
+    ProductModule,
   ],
   exports: [
     AuthModule,
     UserModule,
     FileManagerModule,
-    MailModule,
+    EmailModule,
     AdminModule,
     SupportModule,
     StripeModule,
@@ -55,8 +61,11 @@ import { BillingModule } from './billing/billing.module';
     SubscriptionModule,
     ShippingModule,
     WorkspaceModule,
-    PackageModule,
-    BillingModule
+    MailModule,
+    BillingModule,
+    EasyPostModule,
+    MailboxModule,
+    ProductModule,
   ],
 })
 export class MainModule {}

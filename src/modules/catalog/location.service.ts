@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import {
-  CreateOfficeLocationDto,
-  UpdateOfficeLocationDto,
-  OfficeLocationQueryDto,
+import { 
+  CreateOfficeLocationDto, 
+  UpdateOfficeLocationDto, 
+  OfficeLocationResponseDto,
+  OfficeLocationQueryDto 
 } from 'src/dtos/location.dto';
 import { Prisma } from '@prisma/client';
-import { isValidUUID } from 'src/utils/validate';
 
 @Injectable()
 export class LocationService {
@@ -14,210 +14,260 @@ export class LocationService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // =====================
-  // OFFICE LOCATION OPERATIONS
-  // =====================
+  async createLocation(createLocationDto: CreateOfficeLocationDto): Promise<OfficeLocationResponseDto> {
+    try {
+      // Check if location with same label already exists
+      const existingLocation = await this.prisma.officeLocation.findFirst({
+        where: {
+          label: createLocationDto.label,
+          isDeleted: false,
+        },
+      });
 
-  async getOfficeLocations(query?: OfficeLocationQueryDto) {
-    const {
-      search,
-      country,
-      state,
-      city,
-      page = 1,
-      limit = 10,
-    } = query || {};
-    const skip = (page - 1) * limit;
-    const where: Prisma.OfficeLocationWhereInput = {
-      isActive: true,
-      isDeleted: false,
-      ...(country && { country: { contains: country, mode: 'insensitive' } }),
-      ...(state && { state: { contains: state, mode: 'insensitive' } }),
-      ...(city && { city: { contains: city, mode: 'insensitive' } }),
-      ...(search && {
-        OR: [
-          { label: { contains: search, mode: 'insensitive' } },
-          { city: { contains: search, mode: 'insensitive' } },
-          { state: { contains: search, mode: 'insensitive' } },
-          { addressLine: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
-        ],
-      }),
-    };
+      if (existingLocation) {
+        throw new ConflictException(`Office location with label "${createLocationDto.label}" already exists`);
+      }
 
-    const [locations, total] = await Promise.all([
-      this.prisma.officeLocation.findMany({
-        where,
-        skip,
-        take: limit,
+      const location = await this.prisma.officeLocation.create({
+        data: createLocationDto,
         include: {
           plans: {
             where: { isActive: true, isDeleted: false },
             select: { id: true, name: true, slug: true, isActive: true },
           },
-          workspaceAddresses: {
-            select: { 
-              id: true, 
-              steNumber: true, 
-              isActive: true,
-              workspace: {
-                select: { id: true, name: true, isActive: true },
-              },
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.officeLocation.count({ where }),
-    ]);
-
-    return {
-      data: locations,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  async getActiveOfficeLocations() {
-    return await this.prisma.officeLocation.findMany({
-      where: { 
-        isActive: true, 
-        deletedAt: null 
-      },
-      include: {
-        plans: {
-          where: { isActive: true, isDeleted: false },
-          select: { id: true, name: true, slug: true },
-        },
-      },
-      orderBy: [
-        { label: 'asc' },
-        { city: 'asc' },
-      ],
-    });
-  }
-
-  async getOfficeLocationById(id: string) {
-    const isValid = isValidUUID(id);
-    if (!isValid) {
-      throw new BadRequestException('Invalid office location id');
-    }
-    const location = await this.prisma.officeLocation.findFirst({
-      where: { id },
-      include: {
-        plans: {
-          where: { isActive: true, isDeleted: false },
-          include: {
-            prices: {
-              where: { isActive: true, isDeleted: false },
-              select: { id: true, amount: true, currency: true, billingCycle: true },
-            },
-            features: {
-              where: { isActive: true, isDeleted: false },
-              include: {
-                feature: {
-                  select: { id: true, name: true, description: true },
-                },
-              },
-            },
-          },
-        },
-        workspaceAddresses: {
-          include: {
-            workspace: {
-              select: { id: true, name: true, isActive: true },
-            },
-          },
-        },
-        workspaceSubscriptions: {
-          where: { isActive: true },
-          include: {
-            workspace: {
-              select: { id: true, name: true },
-            },
-          },
-        },
-      },
-    });
-
-    if (!location) {
-      throw new NotFoundException('Office location not found');
-    }
-
-    return location;
-  }
-
-  async createOfficeLocation(data: CreateOfficeLocationDto) {
-    try {
-      // Check if location with same label already exists
-      const existingLocation = await this.prisma.officeLocation.findFirst({
-        where: { 
-          label: data.label,
-          deletedAt: null,
         },
       });
 
-      if (existingLocation) {
-        throw new ConflictException('Office location with this label already exists');
-      }
-
-      return await this.prisma.officeLocation.create({
-        data,
-        include: {
-          plans: {
-            where: { isActive: true, isDeleted: false },
-            select: { id: true, name: true, slug: true },
-          },
-        },
-      });
+      return location;
     } catch (error) {
-      this.logger.error(error.message);
       if (error instanceof ConflictException) {
         throw error;
       }
+      this.logger.error(`Failed to create office location: ${error.message}`);
       throw new BadRequestException('Failed to create office location');
     }
   }
 
-  async updateOfficeLocation(id: string, data: UpdateOfficeLocationDto) {
-    await this.getOfficeLocationById(id); // Check if exists
-
+  async getLocations(query?: OfficeLocationQueryDto) {
     try {
-      // Check if label already exists for other locations
-      if (data.label) {
-        const existingLocation = await this.prisma.officeLocation.findFirst({
-          where: { 
-            label: data.label, 
-            id: { not: id },
-            deletedAt: null,
-          },
-        });
+      const page = query?.page || 1;
+      const limit = query?.limit || 10;
+      const skip = (page - 1) * limit;
 
-        if (existingLocation) {
-          throw new ConflictException('Office location with this label already exists');
-        }
+      const where: Prisma.OfficeLocationWhereInput = {
+        isDeleted: false,
+      };
+
+      if (query?.search) {
+        where.OR = [
+          { label: { contains: query.search, mode: 'insensitive' } },
+          { city: { contains: query.search, mode: 'insensitive' } },
+          { state: { contains: query.search, mode: 'insensitive' } },
+          { country: { contains: query.search, mode: 'insensitive' } },
+        ];
       }
 
-      return await this.prisma.officeLocation.update({
-        where: { id },
-        data: {
-          ...data,
-          updatedAt: new Date(),
+      if (query?.country) {
+        where.country = { contains: query.country, mode: 'insensitive' };
+      }
+
+      if (query?.state) {
+        where.state = { contains: query.state, mode: 'insensitive' };
+      }
+
+      if (query?.city) {
+        where.city = { contains: query.city, mode: 'insensitive' };
+      }
+
+      const [locations, total] = await Promise.all([
+        this.prisma.officeLocation.findMany({
+          where,
+          include: {
+            plans: {
+              where: { isActive: true, isDeleted: false },
+              select: { id: true, name: true, slug: true, isActive: true },
+            },
+            mailboxes: {
+              select: { 
+                id: true, 
+                isActive: true,
+                workspace: {
+                  select: { id: true, name: true, isActive: true },
+                },
+              },
+              where: {
+                isActive: true,
+              },
+            },
+            aviableCarriers: {
+              include: {
+                carrier: {
+                  select: { id: true, name: true, logoUrl: true },
+                },
+              },
+              where: {
+                isActive: true,
+              },
+            },
+            deliverySpeedOptions: {
+              include: {
+                deliverySpeed: {
+                  select: { id: true, label: true, title: true, price: true },
+                },
+              },
+              where: {
+                isActive: true,
+              },
+            },
+            packagingTypeOptions: {
+              include: {
+                packagingType: {
+                  select: { id: true, label: true, title: true },
+                },
+              },
+              where: {
+                isActive: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+          skip,
+        }),
+        this.prisma.officeLocation.count({ where }),
+      ]);
+
+      return {
+        data: locations,
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
         },
+      };
+    } catch (error) {
+      this.logger.error(`Failed to get office locations: ${error.message}`);
+      throw new BadRequestException('Failed to get office locations');
+    }
+  }
+
+  async getLocationById(id: string): Promise<OfficeLocationResponseDto> {
+    try {
+      const location = await this.prisma.officeLocation.findUnique({
+        where: { id },
         include: {
           plans: {
             where: { isActive: true, isDeleted: false },
-            select: { id: true, name: true, slug: true },
+            include: {
+              features: {
+                include: {
+                  feature: {
+                    select: { id: true, name: true, description: true },
+                  },
+                },
+                where: {
+                  isActive: true,
+                  isDeleted: false,
+                },
+              },
+              prices: {
+                where: {
+                  isActive: true,
+                  isDeleted: false,
+                },
+              },
+            },
           },
-          workspaceAddresses: {
-            select: { 
-              id: true, 
-              steNumber: true, 
+          mailboxes: {
+            include: {
+              workspace: {
+                select: { id: true, name: true, isActive: true },
+              },
+              plan: {
+                select: { id: true, name: true, slug: true },
+              },
+            },
+            where: {
               isActive: true,
+            },
+          },
+          aviableCarriers: {
+            include: {
+              carrier: true,
+            },
+            where: {
+              isActive: true,
+            },
+          },
+          deliverySpeedOptions: {
+            include: {
+              deliverySpeed: true,
+            },
+            where: {
+              isActive: true,
+            },
+          },
+          packagingTypeOptions: {
+            include: {
+              packagingType: true,
+            },
+            where: {
+              isActive: true,
+            },
+          },
+        },
+      });
+
+      if (!location || location.isDeleted) {
+        throw new NotFoundException('Office location not found');
+      }
+
+      return location;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Failed to get office location: ${error.message}`);
+      throw new BadRequestException('Failed to get office location');
+    }
+  }
+
+  async updateLocation(id: string, updateLocationDto: UpdateOfficeLocationDto): Promise<OfficeLocationResponseDto> {
+    try {
+      const existingLocation = await this.prisma.officeLocation.findUnique({
+        where: { id },
+      });
+
+      if (!existingLocation || existingLocation.isDeleted) {
+        throw new NotFoundException('Office location not found');
+      }
+
+      // Check if label is being updated and conflicts with another location
+      if (updateLocationDto.label && updateLocationDto.label !== existingLocation.label) {
+        const labelConflict = await this.prisma.officeLocation.findFirst({
+          where: {
+            label: updateLocationDto.label,
+            isDeleted: false,
+            id: { not: id },
+          },
+        });
+
+        if (labelConflict) {
+          throw new ConflictException(`Office location with label "${updateLocationDto.label}" already exists`);
+        }
+      }
+
+      const location = await this.prisma.officeLocation.update({
+        where: { id },
+        data: updateLocationDto,
+        include: {
+          plans: {
+            where: { isActive: true, isDeleted: false },
+          },
+          mailboxes: {
+            where: { isActive: true },
+            include: {
               workspace: {
                 select: { id: true, name: true },
               },
@@ -225,77 +275,129 @@ export class LocationService {
           },
         },
       });
+
+      return location;
     } catch (error) {
-      this.logger.error(error.message);
-      if (error instanceof ConflictException) {
+      if (error instanceof NotFoundException || error instanceof ConflictException) {
         throw error;
       }
+      this.logger.error(`Failed to update office location: ${error.message}`);
       throw new BadRequestException('Failed to update office location');
     }
   }
 
-  async deleteOfficeLocation(id: string) {
-    const location = await this.getOfficeLocationById(id); // Check if exists
-
+  async deleteLocation(id: string): Promise<void> {
     try {
-      // Check if location has active plans or workspace addresses
-      const hasActivePlans = location.plans && location.plans.length > 0;
-      const hasActiveAddresses = location.workspaceAddresses && location.workspaceAddresses.length > 0;
+      const location = await this.prisma.officeLocation.findUnique({
+        where: { id },
+        include: {
+          plans: {
+            where: { isActive: true, isDeleted: false },
+          },
+          mailboxes: {
+            where: { isActive: true },
+          },
+        },
+      });
 
-      if (hasActivePlans || hasActiveAddresses) {
-        throw new BadRequestException(
-          'Cannot delete office location that has active plans or workspace addresses'
-        );
+      if (!location || location.isDeleted) {
+        throw new NotFoundException('Office location not found');
       }
 
-      return await this.prisma.officeLocation.update({
+      // Check if location has active plans or mailboxes
+      const hasActivePlans = location.plans && location.plans.length > 0;
+      const hasActiveMailboxes = location.mailboxes && location.mailboxes.length > 0;
+
+      if (hasActivePlans || hasActiveMailboxes) {
+        throw new ConflictException('Cannot delete office location that has active plans or mailboxes');
+      }
+
+      await this.prisma.officeLocation.update({
         where: { id },
         data: {
-          isActive: false,
           isDeleted: true,
           deletedAt: new Date(),
+          isActive: false,
         },
       });
     } catch (error) {
-      this.logger.error(error.message);
-      if (error instanceof BadRequestException) {
+      if (error instanceof NotFoundException || error instanceof ConflictException) {
         throw error;
       }
+      this.logger.error(`Failed to delete office location: ${error.message}`);
       throw new BadRequestException('Failed to delete office location');
     }
   }
 
-  async getLocationStats(id: string) {
-    const location = await this.getOfficeLocationById(id);
+  async getLocationStatistics(id: string) {
+    try {
+      const location = await this.getLocationById(id);
 
-    const stats = await this.prisma.officeLocation.findUnique({
-      where: { id },
-      select: {
-        _count: {
-          select: {
-            plans: { where: { isActive: true, isDeleted: false } },
-            workspaceAddresses: { where: { isActive: true } },
-            workspaceSubscriptions: { where: { isActive: true } },
-            workspaceFeatureUsages: true,
+      const [totalPlans, totalMailboxes] = await Promise.all([
+        this.prisma.plan.count({
+          where: {
+            officeLocationId: id,
+            isActive: true,
+            isDeleted: false,
+          },
+        }),
+        this.prisma.mailbox.count({
+          where: {
+            officeLocationId: id,
+            isActive: true,
+          },
+        }),
+      ]);
+
+      return {
+        location: {
+          id: location.id,
+          label: location.label,
+          city: location.city,
+          state: location.state,
+          country: location.country,
+        },
+        statistics: {
+          totalActivePlans: totalPlans,
+          totalActiveMailboxes: totalMailboxes,
+          availableCarriers: location.aviableCarriers?.length || 0,
+          deliveryOptions: location.deliverySpeedOptions?.length || 0,
+          packagingOptions: location.packagingTypeOptions?.length || 0,
+        },
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Failed to get location statistics: ${error.message}`);
+      throw new BadRequestException('Failed to get location statistics');
+    }
+  }
+
+  async getActiveLocations(): Promise<OfficeLocationResponseDto[]> {
+    try {
+      return await this.prisma.officeLocation.findMany({
+        where: {
+          isActive: true,
+          isDeleted: false,
+        },
+        include: {
+          plans: {
+            where: { isActive: true, isDeleted: false },
+            select: { id: true, name: true, slug: true },
           },
         },
-      },
-    });
-
-    return {
-      location: {
-        id: location.id,
-        label: location.label,
-        city: location.city,
-        state: location.state,
-        country: location.country,
-      },
-      statistics: {
-        totalActivePlans: stats._count.plans,
-        totalActiveAddresses: stats._count.workspaceAddresses,
-        totalActiveSubscriptions: stats._count.workspaceSubscriptions,
-        totalFeatureUsages: stats._count.workspaceFeatureUsages,
-      },
-    };
+        orderBy: [
+          { country: 'asc' },
+          { state: 'asc' },
+          { city: 'asc' },
+          { label: 'asc' },
+        ],
+      });
+    } catch (error) {
+      this.logger.error(`Failed to get active locations: ${error.message}`);
+      throw new BadRequestException('Failed to get active locations');
+    }
   }
+
 }

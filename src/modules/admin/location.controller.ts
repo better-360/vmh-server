@@ -43,7 +43,7 @@ export class AdminLocationController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   // @CheckPolicies(ability => ability.can('read', 'OfficeLocation'))
   async getAllOfficeLocations(@Query() query: OfficeLocationQueryDto) {
-    return await this.locationService.getOfficeLocations(query);
+    return await this.locationService.getLocations(query);
   }
 
   @Get('active')
@@ -55,7 +55,7 @@ export class AdminLocationController {
   })
   // @CheckPolicies(ability => ability.can('read', 'OfficeLocation'))
   async getActiveOfficeLocations() {
-    return await this.locationService.getActiveOfficeLocations();
+    return await this.locationService.getActiveLocations();
   }
 
   @Get(':id')
@@ -69,7 +69,7 @@ export class AdminLocationController {
   @ApiResponse({ status: 404, description: 'Office location not found' })
   // @CheckPolicies(ability => ability.can('read', 'OfficeLocation'))
   async getOfficeLocationById(@Param('id') id: string) {
-    return await this.locationService.getOfficeLocationById(id);
+    return await this.locationService.getLocationById(id);
   }
 
   @Get(':id/stats')
@@ -82,7 +82,7 @@ export class AdminLocationController {
   @ApiResponse({ status: 404, description: 'Office location not found' })
   // @CheckPolicies(ability => ability.can('read', 'OfficeLocation'))
   async getLocationStats(@Param('id') id: string) {
-    return await this.locationService.getLocationStats(id);
+    return await this.locationService.getLocationStatistics(id);
   }
 
   @Post()
@@ -96,7 +96,7 @@ export class AdminLocationController {
   @ApiResponse({ status: 409, description: 'Office location with this label already exists' })
   // @CheckPolicies(ability => ability.can('create', 'OfficeLocation'))
   async createOfficeLocation(@Body() data: CreateOfficeLocationDto) {
-    return await this.locationService.createOfficeLocation(data);
+    return await this.locationService.createLocation(data);
   }
 
   @Put(':id')
@@ -115,7 +115,7 @@ export class AdminLocationController {
     @Param('id') id: string,
     @Body() data: UpdateOfficeLocationDto,
   ) {
-    return await this.locationService.updateOfficeLocation(id, data);
+    return await this.locationService.updateLocation(id, data);
   }
 
   @Delete(':id')
@@ -129,6 +129,6 @@ export class AdminLocationController {
   @ApiResponse({ status: 404, description: 'Office location not found' })
   // @CheckPolicies(ability => ability.can('delete', 'OfficeLocation'))
   async deleteOfficeLocation(@Param('id') id: string) {
-    return await this.locationService.deleteOfficeLocation(id);
+    return await this.locationService.deleteLocation(id);
   }
 }

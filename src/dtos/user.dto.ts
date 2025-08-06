@@ -12,7 +12,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AddonDto } from './checkout.dto';
+
 
 export class LoginDto {
   @ApiProperty({
@@ -33,34 +33,40 @@ export class RegisterDto {
     description: 'User email address',
     example: 'user@example.com',
   })
-  @IsString()
+  @IsEmail()
   email: string;
 
   @ApiProperty({
-    description: 'Price ID (UUID format)',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    description: 'User password',
+    example: 'strongPassword123!',
   })
   @IsString()
-  planPriceId: string;
+  @MinLength(6)
+  password: string;
 
-  @ApiProperty({
-    type: [AddonDto], // Array olduğu için köşeli parantez içinde veriyoruz
-    description: 'Selected Addons',
-    example: [
-      {
-        productId: '6ab02e6b-9694-4820-bc92-df7d9d1a8846',
-        productPriceId: '2af10df3-4147-4d32-a7cd-3520808f59ea',
-      },
-      {
-        productId: '3ac92be6-9a3d-4820-bd12-d3e7f9d1a776',
-        productPriceId: '5fb10df3-4122-4e98-a3bc-1c3088a3d452',
-      },
-    ],
+  @ApiPropertyOptional({
+    description: 'User first name',
+    example: 'John',
   })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => AddonDto)
-  addons: AddonDto[];
+  @IsString()
+  @IsOptional()
+  firstName?: string;
+
+  @ApiPropertyOptional({
+    description: 'User last name',
+    example: 'Doe',
+  })
+  @IsString()
+  @IsOptional()
+  lastName?: string;
+
+  @ApiPropertyOptional({
+    description: 'User telephone',
+    example: '+1234567890',
+  })
+  @IsString()
+  @IsOptional()
+  telephone?: string;
 }
 
 export class GetUserDetailDto {

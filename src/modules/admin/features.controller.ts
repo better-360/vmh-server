@@ -28,13 +28,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   CreatePlanFeatureDto,
   UpdatePlanFeatureDto,
-  PlanFeatureQueryDto,
-  BulkCreatePlanFeaturesDto,
-  BulkUpdatePlanFeaturesDto,
-  FeatureQueryDto,
-  CreateFeatureDto,
-  UpdateFeatureDto,
 } from 'src/dtos/plan.dto';
+import { CreateFeatureDto, UpdateFeatureDto } from 'src/dtos/feature.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiTags('Feature Management')
@@ -77,7 +72,7 @@ export class AdminFeaturesController {
       }
     }
   })
-  async getPlanFeatures(@Query() query: PlanFeatureQueryDto) {
+  async getPlanFeatures(@Query() query: any) {
     return this.featuresService.getPlanFeatures(query);
   }
 
@@ -90,7 +85,7 @@ export class AdminFeaturesController {
   @ApiResponse({ status: 200, description: 'Plan feature retrieved successfully' })
   @ApiNotFoundResponse({ description: 'Plan feature not found' })
   async getPlanFeatureById(@Param('id') id: string) {
-    return this.featuresService.getPlanFeatureById(id);
+    return this.featuresService.getFeatureById(id);
   }
 
   @Post('plan-features')
@@ -139,7 +134,7 @@ export class AdminFeaturesController {
     summary: 'Bulk add features to plan',
     description: 'Add multiple features to a plan in a single transaction'
   })
-  @ApiBody({ type: BulkCreatePlanFeaturesDto, description: 'Bulk plan features creation data' })
+  @ApiBody({ description: 'Bulk plan features creation data' })
   @ApiResponse({ 
     status: 201, 
     description: 'Features added to plan successfully',
@@ -151,8 +146,8 @@ export class AdminFeaturesController {
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiNotFoundResponse({ description: 'Plan or one or more features not found' })
   @ApiConflictResponse({ description: 'Some features are already added to this plan' })
-  async bulkCreatePlanFeatures(@Body() data: BulkCreatePlanFeaturesDto) {
-    return this.featuresService.bulkCreatePlanFeatures(data);
+  async bulkCreatePlanFeatures(@Body() data: any) {
+    return this.featuresService.bulkCreatePlanFeatures(data.planId, data.features);
   }
 
   @Put('plan-features/bulk-update')
@@ -160,7 +155,7 @@ export class AdminFeaturesController {
     summary: 'Bulk update plan features',
     description: 'Update multiple plan-feature relationships in a single transaction'
   })
-  @ApiBody({ type: BulkUpdatePlanFeaturesDto, description: 'Bulk plan features update data' })
+  @ApiBody({ description: 'Bulk plan features update data' })
   @ApiResponse({ 
     status: 200, 
     description: 'Plan features updated successfully',
@@ -171,8 +166,8 @@ export class AdminFeaturesController {
   })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiNotFoundResponse({ description: 'One or more plan features not found' })
-  async bulkUpdatePlanFeatures(@Body() data: BulkUpdatePlanFeaturesDto) {
-    return this.featuresService.bulkUpdatePlanFeatures(data);
+  async bulkUpdatePlanFeatures(@Body() data: any) {
+    return this.featuresService.updatePlanFeature(data.id, data);
   }
 
 
@@ -209,7 +204,7 @@ export class AdminFeaturesController {
       }
     }
   })
-  async getFeatures(@Query() query: FeatureQueryDto) {
+  async getFeatures(@Query() query: any) {
     return this.featuresService.getFeatures(query);
   }
 
@@ -290,6 +285,6 @@ export class AdminFeaturesController {
   })
   @ApiNotFoundResponse({ description: 'Feature not found' })
   async getFeatureUsageInPlans(@Param('id') featureId: string) {
-    return this.featuresService.getFeatureUsageInPlans(featureId);
+    return this.featuresService.getFeatureUsageStats(featureId);
   }
 }

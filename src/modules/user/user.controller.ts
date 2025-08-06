@@ -19,7 +19,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileManagerService } from '../file-manager/file-manager.service';
 import { validateAndTransform } from '../../utils/validate';
-import { MailService } from '../mail/mail.service';
+import { EmailService } from '../email/email.service';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @ApiBearerAuth()
@@ -28,7 +28,7 @@ import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swa
 export class UserController {
   constructor(
     private readonly userService: UserService,
-    private readonly mailService: MailService,
+    private readonly emailService: EmailService,
     private readonly fileManagerService: FileManagerService,
   ) {}
 

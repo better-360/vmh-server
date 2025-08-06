@@ -1,22 +1,21 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsString,
   IsOptional,
-  IsUUID,
-  IsEnum,
-  IsNumber,
   IsBoolean,
-  IsArray,
-  Min,
+  IsUUID,
+  IsNumber,
   IsNotEmpty,
+  IsArray,
   ValidateNested,
+  Min,
+  IsEnum,
   IsInt,
-  Max,
-  ArrayMinSize,
+  IsJSON,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { BillingCycle } from '@prisma/client'; 
-import { OrderItemResponseDto } from './checkout.dto';
+import { BillingCycle, ResetCycle } from '@prisma/client';
+
 // =====================
 // PLAN DTOs
 // =====================
@@ -70,198 +69,22 @@ export class CreatePlanDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
-}
-
-// =====================
-// PLAN WITH FEATURES DTOs (Helper classes first)
-// =====================
-
-export class CreatePlanFeatureForPlanDto {
-  @ApiProperty({
-    description: 'Feature ID',
-    example: 'be2294ec-a909-462f-a81c-276d6ebbfb58',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  featureId: string;
 
   @ApiPropertyOptional({
-    description: 'Included limit (null = unlimited, 0 = not included but available)',
-    example: 10,
-    minimum: 0,
+    description: 'Display features for UI (JSON format)',
+    example: { 'highlights': ['Feature 1', 'Feature 2'] },
   })
-  @IsNumber()
-  @Min(0)
   @IsOptional()
-  includedLimit?: number;
+  displayFeatures?: any;
 
   @ApiPropertyOptional({
-    description: 'Unit price in cents for additional usage (null = not available)',
-    example: 500,
-    minimum: 0,
-  })
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  unitPrice?: number;
-
-  @ApiPropertyOptional({
-    description: 'Is plan feature active',
+    description: 'Show on marketplace',
     example: true,
     default: true,
   })
   @IsBoolean()
   @IsOptional()
-  isActive?: boolean;
-}
-
-export class CreatePlanPriceForPlanDto {
-  @ApiProperty({
-    description: 'Billing cycle',
-    enum: BillingCycle,
-    example: BillingCycle.MONTHLY,
-  })
-  @IsEnum(BillingCycle)
-  billingCycle: BillingCycle;
-
-  @ApiProperty({
-    description: 'Price amount in cents (e.g., 4999 = $49.99)',
-    example: 4999,
-    minimum: 0,
-  })
-  @IsNumber()
-  @Min(0)
-  amount: number;
-
-  @ApiProperty({
-    description: 'Currency code',
-    example: 'USD',
-  })
-  @IsString()
-  @IsNotEmpty()
-  currency: string;
-
-  @ApiPropertyOptional({
-    description: 'Price description',
-    example: 'Monthly subscription fee',
-  })
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @ApiPropertyOptional({
-    description: 'Stripe Price ID',
-    example: 'price_1234567890',
-  })
-  @IsString()
-  @IsOptional()
-  stripePriceId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Is price active',
-    example: true,
-    default: true,
-  })
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
-}
-
-export class CreatePlanWithFeaturesDto {
-  @ApiProperty({
-    description: 'Office Location ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  officeLocationId: string;
-
-  @ApiProperty({
-    description: 'Plan name',
-    example: 'Premium Business Plan',
-  })
-  @IsString()
-  @IsNotEmpty()
-  name: string;
-
-  @ApiProperty({
-    description: 'Plan slug',
-    example: 'premium-business',
-  })
-  @IsString()
-  @IsNotEmpty()
-  slug: string;
-
-  @ApiPropertyOptional({
-    description: 'Plan description',
-    example: 'Comprehensive business plan with advanced features',
-  })
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @ApiPropertyOptional({
-    description: 'Plan image URL',
-    example: 'https://example.com/premium-plan.png',
-  })
-  @IsString()
-  @IsOptional()
-  imageUrl?: string;
-
-  @ApiPropertyOptional({
-    description: 'Is plan active',
-    example: true,
-    default: true,
-  })
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
-
-  @ApiProperty({
-    description: 'Plan features to include',
-    type: [CreatePlanFeatureForPlanDto],
-    example: [
-      {
-        featureId: "be2294ec-a909-462f-a81c-276d6ebbfb58",
-        includedLimit: 10,
-        unitPrice: 500,
-        isActive: true
-      },
-      {
-        featureId: "5e37ea6d-cba2-4413-8209-57b3b2a77035",
-        includedLimit: null,
-        unitPrice: null,
-        isActive: true
-      }
-    ]
-  })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreatePlanFeatureForPlanDto)
-  features: CreatePlanFeatureForPlanDto[];
-
-  @ApiProperty({
-    description: 'Plan pricing options',
-    type: [CreatePlanPriceForPlanDto],
-    example: [
-      {
-        billingCycle: "MONTHLY",
-        amount: 4999,
-        currency: "USD",
-        description: "Monthly subscription"
-      },
-      {
-        billingCycle: "YEARLY", 
-        amount: 49999,
-        currency: "USD",
-        description: "Annual subscription (save 17%)"
-      }
-    ]
-  })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreatePlanPriceForPlanDto)
-  prices: CreatePlanPriceForPlanDto[];
+  showOnMarketplace?: boolean;
 }
 
 export class UpdatePlanDto extends PartialType(CreatePlanDto) {
@@ -273,174 +96,6 @@ export class UpdatePlanDto extends PartialType(CreatePlanDto) {
   @IsBoolean()
   @IsOptional()
   isDeleted?: boolean;
-}
-
-export class FormattedOfficeLocationDto {
-  @ApiProperty()
-  id: string;
-
-  @ApiProperty()
-  label: string;
-
-  @ApiProperty()
-  city: string;
-
-  @ApiProperty()
-  state: string;
-}
-
-export class FormattedPlanPriceDto {
-  @ApiProperty()
-  id: string;
-
-  @ApiProperty()
-  billingCycle: string;
-
-  @ApiProperty()
-  amount: number;
-
-  @ApiProperty()
-  currency: string;
-
-  @ApiProperty()
-  description: string;
-
-  @ApiProperty()
-  stripePriceId: string;
-}
-
-export class FormattedPlanFeatureDto {
-  @ApiProperty()
-  id: string;
-
-  @ApiProperty()
-  name: string;
-
-  @ApiProperty()
-  description: string;
-
-  @ApiProperty()
-  imageUrl: string;
-
-  @ApiProperty()
-  includedLimit: number;
-
-  @ApiProperty()
-  unitPrice: number;
-
-  @ApiProperty()
-  displayOrder: number;
-}
-
-export class FormattedPlanResponseDto {
-  @ApiProperty()
-  id: string;
-
-  @ApiProperty()
-  name: string;
-
-  @ApiProperty()
-  slug: string;
-
-  @ApiProperty()
-  description: string;
-
-  @ApiProperty()
-  imageUrl: string;
-
-  @ApiProperty()
-  isActive: boolean;
-
-  @ApiProperty()
-  createdAt: Date;
-
-  @ApiProperty()
-  updatedAt: Date;
-
-  @ApiProperty({ type: FormattedOfficeLocationDto })
-  officeLocation: FormattedOfficeLocationDto;
-
-  @ApiProperty({ type: [FormattedPlanPriceDto] })
-  prices: FormattedPlanPriceDto[];
-
-  @ApiProperty({ type: [FormattedPlanFeatureDto] })
-  features: FormattedPlanFeatureDto[];
-}
-
-
-
-export class PlanResponseDto {
-  @ApiProperty({
-    description: 'Plan ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  id: string;
-
-  @ApiProperty({
-    description: 'Plan name',
-    example: 'Basic Plan',
-  })
-  name: string;
-
-  @ApiPropertyOptional({
-    description: 'Plan description',
-    example: 'Basic plan with essential features',
-  })
-  description?: string;
-
-  @ApiPropertyOptional({
-    description: 'Plan image URL',
-    example: 'https://example.com/plan-image.png',
-  })
-  imageUrl?: string;
-
-  @ApiProperty({
-    description: 'Office Location ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  officeLocationId: string;
-
-  @ApiProperty({
-    description: 'Is plan active',
-    example: true,
-  })
-  isActive: boolean;
-
-  @ApiProperty({
-    description: 'Is plan deleted',
-    example: false,
-  })
-  isDeleted: boolean;
-
-  @ApiProperty({
-    description: 'Creation date',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  createdAt: Date;
-
-  @ApiProperty({
-    description: 'Last update date',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  updatedAt: Date;
-
-  @ApiPropertyOptional({
-    description: 'Deletion date',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  deletedAt?: Date;
-
-  @ApiPropertyOptional({
-    description: 'Plan features',
-    type: [Object],
-  })
-  features?: any[];
-
-  @ApiPropertyOptional({
-    description: 'Plan prices',
-    type: [Object],
-  })
-  prices?: any[];
 }
 
 // =====================
@@ -459,17 +114,19 @@ export class CreatePlanPriceDto {
   @ApiProperty({
     description: 'Billing cycle',
     enum: BillingCycle,
-    example: BillingCycle.YEARLY,
+    example: BillingCycle.MONTHLY,
+    default: BillingCycle.MONTHLY,
   })
   @IsEnum(BillingCycle)
-  billingCycle: BillingCycle;
+  @IsOptional()
+  billingCycle?: BillingCycle;
 
   @ApiProperty({
-    description: 'Price amount in cents (e.g., 9999 = $99.99)',
-    example: 9999,
+    description: 'Price amount in cents',
+    example: 2999,
     minimum: 0,
   })
-  @IsNumber()
+  @IsInt()
   @Min(0)
   amount: number;
 
@@ -511,7 +168,6 @@ export class UpdatePlanPriceDto extends PartialType(CreatePlanPriceDto) {
   @ApiPropertyOptional({
     description: 'Is price deleted',
     example: false,
-    default: false,
   })
   @IsBoolean()
   @IsOptional()
@@ -520,7 +176,7 @@ export class UpdatePlanPriceDto extends PartialType(CreatePlanPriceDto) {
 
 export class PlanPriceResponseDto {
   @ApiProperty({
-    description: 'Price ID',
+    description: 'Plan price ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   id: string;
@@ -540,7 +196,7 @@ export class PlanPriceResponseDto {
 
   @ApiProperty({
     description: 'Price amount in cents',
-    example: 9999,
+    example: 2999,
   })
   amount: number;
 
@@ -575,131 +231,34 @@ export class PlanPriceResponseDto {
   isDeleted: boolean;
 
   @ApiProperty({
-    description: 'Creation date',
+    description: 'Created at',
     example: '2024-01-01T00:00:00.000Z',
   })
   createdAt: Date;
 
   @ApiProperty({
-    description: 'Last update date',
+    description: 'Updated at',
     example: '2024-01-01T00:00:00.000Z',
   })
   updatedAt: Date;
 
   @ApiPropertyOptional({
-    description: 'Deletion date',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  deletedAt?: Date;
-}
-
-// =====================
-// FEATURE DTOs
-// =====================
-
-export class CreateFeatureDto {
-  @ApiProperty({
-    description: 'Feature name',
-    example: 'Virtual Address',
-  })
-  @IsString()
-  @IsNotEmpty()
-  name: string;
-
-  @ApiPropertyOptional({
-    description: 'Feature description',
-    example: 'Access to virtual business address services',
-  })
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @ApiPropertyOptional({
-    description: 'Feature image URL',
-    example: 'https://example.com/feature-image.png',
-  })
-  @IsString()
-  @IsOptional()
-  imageUrl?: string;
-
-  @ApiPropertyOptional({
-    description: 'Is feature active',
-    example: true,
-    default: true,
-  })
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
-}
-
-export class UpdateFeatureDto extends PartialType(CreateFeatureDto) {
-    @ApiPropertyOptional({
-    description: 'Is feature deleted',
-    example: false,
-    default: false,
-  })
-  @IsBoolean()
-  @IsOptional()
-  isDeleted?: boolean;
-}
-
-export class FeatureResponseDto {
-  @ApiProperty({
-    description: 'Feature ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  id: string;
-
-  @ApiProperty({
-    description: 'Feature name',
-    example: 'Virtual Address',
-  })
-  name: string;
-
-  @ApiPropertyOptional({
-    description: 'Feature description',
-    example: 'Access to virtual business address services',
-  })
-  description?: string;
-
-  @ApiPropertyOptional({
-    description: 'Feature image URL',
-    example: 'https://example.com/feature-image.png',
-  })
-  imageUrl?: string;
-
-  @ApiProperty({
-    description: 'Is feature active',
-    example: true,
-  })
-  isActive: boolean;
-
-  @ApiProperty({
-    description: 'Creation date',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  createdAt: Date;
-
-  @ApiProperty({
-    description: 'Last update date',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  updatedAt: Date;
-
-  @ApiPropertyOptional({
-    description: 'Deletion date',
+    description: 'Deleted at',
     example: '2024-01-01T00:00:00.000Z',
   })
   deletedAt?: Date;
 
+  // Relations
   @ApiPropertyOptional({
-    description: 'Is feature deleted',
-    example: false,
-    default: false,
+    description: 'Plan details',
   })
-  @IsBoolean()
-  @IsOptional()
-  isDeleted?: boolean;
+  plan?: any;
+
+  @ApiPropertyOptional({
+    description: 'Mailboxes using this price',
+    type: [Object],
+  })
+  mailboxes?: any[];
 }
 
 // =====================
@@ -724,28 +283,37 @@ export class CreatePlanFeatureDto {
   featureId: string;
 
   @ApiPropertyOptional({
-    description: 'Included limit (null = unlimited, 0 = not included but available for purchase)',
-    example: 5,
+    description: 'Included limit (null = unlimited, 0 = not included but can be purchased)',
+    example: 10,
     minimum: 0,
   })
-  @IsNumber()
+  @IsInt()
   @Min(0)
   @IsOptional()
   includedLimit?: number;
 
   @ApiPropertyOptional({
-    description: 'Unit price in cents (null = not available for purchase)',
-    example: 500,
+    description: 'Unit price in cents for extra usage (null = not available for purchase)',
+    example: 299,
     minimum: 0,
   })
-  @IsNumber()
+  @IsInt()
   @Min(0)
   @IsOptional()
   unitPrice?: number;
 
+  @ApiProperty({
+    description: 'Reset cycle for the feature',
+    enum: ResetCycle,
+    example: ResetCycle.MONTHLY,
+    default: ResetCycle.MONTHLY,
+  })
+  @IsEnum(ResetCycle)
+  @IsOptional()
+  resetCycle?: ResetCycle;
 
   @ApiPropertyOptional({
-    description: 'Is plan feature active',
+    description: 'Is feature active in this plan',
     example: true,
     default: true,
   })
@@ -754,19 +322,27 @@ export class CreatePlanFeatureDto {
   isActive?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Display order',
+    description: 'Display order in plan features list',
     example: 1,
   })
-  @IsNumber()
+  @IsInt()
   @IsOptional()
   displayOrder?: number;
+
+  @ApiPropertyOptional({
+    description: 'Show this feature in marketplace list',
+    example: true,
+    default: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  showOnList?: boolean;
 }
 
 export class UpdatePlanFeatureDto extends PartialType(CreatePlanFeatureDto) {
   @ApiPropertyOptional({
     description: 'Is plan feature deleted',
     example: false,
-    default: false,
   })
   @IsBoolean()
   @IsOptional()
@@ -793,958 +369,83 @@ export class PlanFeatureResponseDto {
   featureId: string;
 
   @ApiPropertyOptional({
-    description: 'Included limit (null = unlimited)',
-    example: 5,
+    description: 'Included limit',
+    example: 10,
   })
   includedLimit?: number;
 
   @ApiPropertyOptional({
-    description: 'Unit price in cents (null = not available)',
-    example: 500,
+    description: 'Unit price in cents',
+    example: 299,
   })
   unitPrice?: number;
 
-  @ApiPropertyOptional({
-    description: 'Plan details',
-    type: PlanResponseDto,
+  @ApiProperty({
+    description: 'Reset cycle',
+    enum: ResetCycle,
+    example: ResetCycle.MONTHLY,
   })
-  plan?: PlanResponseDto;
-
-  @ApiPropertyOptional({
-    description: 'Feature details',
-    type: FeatureResponseDto,
-  })
-  feature?: FeatureResponseDto;
+  resetCycle: ResetCycle;
   
   @ApiProperty({
-    description: 'Is plan feature active',
+    description: 'Is feature active',
     example: true,
   })
   isActive: boolean;
 
+  @ApiPropertyOptional({
+    description: 'Display order',
+    example: 1,
+  })
+  displayOrder?: number;
+
   @ApiProperty({
-    description: 'Creation date',
+    description: 'Show on list',
+    example: true,
+  })
+  showOnList: boolean;
+
+  @ApiProperty({
+    description: 'Is feature deleted',
+    example: false,
+  })
+  isDeleted: boolean;
+
+  @ApiProperty({
+    description: 'Created at',
     example: '2024-01-01T00:00:00.000Z',
   })
   createdAt: Date;
 
   @ApiProperty({
-    description: 'Last update date',
+    description: 'Updated at',
     example: '2024-01-01T00:00:00.000Z',
   })
   updatedAt: Date;
 
   @ApiPropertyOptional({
-    description: 'Deletion date',
+    description: 'Deleted at',
     example: '2024-01-01T00:00:00.000Z',
   })
   deletedAt?: Date;
 
-  @ApiPropertyOptional({
-    description: 'Is plan feature deleted',
-    example: false,
-    default: false,
-  })
-  @IsBoolean()
-  @IsOptional()
-  isDeleted?: boolean;
-}
-
-// =====================
-// SUBSCRIPTION DTOs (Office Location Based)
-// =====================
-
-export class CreateOfficeSubscriptionDto {
-  @ApiProperty({
-    description: 'User ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  userId: string;
-
-  @ApiProperty({
-    description: 'Office Location ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  officeLocationId: string;
-
-  @ApiProperty({
-    description: 'Plan Price ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  planId: string;
-
-  @ApiProperty({
-    description: 'Billing cycle',
-    enum: BillingCycle,
-    example: BillingCycle.MONTHLY,
-  })
-  @IsEnum(BillingCycle)
-  billingCycle: BillingCycle;
-
-  @ApiPropertyOptional({
-    description: 'Stripe subscription ID',
-    example: 'sub_1234567890',
-  })
-  @IsString()
-  @IsOptional()
-  stripeSubscriptionId?: string;
-
-  @ApiProperty({
-    description: 'Subscription start date',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  @Type(() => Date)
-  startDate: Date;
-
-  @ApiPropertyOptional({
-    description: 'Subscription end date',
-    example: '2024-12-31T23:59:59.999Z',
-  })
-  @Type(() => Date)
-  @IsOptional()
-  endDate?: Date;
-}
-
-export class UpdateOfficeSubscriptionDto extends PartialType(CreateOfficeSubscriptionDto) {
-  @ApiPropertyOptional({
-    description: 'Is subscription active',
-    example: true,
-  })
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
-}
-
-export class OfficeSubscriptionResponseDto {
-  @ApiProperty({
-    description: 'Subscription ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  id: string;
-
-  @ApiProperty({
-    description: 'User ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  userId: string;
-
-  @ApiProperty({
-    description: 'Office Location ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  officeLocationId: string;
-
-  @ApiProperty({
-    description: 'Plan ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  planId: string;
-
-  @ApiProperty({
-    description: 'Billing cycle',
-    enum: BillingCycle,
-    example: BillingCycle.MONTHLY,
-  })
-  billingCycle: BillingCycle;
-
-  @ApiPropertyOptional({
-    description: 'Stripe subscription ID',
-    example: 'sub_1234567890',
-  })
-  stripeSubscriptionId?: string;
-
-  @ApiProperty({
-    description: 'Subscription start date',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  startDate: Date;
-
-  @ApiPropertyOptional({
-    description: 'Subscription end date',
-    example: '2024-12-31T23:59:59.999Z',
-  })
-  endDate?: Date;
-
-  @ApiProperty({
-    description: 'Is subscription active',
-    example: true,
-  })
-  isActive: boolean;
-
-  @ApiProperty({
-    description: 'Creation date',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  createdAt: Date;
-
-  @ApiProperty({
-    description: 'Last update date',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  updatedAt: Date;
-
+  // Relations
   @ApiPropertyOptional({
     description: 'Plan details',
-    type: PlanPriceResponseDto,
   })
-  plan?: PlanPriceResponseDto;
-
-  @ApiPropertyOptional({
-    description: 'User details',
-    type: Object,
-  })
-  user?: any;
-
-  @ApiPropertyOptional({
-    description: 'Office location details',
-    type: Object,
-  })
-  officeLocation?: any;
-}
-
-export class OfficeSubscriptionQueryDto {
-  @ApiPropertyOptional({
-    description: 'Filter by user ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsOptional()
-  userId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by office location ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsOptional()
-  officeLocationId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by plan ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsOptional()
-  planId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by billing cycle',
-    enum: BillingCycle,
-    example: BillingCycle.MONTHLY,
-  })
-  @IsEnum(BillingCycle)
-  @IsOptional()
-  billingCycle?: BillingCycle;
-
-  @ApiPropertyOptional({
-    description: 'Filter by active status',
-    example: true,
-  })
-  @IsBoolean()
-  @IsOptional()
-  @Type(() => Boolean)
-  isActive?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Page number',
-    example: 1,
-    minimum: 1,
-  })
-  @IsNumber()
-  @Min(1)
-  @IsOptional()
-  @Type(() => Number)
-  page?: number;
-
-  @ApiPropertyOptional({
-    description: 'Items per page',
-    example: 10,
-    minimum: 1,
-    maximum: 100,
-  })
-  @IsNumber()
-  @Min(1)
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number;
-}
-
-// =====================
-// WORKSPACE SUBSCRIPTION DTOs
-// =====================
-
-export class CreateWorkspaceSubscriptionItemDto {
-  @ApiProperty({
-    description: 'Item type (PRODUCT, ADDON)',
-    enum: ['PRODUCT', 'ADDON'],
-    example: 'ADDON',
-  })
-  @IsEnum(['PRODUCT', 'ADDON'])
-  @IsNotEmpty()
-  itemType: 'PRODUCT' | 'ADDON';
-
-  @ApiProperty({
-    description: 'Product or Addon ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  itemId: string;
-
-  @ApiPropertyOptional({
-    description: 'Variant ID for Product or Addon variants',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsOptional()
-  variantId?: string;
-
-  @ApiProperty({
-    description: 'Billing cycle',
-    enum: BillingCycle,
-    example: BillingCycle.MONTHLY,
-  })
-  @IsEnum(BillingCycle)
-  billingCycle: BillingCycle;
-
-  @ApiProperty({
-    description: 'Quantity',
-    example: 1,
-  })
-  @IsInt()
-  @Min(1)
-  quantity: number;
-
-  @ApiProperty({
-    description: 'Unit price in cents',
-    example: 9999,
-  })
-  @IsInt()
-  @Min(0)
-  unitPrice: number;
-
-  @ApiProperty({
-    description: 'Total price in cents',
-    example: 9999,
-  })
-  @IsInt()
-  @Min(0)
-  totalPrice: number;
-
-  @ApiPropertyOptional({
-    description: 'Currency',
-    example: 'USD',
-    default: 'USD',
-  })
-  @IsString()
-  @IsOptional()
-  currency?: string;
-
-  @ApiProperty({
-    description: 'Item start date',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  @Type(() => Date)
-  startDate: Date;
-
-  @ApiPropertyOptional({
-    description: 'Item end date (null for one-time payments)',
-    example: '2024-12-31T23:59:59.999Z',
-  })
-  @Type(() => Date)
-  @IsOptional()
-  endDate?: Date;
-
-  @ApiProperty({
-    description: 'Item name',
-    example: 'Premium Addon',
-  })
-  @IsString()
-  @IsNotEmpty()
-  itemName: string;
-
-  @ApiPropertyOptional({
-    description: 'Item description',
-    example: 'Premium addon with unlimited features',
-  })
-  @IsString()
-  @IsOptional()
-  itemDescription?: string;
-}
-
-export class CreateInitialSubscriptionDto {
-  @ApiProperty({
-    description: 'Workspace ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  workspaceId: string;
-
-  @ApiProperty({
-    description: 'Office Location ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  officeLocationId: string;
-
-  @ApiProperty({
-    description: 'Plan Price ID (ana abonelik)',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  planPriceId: string;
-
-  @ApiPropertyOptional({
-    description: 'Stripe subscription ID',
-    example: 'sub_1234567890',
-  })
-  @IsString()
-  @IsOptional()
-  stripeSubscriptionId?: string;
-
-  @ApiProperty({
-    description: 'Subscription start date',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  @Type(() => Date)
-  startDate: Date;
-
-  @ApiPropertyOptional({
-    description: 'Additional items (products, addons)',
-    type: [CreateWorkspaceSubscriptionItemDto],
-  })
-  @ValidateNested({ each: true })
-  @Type(() => CreateWorkspaceSubscriptionItemDto)
-  @IsArray()
-  @IsOptional()
-  items?: CreateWorkspaceSubscriptionItemDto[];
-}
-
-export class AddItemToSubscriptionDto {
-  @ApiProperty({
-    description: 'Subscription ID to add item to',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  subscriptionId: string;
-
-  @ApiProperty({
-    description: 'Subscription item to add',
-    type: CreateWorkspaceSubscriptionItemDto,
-  })
-  @ValidateNested()
-  @Type(() => CreateWorkspaceSubscriptionItemDto)
-  item: CreateWorkspaceSubscriptionItemDto;
-}
-
-export class UpdateWorkspaceSubscriptionDto {
-  @ApiPropertyOptional({
-    description: 'Stripe subscription ID',
-    example: 'sub_1234567890',
-  })
-  @IsString()
-  @IsOptional()
-  stripeSubscriptionId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Subscription status',
-    enum: ['ACTIVE', 'INACTIVE', 'PENDING', 'CANCELLED', 'EXPIRED', 'SUSPENDED'],
-    example: 'ACTIVE',
-  })
-  @IsEnum(['ACTIVE', 'INACTIVE', 'PENDING', 'CANCELLED', 'EXPIRED', 'SUSPENDED'])
-  @IsOptional()
-  status?: 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'CANCELLED' | 'EXPIRED' | 'SUSPENDED';
-
-  @ApiPropertyOptional({
-    description: 'Subscription start date',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  @Type(() => Date)
-  @IsOptional()
-  startDate?: Date;
-
-  @ApiPropertyOptional({
-    description: 'Subscription end date',
-    example: '2024-12-31T23:59:59.999Z',
-  })
-  @Type(() => Date)
-  @IsOptional()
-  endDate?: Date;
-
-  @ApiPropertyOptional({
-    description: 'Is subscription active',
-    example: true,
-  })
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
-}
-
-export class UpdateWorkspaceSubscriptionItemDto {
-  @ApiPropertyOptional({
-    description: 'Quantity',
-    example: 2,
-  })
-  @IsInt()
-  @Min(1)
-  @IsOptional()
-  quantity?: number;
-
-  @ApiPropertyOptional({
-    description: 'Unit price in cents',
-    example: 9999,
-  })
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  unitPrice?: number;
-
-  @ApiPropertyOptional({
-    description: 'Total price in cents',
-    example: 19998,
-  })
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  totalPrice?: number;
-
-  @ApiPropertyOptional({
-    description: 'Item start date',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  @Type(() => Date)
-  @IsOptional()
-  startDate?: Date;
-
-  @ApiPropertyOptional({
-    description: 'Item end date',
-    example: '2024-12-31T23:59:59.999Z',
-  })
-  @Type(() => Date)
-  @IsOptional()
-  endDate?: Date;
-
-  @ApiPropertyOptional({
-    description: 'Item status',
-    enum: ['ACTIVE', 'INACTIVE', 'PENDING', 'CANCELLED', 'EXPIRED', 'SUSPENDED'],
-    example: 'ACTIVE',
-  })
-  @IsEnum(['ACTIVE', 'INACTIVE', 'PENDING', 'CANCELLED', 'EXPIRED', 'SUSPENDED'])
-  @IsOptional()
-  status?: 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'CANCELLED' | 'EXPIRED' | 'SUSPENDED';
-
-  @ApiPropertyOptional({
-    description: 'Is item active',
-    example: true,
-  })
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
-}
-
-export class WorkspaceSubscriptionQueryDto {
-  @ApiPropertyOptional({
-    description: 'Filter by workspace ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsOptional()
-  workspaceId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by office location ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsOptional()
-  officeLocationId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by subscription status',
-    enum: ['ACTIVE', 'INACTIVE', 'PENDING', 'CANCELLED', 'EXPIRED', 'SUSPENDED'],
-    example: 'ACTIVE',
-  })
-  @IsEnum(['ACTIVE', 'INACTIVE', 'PENDING', 'CANCELLED', 'EXPIRED', 'SUSPENDED'])
-  @IsOptional()
-  status?: 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'CANCELLED' | 'EXPIRED' | 'SUSPENDED';
-
-  @ApiPropertyOptional({
-    description: 'Filter by active status',
-    example: true,
-  })
-  @IsBoolean()
-  @IsOptional()
-  @Type(() => Boolean)
-  isActive?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Page number',
-    example: 1,
-    default: 1,
-  })
-  @IsInt()
-  @Min(1)
-  @IsOptional()
-  @Type(() => Number)
-  page?: number;
-
-  @ApiPropertyOptional({
-    description: 'Number of items per page',
-    example: 10,
-    default: 10,
-  })
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number;
-}
-
-// =====================
-// FEATURE USAGE DTOs (Office Location Based)
-// =====================
-
-export class CreateFeatureUsageDto {
-  @ApiProperty({
-    description: 'User ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  userId: string;
-
-  @ApiProperty({
-    description: 'Office Location ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  officeLocationId: string;
-
-  @ApiProperty({
-    description: 'Feature ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  featureId: string;
-
-  @ApiProperty({
-    description: 'Usage month (first day of month)',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  @Type(() => Date)
-  usedAt: Date;
-
-  @ApiProperty({
-    description: 'Usage count',
-    example: 5,
-    minimum: 0,
-  })
-  @IsNumber()
-  @Min(0)
-  usedCount: number;
-}
-
-export class UpdateFeatureUsageDto {
-  @ApiProperty({
-    description: 'Usage count',
-    example: 10,
-    minimum: 0,
-  })
-  @IsNumber()
-  @Min(0)
-  usedCount: number;
-}
-
-export class FeatureUsageResponseDto {
-  @ApiProperty({
-    description: 'Feature usage ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  id: string;
-
-  @ApiProperty({
-    description: 'User ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  userId: string;
-
-  @ApiProperty({
-    description: 'Office Location ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  officeLocationId: string;
-
-  @ApiProperty({
-    description: 'Feature ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  featureId: string;
-
-  @ApiProperty({
-    description: 'Usage month',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  usedAt: Date;
-
-  @ApiProperty({
-    description: 'Usage count',
-    example: 5,
-  })
-  usedCount: number;
-
-  @ApiPropertyOptional({
-    description: 'User details',
-    type: Object,
-  })
-  user?: any;
-
-  @ApiPropertyOptional({
-    description: 'Office location details',
-    type: Object,
-  })
-  officeLocation?: any;
+  plan?: any;
 
   @ApiPropertyOptional({
     description: 'Feature details',
-    type: FeatureResponseDto,
   })
-  feature?: FeatureResponseDto;
-}
-
-export class FeatureUsageQueryDto {
-  @ApiPropertyOptional({
-    description: 'Filter by user ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsOptional()
-  userId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by office location ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsOptional()
-  officeLocationId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by feature ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsOptional()
-  featureId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by month',
-    example: '2024-01-01',
-  })
-  @IsOptional()
-  @Type(() => Date)
-  usedAt?: Date;
-
-  @ApiPropertyOptional({
-    description: 'Page number',
-    example: 1,
-    minimum: 1,
-  })
-  @IsNumber()
-  @Min(1)
-  @IsOptional()
-  @Type(() => Number)
-  page?: number;
-
-  @ApiPropertyOptional({
-    description: 'Items per page',
-    example: 10,
-    minimum: 1,
-    maximum: 100,
-  })
-  @IsNumber()
-  @Min(1)
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number;
+  feature?: any;
 }
 
 // =====================
-// QUERY DTOs
+// PLAN ADDON DTOs
 // =====================
 
-export class PlanQueryDto {
-  @ApiPropertyOptional({
-    description: 'Filter by active status',
-    example: true,
-  })
-  @IsBoolean()
-  @IsOptional()
-  @Type(() => Boolean)
-  isActive?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Office Location ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsOptional()
-  officeLocationId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by deleted status',
-    example: false,
-  })
-  @IsBoolean()
-  @IsOptional()
-  @Type(() => Boolean)
-  isDeleted?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Search by name',
-    example: 'Basic',
-  })
-  @IsString()
-  @IsOptional()
-  search?: string;
-
-  @ApiPropertyOptional({
-    description: 'Page number',
-    example: 1,
-    minimum: 1,
-  })
-  @IsNumber()
-  @Min(1)
-  @IsOptional()
-  @Type(() => Number)
-  page?: number;
-
-  @ApiPropertyOptional({
-    description: 'Items per page',
-    example: 10,
-    minimum: 1,
-    maximum: 100,
-  })
-  @IsNumber()
-  @Min(1)
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number;
-}
-
-export class PlanPriceQueryDto {
-  @ApiPropertyOptional({
-    description: 'Filter by plan ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsString()
-  @IsOptional()
-  planId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by billing cycle',
-    enum: BillingCycle,
-    example: BillingCycle.MONTHLY,
-  })
-  @IsEnum(BillingCycle)
-  @IsOptional()
-  billingCycle?: BillingCycle;
-
-  @ApiPropertyOptional({
-    description: 'Filter by currency',
-    example: 'USD',
-  })
-  @IsString()
-  @IsOptional()
-  currency?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by active status',
-    example: true,
-  })
-  @IsBoolean()
-  @IsOptional()
-  @Type(() => Boolean)
-  isActive?: boolean;
-}
-
-export class FeatureQueryDto {
-  @ApiPropertyOptional({
-    description: 'Filter by active status',
-    example: true,
-  })
-  @IsBoolean()
-  @IsOptional()
-  @Type(() => Boolean)
-  isActive?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Search by name',
-    example: 'Virtual',
-  })
-  @IsString()
-  @IsOptional()
-  search?: string;
-
-  @ApiPropertyOptional({
-    description: 'Page number',
-    example: 1,
-    minimum: 1,
-  })
-  @IsNumber()
-  @Min(1)
-  @IsOptional()
-  @Type(() => Number)
-  page?: number;
-
-  @ApiPropertyOptional({
-    description: 'Items per page',
-    example: 10,
-    minimum: 1,
-    maximum: 100,
-  })
-  @IsNumber()
-  @Min(1)
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number;
-}
-
-export class PlanFeatureQueryDto {
-  @ApiPropertyOptional({
-    description: 'Filter by plan ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsOptional()
-  planId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by feature ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsOptional()
-  featureId?: string;
-}
-
-// =====================
-// BULK OPERATION DTOs
-// =====================
-
-export class BulkCreatePlanFeaturesDto {
+export class CreatePlanAddonDto {
   @ApiProperty({
     description: 'Plan ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
@@ -1754,610 +455,339 @@ export class BulkCreatePlanFeaturesDto {
   planId: string;
 
   @ApiProperty({
-    description: 'Array of plan features to create',
-    type: [CreatePlanFeatureDto],
-  })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreatePlanFeatureDto)
-  features: Omit<CreatePlanFeatureDto, 'planId'>[];
-}
-
-export class BulkUpdatePlanFeaturesDto {
-  @ApiProperty({
-    description: 'Array of plan feature updates',
-    type: [Object],
-  })
-  @IsArray()
-  @ValidateNested({ each: true })
-  features: Array<{
-    id: string;
-    includedLimit?: number;
-    unitPrice?: number;
-  }>;
-}
-
-// =====================
-// WORKSPACE FEATURE USAGE DTOs (Workspace Based)
-// =====================
-
-export class CreateWorkspaceFeatureUsageDto {
-  @ApiProperty({
-    description: 'Workspace ID',
+    description: 'Product ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @IsUUID()
   @IsNotEmpty()
-  workspaceId: string;
+  productId: string;
 
   @ApiProperty({
-    description: 'Office Location ID',
+    description: 'Product Price ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @IsUUID()
   @IsNotEmpty()
-  officeLocationId: string;
+  productPriceId: string;
 
   @ApiProperty({
-    description: 'Feature ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  featureId: string;
-
-  @ApiProperty({
-    description: 'Usage month (first day of month)',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  @Type(() => Date)
-  usedAt: Date;
-
-  @ApiProperty({
-    description: 'Usage count',
-    example: 5,
-    minimum: 0,
-  })
-  @IsNumber()
-  @Min(0)
-  usedCount: number;
-}
-
-export class UpdateWorkspaceFeatureUsageDto {
-  @ApiProperty({
-    description: 'Usage count',
-    example: 10,
-    minimum: 0,
-  })
-  @IsNumber()
-  @Min(0)
-  usedCount: number;
-}
-
-export class WorkspaceFeatureUsageResponseDto {
-  @ApiProperty({
-    description: 'Feature usage ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  id: string;
-
-  @ApiProperty({
-    description: 'Workspace ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  workspaceId: string;
-
-  @ApiProperty({
-    description: 'Office Location ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  officeLocationId: string;
-
-  @ApiProperty({
-    description: 'Feature ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  featureId: string;
-
-  @ApiProperty({
-    description: 'Usage month',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  usedAt: Date;
-
-  @ApiProperty({
-    description: 'Usage count',
-    example: 5,
-  })
-  usedCount: number;
-
-  @ApiPropertyOptional({
-    description: 'Workspace details',
-    type: Object,
-  })
-  workspace?: any;
-
-  @ApiPropertyOptional({
-    description: 'Office location details',
-    type: Object,
-  })
-  officeLocation?: any;
-
-  @ApiPropertyOptional({
-    description: 'Feature details',
-    type: FeatureResponseDto,
-  })
-  feature?: FeatureResponseDto;
-}
-
-export class WorkspaceFeatureUsageQueryDto {
-  @ApiPropertyOptional({
-    description: 'Filter by workspace ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsOptional()
-  workspaceId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by office location ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsOptional()
-  officeLocationId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by feature ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsOptional()
-  featureId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by month',
-    example: '2024-01-01',
-  })
-  @IsOptional()
-  @Type(() => Date)
-  usedAt?: Date;
-
-  @ApiPropertyOptional({
-    description: 'Page number',
+    description: 'Display order in plan addons list',
     example: 1,
-    minimum: 1,
   })
-  @IsNumber()
-  @Min(1)
-  @IsOptional()
-  @Type(() => Number)
-  page?: number;
+  @IsInt()
+  displayOrder: number;
 
   @ApiPropertyOptional({
-    description: 'Items per page',
-    example: 10,
-    minimum: 1,
-    maximum: 100,
-  })
-  @IsNumber()
-  @Min(1)
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number;
-}
-
-// =====================
-// PLAN TEMPLATE DTOs
-// =====================
-
-export class CreatePlanTemplateDto {
-  @ApiProperty({
-    description: 'Template name',
-    example: 'Basic Package Template',
-  })
-  @IsString()
-  @IsNotEmpty()
-  name: string;
-
-  @ApiProperty({
-    description: 'Template slug',
-    example: 'basic-package',
-  })
-  @IsString()
-  @IsNotEmpty()
-  slug: string;
-
-  @ApiPropertyOptional({
-    description: 'Template description',
-    example: 'Basic package template for small businesses',
-  })
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @ApiPropertyOptional({
-    description: 'Template image URL',
-    example: 'https://example.com/template-image.png',
-  })
-  @IsString()
-  @IsOptional()
-  imageUrl?: string;
-
-  @ApiProperty({
-    description: 'Monthly price in cents',
-    example: 1999,
-    minimum: 0,
-  })
-  @IsNumber()
-  @Min(0)
-  priceMonthly: number;
-
-  @ApiProperty({
-    description: 'Yearly price in cents',
-    example: 19999,
-    minimum: 0,
-  })
-  @IsNumber()
-  @Min(0)
-  priceYearly: number;
-
-  @ApiPropertyOptional({
-    description: 'Currency code',
-    example: 'USD',
-    default: 'USD',
-  })
-  @IsString()
-  @IsOptional()
-  currency?: string;
-
-
-  @ApiPropertyOptional({
-    description: 'Is template active',
+    description: 'Is addon active',
     example: true,
     default: true,
   })
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Template features',
-    type: [Object],
-  })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreatePlanTemplateFeatureDto)
-  @IsOptional()
-  features?: CreatePlanTemplateFeatureDto[];
 }
 
-export class UpdatePlanTemplateDto {
+export class UpdatePlanAddonDto extends PartialType(CreatePlanAddonDto) {
   @ApiPropertyOptional({
-    description: 'Template name',
-    example: 'Basic Package Template',
-  })
-  @IsString()
-  @IsOptional()
-  name?: string;
-
-  @ApiPropertyOptional({
-    description: 'Template slug',
-    example: 'basic-package',
-  })
-  @IsString()
-  @IsOptional()
-  slug?: string;
-
-  @ApiPropertyOptional({
-    description: 'Template description',
-    example: 'Basic package template for small businesses',
-  })
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @ApiPropertyOptional({
-    description: 'Template image URL',
-    example: 'https://example.com/template-image.png',
-  })
-  @IsString()
-  @IsOptional()
-  imageUrl?: string;
-
-  @ApiPropertyOptional({
-    description: 'Monthly price in cents',
-    example: 1999,
-    minimum: 0,
-  })
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  priceMonthly?: number;
-
-  @ApiPropertyOptional({
-    description: 'Yearly price in cents',
-    example: 19999,
-    minimum: 0,
-  })
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  priceYearly?: number;
-
-  @ApiPropertyOptional({
-    description: 'Currency code',
-    example: 'USD',
-  })
-  @IsString()
-  @IsOptional()
-  currency?: string;
-
-  @ApiPropertyOptional({
-    description: 'Is template active',
-    example: true,
-  })
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Is template deleted',
+    description: 'Is plan addon deleted',
     example: false,
-    default: false,
   })
   @IsBoolean()
   @IsOptional()
   isDeleted?: boolean;
 }
 
-export class PlanTemplateResponseDto {
+export class PlanAddonResponseDto {
   @ApiProperty({
-    description: 'Template ID',
+    description: 'Plan addon ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   id: string;
 
   @ApiProperty({
-    description: 'Template name',
-    example: 'Basic Package Template',
+    description: 'Plan ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
   })
-  name: string;
+  planId: string;
 
   @ApiProperty({
-    description: 'Template slug',
-    example: 'basic-package',
+    description: 'Product ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
   })
-  slug: string;
-
-  @ApiPropertyOptional({
-    description: 'Template description',
-    example: 'Basic package template for small businesses',
-  })
-  description?: string;
-
-  @ApiPropertyOptional({
-    description: 'Template image URL',
-    example: 'https://example.com/template-image.png',
-  })
-  imageUrl?: string;
+  productId: string;
 
   @ApiProperty({
-    description: 'Monthly price in cents',
-    example: 1999,
+    description: 'Product Price ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
   })
-  priceMonthly: number;
+  productPriceId: string;
 
   @ApiProperty({
-    description: 'Yearly price in cents',
-    example: 19999,
+    description: 'Display order',
+    example: 1,
   })
-  priceYearly: number;
+  displayOrder: number;
 
   @ApiProperty({
-    description: 'Currency code',
-    example: 'USD',
-  })
-  currency: string;
-
-  @ApiProperty({
-    description: 'Is template active',
+    description: 'Is addon active',
     example: true,
   })
   isActive: boolean;
 
   @ApiProperty({
-    description: 'Is template deleted',
+    description: 'Is addon deleted',
     example: false,
   })
   isDeleted: boolean;
 
   @ApiProperty({
-    description: 'Creation date',
+    description: 'Created at',
     example: '2024-01-01T00:00:00.000Z',
   })
   createdAt: Date;
 
   @ApiProperty({
-    description: 'Last update date',
+    description: 'Updated at',
     example: '2024-01-01T00:00:00.000Z',
   })
   updatedAt: Date;
 
   @ApiPropertyOptional({
-    description: 'Deletion date',
+    description: 'Deleted at',
     example: '2024-01-01T00:00:00.000Z',
   })
   deletedAt?: Date;
 
+  // Relations
   @ApiPropertyOptional({
-    description: 'Template features',
-    type: [Object],
+    description: 'Plan details',
   })
-  features?: any[];
+  plan?: any;
+
+  @ApiPropertyOptional({
+    description: 'Product details',
+  })
+  product?: any;
+
+  @ApiPropertyOptional({
+    description: 'Price details',
+  })
+  prices?: any;
 }
 
-export class CreatePlanTemplateFeatureDto {
+// =====================
+// PLAN RESPONSE DTOs
+// =====================
+
+export class PlanResponseDto {
   @ApiProperty({
-    description: 'Feature ID',
+    description: 'Plan ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
-  @IsUUID()
-  @IsNotEmpty()
-  featureId: string;
-
-  @ApiPropertyOptional({
-    description: 'Included limit (null = unlimited, 0 = not included)',
-    example: 5,
-    minimum: 0,
-  })
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  includedLimit?: number;
-
-  @ApiPropertyOptional({
-    description: 'Unit price in cents (null = not available for purchase)',
-    example: 500,
-    minimum: 0,
-  })
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  unitPrice?: number;
-
-  @ApiPropertyOptional({
-    description: 'Is feature required in template',
-    example: true,
-    default: false,
-  })
-  @IsBoolean()
-  @IsOptional()
-  isRequired?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Display order',
-    example: 1,
-    minimum: 0,
-  })
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  displayOrder?: number;
-}
-
-export class UpdatePlanTemplateFeatureDto extends PartialType(CreatePlanTemplateFeatureDto) {}
-
-export class PlanTemplateQueryDto {
-  @ApiPropertyOptional({
-    description: 'Filter by active status',
-    example: true,
-  })
-  @IsBoolean()
-  @IsOptional()
-  @Type(() => Boolean)
-  isActive?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Filter by deleted status',
-    example: false,
-  })
-  @IsBoolean()
-  @IsOptional()
-  @Type(() => Boolean)
-  isDeleted?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Search by name or slug',
-    example: 'basic',
-  })
-  @IsString()
-  @IsOptional()
-  search?: string;
-
-  @ApiPropertyOptional({
-    description: 'Page number',
-    example: 1,
-    minimum: 1,
-  })
-  @IsNumber()
-  @Min(1)
-  @IsOptional()
-  @Type(() => Number)
-  page?: number;
-
-  @ApiPropertyOptional({
-    description: 'Items per page',
-    example: 10,
-    minimum: 1,
-    maximum: 100,
-  })
-  @IsNumber()
-  @Min(1)
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number;
-}
-
-export class CreatePlanFromTemplateDto {
-  @ApiProperty({
-    description: 'Template ID to copy from',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  templateId: string;
+    id: string;
 
   @ApiProperty({
-    description: 'Office Location ID',
+    description: 'Office location ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
-  @IsUUID()
-  @IsNotEmpty()
   officeLocationId: string;
 
-  @ApiPropertyOptional({
-    description: 'Override plan name (optional)',
-    example: 'NYC Basic Plan',
+  @ApiProperty({
+    description: 'Plan name',
+    example: 'Basic Plan',
   })
-  @IsString()
-  @IsOptional()
-  name?: string;
+  name: string;
+
+  @ApiProperty({
+    description: 'Plan slug',
+    example: 'basic-plan',
+  })
+  slug: string;
 
   @ApiPropertyOptional({
-    description: 'Override plan slug (optional)',
-    example: 'nyc-basic',
+    description: 'Plan description',
+    example: 'Basic plan with essential features',
   })
-  @IsString()
-  @IsOptional()
-  slug?: string;
+  description?: string;
 
   @ApiPropertyOptional({
-    description: 'Override monthly price (optional)',
-    example: 2499,
-    minimum: 0,
+    description: 'Plan image URL',
+    example: 'https://example.com/plan-image.png',
   })
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  priceMonthly?: number;
+  imageUrl?: string;
+
+  @ApiProperty({
+    description: 'Is plan active',
+    example: true,
+  })
+  isActive: boolean;
+
+  @ApiProperty({
+    description: 'Is plan deleted',
+    example: false,
+  })
+  isDeleted: boolean;
+
+  @ApiProperty({
+    description: 'Show on marketplace',
+    example: true,
+  })
+  showOnMarketplace: boolean;
 
   @ApiPropertyOptional({
-    description: 'Override yearly price (optional)',
-    example: 24999,
-    minimum: 0,
+    description: 'Display features for UI',
   })
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  priceYearly?: number;
+  displayFeatures?: any;
+
+  @ApiProperty({
+    description: 'Created at',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    description: 'Updated at',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  updatedAt: Date;
 
   @ApiPropertyOptional({
-    description: 'Override currency (optional)',
-    example: 'EUR',
+    description: 'Deleted at',
+    example: '2024-01-01T00:00:00.000Z',
   })
-  @IsString()
-  @IsOptional()
-  currency?: string;
+  deletedAt?: Date;
+
+  // Relations
+  @ApiPropertyOptional({
+    description: 'Office location details',
+  })
+  officeLocation?: any;
+
+  @ApiPropertyOptional({
+    description: 'Plan features',
+    type: [PlanFeatureResponseDto],
+  })
+  features?: PlanFeatureResponseDto[];
+
+  @ApiPropertyOptional({
+    description: 'Plan prices',
+    type: [PlanPriceResponseDto],
+  })
+  prices?: PlanPriceResponseDto[];
+
+  @ApiPropertyOptional({
+    description: 'Plan addons',
+    type: [PlanAddonResponseDto],
+  })
+  addons?: PlanAddonResponseDto[];
+
+  @ApiPropertyOptional({
+    description: 'Mailboxes using this plan',
+    type: [Object],
+  })
+  mailboxes?: any[];
 }
 
+// =====================
+// COMPLETE PLAN WITH FEATURES DTOs
+// =====================
+
+export class CreateCompleteRLanDto {
+  @ApiProperty({
+    description: 'Basic plan information',
+    type: CreatePlanDto,
+  })
+  @ValidateNested()
+  @Type(() => CreatePlanDto)
+  plan: CreatePlanDto;
+
+  @ApiPropertyOptional({
+    description: 'Plan prices',
+    type: [CreatePlanPriceDto],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreatePlanPriceDto)
+  @IsOptional()
+  prices?: Omit<CreatePlanPriceDto, 'planId'>[];
+
+  @ApiPropertyOptional({
+    description: 'Plan features',
+    type: [CreatePlanFeatureDto],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreatePlanFeatureDto)
+  @IsOptional()
+  features?: Omit<CreatePlanFeatureDto, 'planId'>[];
+
+  @ApiPropertyOptional({
+    description: 'Plan addons',
+    type: [CreatePlanAddonDto],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreatePlanAddonDto)
+  @IsOptional()
+  addons?: Omit<CreatePlanAddonDto, 'planId'>[];
+}
+
+
+export class AssignProductToPlanAddonDto {
+  @ApiProperty({ example: 'plan-uuid', description: 'Eklenecek Pricing Plan ID' })
+  @IsUUID()
+  planId: string;
+
+  @ApiProperty({ example: 'product-uuid', description: 'Eklenen ürün ID' })
+  @IsUUID()
+  productId: string;
+
+  @ApiPropertyOptional({ example:"['id1','id2']" , description: 'Eğer ürünün birden fazla fiyatı varsa, gösterilecek fiyat ID leri' })  
+  @IsOptional()
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  productPriceIds?: string[]; 
+
+  @ApiProperty({ example: 1, description: 'Bu addonun sırası' })
+  @IsInt()
+  order: number;
+}
+
+export class RemoveProductFromPlanAddonDto {
+  @IsUUID()
+  pricingPlanId: string;
+
+  @IsUUID()
+  productId: string;
+}
+
+// =====================
+// COMPOSITE DTOs
+// =====================
+
+export class CreatePlanWithFeaturesDto {
+  @ApiProperty({ description: 'Plan creation data' })
+  @ValidateNested()
+  @Type(() => CreatePlanDto)
+  plan: CreatePlanDto;
+
+  @ApiPropertyOptional({
+    description: 'Plan features to include',
+    type: [CreatePlanFeatureDto]
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreatePlanFeatureDto)
+  @IsOptional()
+  features?: CreatePlanFeatureDto[];
+
+  @ApiPropertyOptional({
+    description: 'Plan prices to include',
+    type: [CreatePlanPriceDto]
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreatePlanPriceDto)
+  @IsOptional()
+  prices?: CreatePlanPriceDto[];
+}

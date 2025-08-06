@@ -144,7 +144,7 @@ export class UserService {
         lastName: true,
       },
     });
-    await this.workspaceService.createWorkspace(newUser.id,{ name: `${newUser.firstName} ${newUser.lastName || ''}`.trim() });
+    await this.workspaceService.createWorkspace({ name: `${newUser.firstName} ${newUser.lastName || ''}`.trim() }, newUser.id);
     await this.prismaService.userRole.create({
       data: {
         userId: newUser.id,

@@ -1,11 +1,4 @@
 import { Body, Controller, Param, Post, Put, Get, Query, Delete, Patch } from '@nestjs/common';
-import { 
-  CreateInitialSubscriptionDto, 
-  AddItemToSubscriptionDto,
-  UpdateWorkspaceSubscriptionDto,
-  UpdateWorkspaceSubscriptionItemDto,
-  WorkspaceSubscriptionQueryDto 
-} from 'src/dtos/plan.dto';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   ApiConflictResponse, 
@@ -16,9 +9,10 @@ import {
   ApiParam,
   ApiQuery 
 } from '@nestjs/swagger';
-import { SubscriptionService } from './subscription.service';
+import { SubscriptionService, CreateSubscriptionItemDto, UpdateSubscriptionItemDto, SubscriptionItemQueryDto } from './subscription.service';
+import { SubscriptionItemStatus, ProductType } from '@prisma/client';
 
-@ApiTags('Workspace Subscriptions')
+@ApiTags('Subscription Items')
 @Controller('subscription')
 export class SubscriptionController {
   constructor(
@@ -26,142 +20,205 @@ export class SubscriptionController {
   ) {}
 
   // =====================
-  // WORKSPACE SUBSCRIPTION ENDPOINTS
+  // SUBSCRIPTION ITEM ENDPOINTS
   // =====================
 
   @Get()
   @ApiOperation({ 
-    summary: 'Get workspace subscriptions',
-    description: 'Retrieve workspace subscriptions with filtering and pagination'
+    summary: 'Get subscription items',
+    description: 'Retrieve subscription items with filtering and pagination'
   })
-  @ApiQuery({ type: WorkspaceSubscriptionQueryDto, required: false })
-  @ApiResponse({ status: 200, description: 'Subscriptions retrieved successfully' })
-  async getWorkspaceSubscriptions(@Query() query?: WorkspaceSubscriptionQueryDto) {
-    return this.subscriptionService.getWorkspaceSubscriptions(query);
+  @ApiQuery({ name: 'mailboxId', required: false, description: 'Filter by mailbox ID' })
+  @ApiQuery({ name: 'itemType', required: false, enum: ProductType, description: 'Filter by item type' })
+  @ApiQuery({ name: 'status', required: false, enum: SubscriptionItemStatus, description: 'Filter by status' })
+  @ApiQuery({ name: 'isActive', required: false, type: Boolean, description: 'Filter by active status' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (default: 10)' })
+  @ApiResponse({ status: 200, description: 'Subscription items retrieved successfully' })
+  async getSubscriptionItems(@Query() query: SubscriptionItemQueryDto) {
+    return this.subscriptionService.getSubscriptionItems(query);
   }
 
   @Get(':id')
   @ApiOperation({ 
-    summary: 'Get workspace subscription by ID',
-    description: 'Retrieve a specific workspace subscription with its items'
+    summary: 'Get subscription item by ID',
+    description: 'Retrieve detailed information about a specific subscription item'
   })
-  @ApiParam({ name: 'id', description: 'Subscription ID', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Subscription retrieved successfully' })
-  @ApiNotFoundResponse({ description: 'Subscription not found' })
-  async getWorkspaceSubscriptionById(@Param('id') id: string) {
-    return this.subscriptionService.getWorkspaceSubscriptionById(id);
+  @ApiParam({ name: 'id', description: 'Subscription Item ID', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Subscription item retrieved successfully' })
+  @ApiNotFoundResponse({ description: 'Subscription item not found' })
+  async getSubscriptionItemById(@Param('id') id: string) {
+    return this.subscriptionService.getSubscriptionItemById(id);
   }
 
-  @Post('initial')
+  @Get('mailbox/:mailboxId')
   @ApiOperation({ 
-    summary: 'Create initial subscription',
-    description: 'Create a new workspace subscription with initial plans, products, and addons'
+    summary: 'Get subscription items by mailbox',
+    description: 'Retrieve all subscription items for a specific mailbox'
   })
-  @ApiBody({ type: CreateInitialSubscriptionDto, description: 'Initial subscription data' })
-  @ApiResponse({ status: 201, description: 'Initial subscription created successfully' })
-  @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiNotFoundResponse({ description: 'Workspace or office location not found' })
-  @ApiConflictResponse({ description: 'Active subscription already exists for this office location' })
-  async createInitialSubscription(@Body() data: CreateInitialSubscriptionDto) {
-    return this.subscriptionService.createInitialSubscription(data);
+  @ApiParam({ name: 'mailboxId', description: 'Mailbox ID', type: 'string' })
+  @ApiQuery({ name: 'itemType', required: false, enum: ProductType, description: 'Filter by item type' })
+  @ApiQuery({ name: 'status', required: false, enum: SubscriptionItemStatus, description: 'Filter by status' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (default: 10)' })
+  @ApiResponse({ status: 200, description: 'Subscription items retrieved successfully' })
+  async getSubscriptionItemsByMailbox(
+    @Param('mailboxId') mailboxId: string,
+    @Query() query: Omit<SubscriptionItemQueryDto, 'mailboxId'>
+  ) {
+    return this.subscriptionService.getSubscriptionItemsByMailbox(mailboxId, query);
   }
 
-  @Post('add-item')
+  @Post()
   @ApiOperation({ 
-    summary: 'Add item to existing subscription',
-    description: 'Add a new plan, product, or addon to an existing subscription'
+    summary: 'Create subscription item',
+    description: 'Add a new item to a mailbox subscription'
   })
-  @ApiBody({ type: AddItemToSubscriptionDto, description: 'Add item data' })
-  @ApiResponse({ status: 201, description: 'Item added to subscription successfully' })
+  @ApiBody({ 
+    description: 'Subscription item creation data',
+    schema: {
+      type: 'object',
+      properties: {
+        mailboxId: { type: 'string', description: 'Mailbox ID' },
+        itemType: { type: 'string', enum: Object.values(ProductType), description: 'Item type' },
+        itemId: { type: 'string', description: 'Product or Addon ID' },
+        priceId: { type: 'string', description: 'Price variant ID', nullable: true },
+        billingCycle: { type: 'string', description: 'Billing cycle' },
+        quantity: { type: 'number', description: 'Quantity', default: 1 },
+        unitPrice: { type: 'number', description: 'Unit price in cents' },
+        currency: { type: 'string', description: 'Currency', default: 'USD' },
+        startDate: { type: 'string', format: 'date-time', description: 'Start date' },
+        endDate: { type: 'string', format: 'date-time', description: 'End date', nullable: true },
+        itemName: { type: 'string', description: 'Item name' },
+        itemDescription: { type: 'string', description: 'Item description', nullable: true },
+      },
+      required: ['mailboxId', 'itemType', 'itemId', 'unitPrice', 'startDate', 'itemName']
+    }
+  })
+  @ApiResponse({ status: 201, description: 'Subscription item created successfully' })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiNotFoundResponse({ description: 'Subscription or item not found' })
-  async addItemToSubscription(@Body() data: AddItemToSubscriptionDto) {
-    return this.subscriptionService.addItemToSubscription(data);
+  @ApiNotFoundResponse({ description: 'Mailbox not found' })
+  async createSubscriptionItem(@Body() createDto: CreateSubscriptionItemDto) {
+    return this.subscriptionService.createSubscriptionItem(createDto);
   }
 
   @Put(':id')
   @ApiOperation({ 
-    summary: 'Update workspace subscription',
-    description: 'Update workspace subscription details'
-  })
-  @ApiParam({ name: 'id', description: 'Subscription ID', type: 'string' })
-  @ApiBody({ type: UpdateWorkspaceSubscriptionDto, description: 'Subscription update data' })
-  @ApiResponse({ status: 200, description: 'Subscription updated successfully' })
-  @ApiBadRequestResponse({ description: 'Invalid input data or failed to update' })
-  @ApiNotFoundResponse({ description: 'Subscription not found' })
-  async updateWorkspaceSubscription(
-    @Param('id') id: string, 
-    @Body() data: UpdateWorkspaceSubscriptionDto
-  ) {
-    return this.subscriptionService.updateWorkspaceSubscription(id, data);
-  }
-
-  @Patch('item/:itemId')
-  @ApiOperation({ 
     summary: 'Update subscription item',
-    description: 'Update a specific subscription item (plan, product, or addon)'
+    description: 'Update an existing subscription item'
   })
-  @ApiParam({ name: 'itemId', description: 'Subscription Item ID', type: 'string' })
-  @ApiBody({ type: UpdateWorkspaceSubscriptionItemDto, description: 'Item update data' })
+  @ApiParam({ name: 'id', description: 'Subscription Item ID', type: 'string' })
+  @ApiBody({ 
+    description: 'Subscription item update data',
+    schema: {
+      type: 'object',
+      properties: {
+        quantity: { type: 'number', description: 'Quantity' },
+        unitPrice: { type: 'number', description: 'Unit price in cents' },
+        endDate: { type: 'string', format: 'date-time', description: 'End date', nullable: true },
+        status: { type: 'string', enum: Object.values(SubscriptionItemStatus), description: 'Status' },
+        isActive: { type: 'boolean', description: 'Active status' },
+      }
+    }
+  })
   @ApiResponse({ status: 200, description: 'Subscription item updated successfully' })
-  @ApiBadRequestResponse({ description: 'Invalid input data or failed to update' })
   @ApiNotFoundResponse({ description: 'Subscription item not found' })
-  async updateWorkspaceSubscriptionItem(
-    @Param('itemId') itemId: string, 
-    @Body() data: UpdateWorkspaceSubscriptionItemDto
+  @ApiBadRequestResponse({ description: 'Invalid input data' })
+  async updateSubscriptionItem(
+    @Param('id') id: string, 
+    @Body() updateDto: UpdateSubscriptionItemDto
   ) {
-    return this.subscriptionService.updateWorkspaceSubscriptionItem(itemId, data);
+    return this.subscriptionService.updateSubscriptionItem(id, updateDto);
   }
 
-  @Delete(':id/cancel')
+  @Patch(':id/deactivate')
   @ApiOperation({ 
-    summary: 'Cancel workspace subscription',
-    description: 'Cancel workspace subscription and all its items'
+    summary: 'Deactivate subscription item',
+    description: 'Deactivate a subscription item (soft delete)'
   })
-  @ApiParam({ name: 'id', description: 'Subscription ID', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Subscription cancelled successfully' })
-  @ApiBadRequestResponse({ description: 'Failed to cancel subscription' })
-  @ApiNotFoundResponse({ description: 'Subscription not found' })
-  async cancelWorkspaceSubscription(@Param('id') id: string) {
-    return this.subscriptionService.cancelWorkspaceSubscription(id);
-  }
-
-  @Delete('item/:itemId/cancel')
-  @ApiOperation({ 
-    summary: 'Cancel subscription item',
-    description: 'Cancel a specific subscription item'
-  })
-  @ApiParam({ name: 'itemId', description: 'Subscription Item ID', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Subscription item cancelled successfully' })
-  @ApiBadRequestResponse({ description: 'Failed to cancel subscription item' })
+  @ApiParam({ name: 'id', description: 'Subscription Item ID', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Subscription item deactivated successfully' })
   @ApiNotFoundResponse({ description: 'Subscription item not found' })
-  async cancelSubscriptionItem(@Param('itemId') itemId: string) {
-    return this.subscriptionService.cancelSubscriptionItem(itemId);
+  async deactivateSubscriptionItem(@Param('id') id: string) {
+    return this.subscriptionService.deactivateSubscriptionItem(id);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ 
+    summary: 'Delete subscription item',
+    description: 'Permanently delete a subscription item'
+  })
+  @ApiParam({ name: 'id', description: 'Subscription Item ID', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Subscription item deleted successfully' })
+  @ApiNotFoundResponse({ description: 'Subscription item not found' })
+  async deleteSubscriptionItem(@Param('id') id: string) {
+    return this.subscriptionService.deleteSubscriptionItem(id);
   }
 
   // =====================
-  // UTILITY ENDPOINTS
+  // BULK OPERATIONS
   // =====================
 
-  @Get('office/:officeLocationId/active')
+  @Patch('mailbox/:mailboxId/bulk-update')
   @ApiOperation({ 
-    summary: 'Get active subscriptions for office',
-    description: 'Retrieve all active subscriptions for a specific office location'
+    summary: 'Bulk update subscription items',
+    description: 'Update multiple subscription items for a mailbox'
   })
-  @ApiParam({ name: 'officeLocationId', description: 'Office Location ID', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Active subscriptions retrieved successfully' })
-  async getActiveSubscriptionsForOffice(@Param('officeLocationId') officeLocationId: string) {
-    return this.subscriptionService.getActiveSubscriptionsForOffice(officeLocationId);
+  @ApiParam({ name: 'mailboxId', description: 'Mailbox ID', type: 'string' })
+  @ApiBody({ 
+    description: 'Bulk update data',
+    schema: {
+      type: 'object',
+      properties: {
+        quantity: { type: 'number', description: 'Quantity' },
+        unitPrice: { type: 'number', description: 'Unit price in cents' },
+        status: { type: 'string', enum: Object.values(SubscriptionItemStatus), description: 'Status' },
+        isActive: { type: 'boolean', description: 'Active status' },
+      }
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Subscription items updated successfully' })
+  async bulkUpdateSubscriptionItems(
+    @Param('mailboxId') mailboxId: string,
+    @Body() updateDto: Partial<UpdateSubscriptionItemDto>
+  ) {
+    return this.subscriptionService.bulkUpdateSubscriptionItems(mailboxId, updateDto);
   }
 
-  @Get('workspace/:workspaceId/active')
+  @Patch('mailbox/:mailboxId/deactivate-all')
   @ApiOperation({ 
-    summary: 'Get active subscriptions for workspace',
-    description: 'Retrieve all active subscriptions for a specific workspace'
+    summary: 'Deactivate all subscription items',
+    description: 'Deactivate all subscription items for a mailbox'
   })
-  @ApiParam({ name: 'workspaceId', description: 'Workspace ID', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Active subscriptions retrieved successfully' })
-  async getWorkspaceActiveSubscriptions(@Param('workspaceId') workspaceId: string) {
-    return this.subscriptionService.getWorkspaceActiveSubscriptions(workspaceId);
+  @ApiParam({ name: 'mailboxId', description: 'Mailbox ID', type: 'string' })
+  @ApiResponse({ status: 200, description: 'All subscription items deactivated successfully' })
+  async deactivateAllSubscriptionItems(@Param('mailboxId') mailboxId: string) {
+    return this.subscriptionService.deactivateAllSubscriptionItems(mailboxId);
+  }
+
+  // =====================
+  // STATISTICS
+  // =====================
+
+  @Get('statistics/overview')
+  @ApiOperation({ 
+    summary: 'Get subscription statistics',
+    description: 'Get overview statistics for all subscription items'
+  })
+  @ApiQuery({ name: 'mailboxId', required: false, description: 'Filter by mailbox ID' })
+  @ApiResponse({ status: 200, description: 'Statistics retrieved successfully' })
+  async getSubscriptionStatistics(@Query('mailboxId') mailboxId?: string) {
+    return this.subscriptionService.getSubscriptionItemStatistics(mailboxId);
+  }
+
+  @Get('mailbox/:mailboxId/active')
+  @ApiOperation({ 
+    summary: 'Get active subscription items for mailbox',
+    description: 'Get all active subscription items for a specific mailbox'
+  })
+  @ApiParam({ name: 'mailboxId', description: 'Mailbox ID', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Active subscription items retrieved successfully' })
+  async getActiveSubscriptionItemsForMailbox(@Param('mailboxId') mailboxId: string) {
+    return this.subscriptionService.getActiveSubscriptionItemsForMailbox(mailboxId);
   }
 }

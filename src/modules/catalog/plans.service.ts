@@ -3,12 +3,9 @@ import { PrismaService } from 'src/prisma.service';
 import {
   CreatePlanDto,
   UpdatePlanDto,
-  PlanQueryDto,
   CreatePlanPriceDto,
   UpdatePlanPriceDto,
-  PlanPriceQueryDto,
-  CreatePlanFromTemplateDto,
-  CreatePlanWithFeaturesDto,
+  PlanResponseDto,
 } from 'src/dtos/plan.dto';
 import { Prisma } from '@prisma/client';
 import { TIMEOUT } from 'dns';
@@ -19,7 +16,7 @@ export class PlansService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async getPlans(query?: PlanQueryDto) {
+  async getPlans(query?: any) {
     const {
       isActive,
       officeLocationId,
@@ -88,10 +85,27 @@ export class PlansService {
           where: { isActive: true, isDeleted: false },
           orderBy: { amount: 'asc' },
         },
-        planAddons:{
-          include:{
-          addon:true,
-          }
+        addons: {
+          include: {
+            product: {
+              include: {
+                prices: {
+                  where: {
+                    isDeleted: false,
+                    active: true,
+                  },
+                },
+              },
+            },
+            prices: true,
+          },
+          where: {
+            isActive: true,
+            isDeleted: false,
+          },
+          orderBy: {
+            displayOrder: 'asc',
+          },
         },
         features: {
           where: { isActive: true, isDeleted: false },
@@ -245,7 +259,7 @@ export class PlansService {
     }
   }
 
-  async createPlanWithFeatures(data: CreatePlanWithFeaturesDto) {
+  async createPlanWithFeatures(data: any) {
     try {
       // Check if office location exists
       const officeLocation = await this.prisma.officeLocation.findUnique({
@@ -419,12 +433,17 @@ export class PlansService {
         isDeleted: false,
       },
       include: {
-        addon: {
+        product: {
           include: {
-            variants: {
-              where: { isDeleted: false },
-              orderBy: { price: 'asc' },
+            prices: {
+              where: { isDeleted: false, active: true },
+              orderBy: { unit_amount: 'asc' },
             },
+          },
+        },
+        prices: {
+          include: {
+            recurring: true,
           },
         },
       },
@@ -432,13 +451,12 @@ export class PlansService {
     });
 
     return planAddons.map(planAddon => ({
-      ...planAddon.addon,
+      ...planAddon.product,
       planAddonConfig: {
         id: planAddon.id,
-        isIncludedInPlan: planAddon.isIncludedInPlan,
-        discountPercent: planAddon.discountPercent,
-        isRequired: planAddon.isRequired,
         displayOrder: planAddon.displayOrder,
+        selectedPriceId: planAddon.productPriceId,
+        selectedPrice: planAddon.prices,
       },
     }));
   }
@@ -477,7 +495,7 @@ export class PlansService {
     }
   }
 
-  async createPlanFromTemplate(data: CreatePlanFromTemplateDto) {
+  async createPlanFromTemplate(data: any) {
     try {
       // Get template with features
       const template = await this.prisma.planTemplate.findFirst({
@@ -601,7 +619,7 @@ export class PlansService {
   // PLAN PRICE OPERATIONS
   // =====================
 
-  async getPlanPrices(query?: PlanPriceQueryDto) {
+  async getPlanPrices(query?: any) {
     const { planId, billingCycle, currency } = query || {};
     const where: Prisma.PlanPriceWhereInput = {
       isDeleted: false,

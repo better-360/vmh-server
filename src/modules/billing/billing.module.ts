@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
-import { BillingService } from './billing.service';
+// import { BillingService } from './billing.service'; // Disabled
 import { StripeService } from '../stripe/stripe.service';
 import { BillingController } from './billing.controller';
 import { UserService } from '../user/user.service';
@@ -12,7 +12,7 @@ import { PlansService } from '../catalog/plans.service';
 @Module({
     imports: [HttpModule],
     providers: [
-        BillingService,
+        // BillingService, // Disabled
         StripeService,
         UserService,
         WorkspaceService,

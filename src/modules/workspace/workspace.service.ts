@@ -1,599 +1,458 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from "@nestjs/common";
-import { PrismaService } from "src/prisma.service";
+import { Injectable, NotFoundException, BadRequestException, ConflictException, Logger } from '@nestjs/common';
+import { PrismaService } from 'src/prisma.service';
 import { 
   CreateWorkspaceDto, 
   UpdateWorkspaceDto, 
-  AddWorkspaceMemberDto, 
+  CreateWorkspaceMemberDto,
   UpdateWorkspaceMemberDto,
-  CreateWorkspaceAddressDto,
-  UpdateWorkspaceAddressDto,
-  CreateWorkspaceDeliveryAddressDto,
-  UpdateWorkspaceDeliveryAddressDto,
-  CreateWorkspaceSubscriptionDto,
-  WorkspaceQueryDto,
-} from "src/dtos/workspace.dto";
-import { WorkspaceRole as PrismaWorkspaceRole } from "@prisma/client";
+  WorkspaceResponseDto,
+  WorkspaceMemberResponseDto,
+} from 'src/dtos/workspace.dto';
+import { Prisma, WorkspaceRole } from '@prisma/client';
 
 @Injectable()
 export class WorkspaceService {
-    constructor(
-        private readonly prisma: PrismaService,
-    ) {}    
+  private readonly logger = new Logger('WorkspaceService');
 
-    // Workspace CRUD
-    async createWorkspace(userId: string, createWorkspaceDto: CreateWorkspaceDto) {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async createWorkspace(createWorkspaceDto: CreateWorkspaceDto, ownerId: string): Promise<WorkspaceResponseDto> {
+    try {
         const workspace = await this.prisma.workspace.create({
             data: {
-                name: createWorkspaceDto.name,
+          ...createWorkspaceDto,
                 members: {
                     create: {
-                        userId,
-                        role: PrismaWorkspaceRole.OWNER
-                    }
-                }
+              userId: ownerId,
+              role: WorkspaceRole.OWNER,
+            },
+          },
             },
             include: {
                 members: {
                     include: {
                         user: {
-                            select: {
-                                id: true,
-                                email: true,
-                                firstName: true,
-                                lastName: true,
-                            }
-                        }
-                    }
-                }
-            }
-        });
+                select: { id: true, firstName: true, lastName: true, email: true },
+              },
+            },
+          },
+          mailboxes: {
+            include: {
+              plan: {
+                select: { id: true, name: true, slug: true },
+              },
+              officeLocation: {
+                select: { id: true, label: true, city: true, state: true },
+              },
+            },
+          },
+        },
+      });
 
+      this.logger.log(`Workspace created successfully: ${workspace.id}`);
         return workspace;
+    } catch (error) {
+      this.logger.error(`Failed to create workspace: ${error.message}`);
+      throw new BadRequestException('Failed to create workspace');
+    }
     }
 
-    async getWorkspaceById(id: string, userId?: string) {
+  async getWorkspaceById(id: string, userId: string): Promise<WorkspaceResponseDto> {
+    try {
         const workspace = await this.prisma.workspace.findUnique({
             where: { id },
             include: {
+            
                 members: {
-                    where: { isDeleted: false },
                     include: {
                         user: {
-                            select: {
-                                id: true,
-                                email: true,
-                                firstName: true,
-                                lastName: true,
-                                profileImage: true
-                            }
-                        }
-                    }
-                },
-                addresses: {
-                    where: { isActive: true },
+                select: { id: true, firstName: true, lastName: true, email: true },
+              },
+            },
+            where: { isDeleted: false },
+          },
+          mailboxes: {
                     include: {
-                        officeLocation: true
-                    }
-                },
-                deliveryAddresses: true,
-                subscriptions: {
-                    where: { isActive: true },
-                    select: { 
-                        id: true, 
-                        startDate: true, 
-                        endDate: true 
-                    }
-                },
-                _count: {
-                    select: {
-                        members: { where: { isDeleted: false } },
-                        tickets: true,
-                        invoices: true
-                    }
-                }
-            }
-        });
+              plan: {
+                select: { id: true, name: true, slug: true },
+              },
+              deliveryAddresses:true,
+              officeLocation: {
+                select: { id: true, label: true, city: true, state: true },
+              },
+            },
+          },
+        },
+      });
 
-        if (!workspace) {
-            throw new NotFoundException('Workspace cannot be found');
-        }
+      if (!workspace || workspace.isDeleted) {
+        throw new NotFoundException('Workspace not found');
+      }
 
-        // Kullanıcının bu workspace'e erişimi var mı kontrol et
-        if (userId) {
+      // Check if user has access to this workspace
             const userMembership = workspace.members.find(m => m.userId === userId);
             if (!userMembership) {
-                throw new ForbiddenException('You have no access to this workspace');
-            }
+        throw new NotFoundException('Workspace not found or access denied');
         }
 
         return workspace;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Failed to get workspace: ${error.message}`);
+      throw new BadRequestException('Failed to get workspace');
     }
+  }
 
-    async getUserWorkspaces(userId: string, query: WorkspaceQueryDto) {
-        const { page = 1, limit = 10, search, isActive } = query;
-        const skip = (page - 1) * limit;
-
-        const whereClause: any = {
+  async getUserWorkspaces(userId: string): Promise<WorkspaceResponseDto[]> {
+    try {
+      const workspaces = await this.prisma.workspace.findMany({
+        where: {
+          isDeleted: false,
             members: {
                 some: {
                     userId,
-                    isDeleted: false
-                }
-            }
-        };
-
-        if (search) {
-            whereClause.name = {
-                contains: search,
-                mode: 'insensitive'
-            };
-        }
-
-        if (isActive !== undefined) {
-            whereClause.isActive = isActive;
-        }
-
-        const [workspaces, total] = await Promise.all([
-            this.prisma.workspace.findMany({
-                where: whereClause,
-                skip,
-                take: limit,
+              isDeleted: false,
+            },
+          },
+        },
                 include: {
                     members: {
-                        where: { 
-                            userId,
-                            isDeleted: false 
-                        },
-                        select: {
-                            role: true
-                        }
+            include: {
+              user: {
+                select: { id: true, firstName: true, lastName: true, email: true },
+              },
+            },
+            where: { isDeleted: false },
+          },
+          mailboxes: {
+            include: {
+              plan: {
+                select: { id: true, name: true, slug: true },
+              },
+              officeLocation: {
+                select: { id: true, label: true, city: true, state: true },
+              },
+            },
                     },
                     _count: {
                         select: {
-                            members: { where: { isDeleted: false } }
-                        }
-                    }
-                },
-                orderBy: { createdAt: 'desc' }
-            }),
-            this.prisma.workspace.count({ where: whereClause })
-        ]);
+              mailboxes: {
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
 
-        return {
-            workspaces: workspaces.map(workspace => ({
-                ...workspace,
-                userRole: workspace.members[0]?.role,
-                memberCount: workspace._count.members
-            })),
-            total,
-            page,
-            limit,
-            totalPages: Math.ceil(total / limit)
-        };
+      return workspaces;
+    } catch (error) {
+      this.logger.error(`Failed to get user workspaces: ${error.message}`);
+      throw new BadRequestException('Failed to get user workspaces');
     }
+  }
 
-    async updateWorkspace(id: string, userId: string, updateWorkspaceDto: UpdateWorkspaceDto) {
-        // Kullanıcının bu workspace'i güncelleyebilme yetkisi var mı kontrol et
-        await this.checkUserPermission(id, userId, [PrismaWorkspaceRole.OWNER]);
+  async updateWorkspace(id: string, updateWorkspaceDto: UpdateWorkspaceDto, userId: string): Promise<WorkspaceResponseDto> {
+    try {
+      const workspace = await this.getWorkspaceById(id, userId);
 
-        const workspace = await this.prisma.workspace.update({
+      // Check if user has permission to update
+      const userMembership = workspace.members.find(m => m.userId === userId);
+      if (!userMembership || !['OWNER'].includes(userMembership.role)) {
+        throw new BadRequestException('Insufficient permissions to update workspace');
+      }
+
+      const updatedWorkspace = await this.prisma.workspace.update({
             where: { id },
             data: updateWorkspaceDto,
             include: {
                 members: {
                     include: {
                         user: {
-                            select: {
-                                id: true,
-                                email: true,
-                                firstName: true,
-                                lastName: true
-                            }
-                        }
-                    }
-                }
-            }
-        });
+                select: { id: true, firstName: true, lastName: true, email: true },
+              },
+            },
+            where: { isDeleted: false },
+          },
+          mailboxes: {
+            include: {
+              plan: {
+                select: { id: true, name: true, slug: true },
+              },
+              officeLocation: {
+                select: { id: true, label: true, city: true, state: true },
+              },
+            },
+          },
+        },
+      });
 
-        return workspace;
+      this.logger.log(`Workspace updated successfully: ${updatedWorkspace.id}`);
+      return updatedWorkspace;
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(`Failed to update workspace: ${error.message}`);
+      throw new BadRequestException('Failed to update workspace');
     }
+  }
 
-    async deleteWorkspace(id: string, userId: string) {
-        // Sadece owner silebilir
-        await this.checkUserPermission(id, userId, [PrismaWorkspaceRole.OWNER]);
+  async deleteWorkspace(id: string, userId: string): Promise<void> {
+    try {
+      const workspace = await this.getWorkspaceById(id, userId);
 
-        // Soft delete
+      // Check if user is owner
+      const userMembership = workspace.members.find(m => m.userId === userId);
+      if (!userMembership || userMembership.role !== WorkspaceRole.OWNER) {
+        throw new BadRequestException('Only workspace owner can delete workspace');
+      }
+
+      // Check if workspace has active mailboxes
+      const activeMailboxes = await this.prisma.mailbox.count({
+        where: {
+          workspaceId: id,
+        },
+      });
+
+      if (activeMailboxes > 0) {
+        throw new ConflictException('Cannot delete workspace with active mailboxes');
+      }
+
         await this.prisma.workspace.update({
             where: { id },
             data: { 
+          isDeleted: true,
+          deletedAt: new Date(),
                 isActive: false,
-                members: {
-                    updateMany: {
-                        where: { workspaceId: id },
-                        data: { 
-                            isDeleted: true,
-                            deletedAt: new Date()
-                        }
-                    }
-                }
-            }
-        });
+        },
+      });
 
-        return { message: 'Workspace deleted succesfuly' };
+      this.logger.log(`Workspace deleted successfully: ${id}`);
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof ConflictException || error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(`Failed to delete workspace: ${error.message}`);
+      throw new BadRequestException('Failed to delete workspace');
     }
+  }
+  async getWorkspaceMembers(workspaceId: string, userId: string): Promise<WorkspaceMemberResponseDto[]> {
+    const workspace = await this.getWorkspaceById(workspaceId, userId);
+    return workspace.members;
+  }
 
-    // Workspace üye yönetimi
-    async addWorkspaceMember(workspaceId: string, userId: string, addMemberDto: AddWorkspaceMemberDto) {
-        // Sadece owner üye ekleyebilir
-        await this.checkUserPermission(workspaceId, userId, [PrismaWorkspaceRole.OWNER]);
+  async addWorkspaceMember(workspaceId: string, createMemberDto: CreateWorkspaceMemberDto, userId: string): Promise<WorkspaceMemberResponseDto> {
+    try {
+      const workspace = await this.getWorkspaceById(workspaceId, userId);
 
-        // Kullanıcı var mı kontrol et
+      // Check if user has permission to add members
+      const userMembership = workspace.members.find(m => m.userId === userId);
+      if (!userMembership || !['OWNER'].includes(userMembership.role)) {
+        throw new BadRequestException('Insufficient permissions to add members');
+      }
+
+      // Check if user is already a member
+      const existingMember = await this.prisma.workspaceMember.findFirst({
+        where: {
+          workspaceId,
+          userId: createMemberDto.userId,
+          isDeleted: false,
+        },
+      });
+
+      if (existingMember) {
+        throw new ConflictException('User is already a member of this workspace');
+      }
+
+      // Verify the user exists
         const user = await this.prisma.user.findUnique({
-            where: { email: addMemberDto.email }
+        where: { id: createMemberDto.userId },
         });
 
         if (!user) {
             throw new NotFoundException('User not found');
         }
 
-        // Zaten üye mi kontrol et
-        const existingMember = await this.prisma.workspaceMember.findFirst({
-            where: {
-                workspaceId,
-                userId: user.id,
-                isDeleted: false
-            }
-        });
-
-        if (existingMember) {
-            throw new BadRequestException('User is already a member of this workspace');
-        }
-
         const member = await this.prisma.workspaceMember.create({
             data: {
                 workspaceId,
-                userId: user.id,
-                role: addMemberDto.role as PrismaWorkspaceRole
+          userId: createMemberDto.userId,
+          role: createMemberDto.role || WorkspaceRole.MEMBER,
             },
             include: {
                 user: {
-                    select: {
-                        id: true,
-                        email: true,
-                        firstName: true,
-                        lastName: true,
-                        profileImage: true
-                    }
-                }
-            }
-        });
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
+          workspace: {
+            select: { id: true, name: true },
+          },
+        },
+      });
 
-        return member;
+      this.logger.log(`Member added to workspace: ${member.id}`);
+      return member;
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof ConflictException || error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(`Failed to add workspace member: ${error.message}`);
+      throw new BadRequestException('Failed to add workspace member');
     }
+  }
 
-    async updateWorkspaceMember(workspaceId: string, memberId: string, userId: string, updateMemberDto: UpdateWorkspaceMemberDto) {
-        // Sadece owner üye güncelleyebilir
-        await this.checkUserPermission(workspaceId, userId, [PrismaWorkspaceRole.OWNER]);
+  async updateWorkspaceMember(workspaceId: string, memberId: string, updateMemberDto: UpdateWorkspaceMemberDto, userId: string): Promise<WorkspaceMemberResponseDto> {
+    try {
+      const workspace = await this.getWorkspaceById(workspaceId, userId);
 
-        const member = await this.prisma.workspaceMember.update({
-            where: { 
-                id: memberId,
-                workspaceId,
-                isDeleted: false
-            },
-            data: {
-                role: updateMemberDto.role as PrismaWorkspaceRole
-            },
+      // Check if user has permission to update members
+      const userMembership = workspace.members.find(m => m.userId === userId);
+      if (!userMembership || !['OWNER'].includes(userMembership.role)) {
+        throw new BadRequestException('Insufficient permissions to update members');
+      }
+
+      const existingMember = await this.prisma.workspaceMember.findUnique({
+        where: { id: memberId },
+        include: {
+          user: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
+        },
+      });
+
+      if (!existingMember || existingMember.workspaceId !== workspaceId) {
+        throw new NotFoundException('Member not found');
+      }
+
+      // Cannot change role of workspace owner
+      if (existingMember.role === WorkspaceRole.OWNER && updateMemberDto.role && updateMemberDto.role !== WorkspaceRole.OWNER) {
+        throw new BadRequestException('Cannot change role of workspace owner');
+      }
+
+      const updatedMember = await this.prisma.workspaceMember.update({
+        where: { id: memberId },
+        data: updateMemberDto,
             include: {
                 user: {
-                    select: {
-                        id: true,
-                        email: true,
-                        firstName: true,
-                        lastName: true,
-                        profileImage: true
-                    }
-                }
-            }
-        });
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
+          workspace: {
+            select: { id: true, name: true },
+          },
+        },
+      });
 
-        return member;
+      this.logger.log(`Workspace member updated: ${updatedMember.id}`);
+      return updatedMember;
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(`Failed to update workspace member: ${error.message}`);
+      throw new BadRequestException('Failed to update workspace member');
     }
+  }
 
-    async removeWorkspaceMember(workspaceId: string, memberId: string, userId: string) {
-        // Sadece owner üye çıkarabilir veya kişi kendini çıkarabilir
-        const member = await this.prisma.workspaceMember.findUnique({
-            where: { id: memberId }
-        });
+  async removeWorkspaceMember(workspaceId: string, memberId: string, userId: string): Promise<void> {
+    try {
+      const workspace = await this.getWorkspaceById(workspaceId, userId);
 
-        if (!member) {
-            throw new NotFoundException('Üye bulunamadı');
-        }
+      // Check if user has permission to remove members
+      const userMembership = workspace.members.find(m => m.userId === userId);
+      if (!userMembership || !['OWNER'].includes(userMembership.role)) {
+        throw new BadRequestException('Insufficient permissions to remove members');
+      }
 
-        if (member.userId !== userId) {
-            await this.checkUserPermission(workspaceId, userId, [PrismaWorkspaceRole.OWNER]);
-        }
+      const existingMember = await this.prisma.workspaceMember.findUnique({
+        where: { id: memberId },
+      });
 
-        // Owner kendini çıkaramaz
-        if (member.role === PrismaWorkspaceRole.OWNER && member.userId === userId) {
-            throw new BadRequestException('Workspace sahibi kendini çıkaramaz');
+      if (!existingMember || existingMember.workspaceId !== workspaceId) {
+        throw new NotFoundException('Member not found');
+      }
+
+      // Cannot remove workspace owner
+      if (existingMember.role === WorkspaceRole.OWNER) {
+        throw new BadRequestException('Cannot remove workspace owner');
         }
 
         await this.prisma.workspaceMember.update({
             where: { id: memberId },
             data: {
                 isDeleted: true,
-                deletedAt: new Date()
-            }
-        });
+          deletedAt: new Date(),
+        },
+      });
 
-        return { message: 'Üye başarıyla çıkarıldı' };
-    }
-
-    // Workspace adres yönetimi
-    async createWorkspaceAddress(workspaceId: string, userId: string, createAddressDto: CreateWorkspaceAddressDto) {
-        await this.checkUserPermission(workspaceId, userId, [PrismaWorkspaceRole.OWNER, PrismaWorkspaceRole.MEMBER]);
-
-        // Eğer varsayılan adres olarak işaretlenmişse, diğer varsayılan adresleri kaldır
-        if (createAddressDto.isDefault) {
-            await this.prisma.workspaceAddress.updateMany({
-                where: { workspaceId, isDefault: true },
-                data: { isDefault: false }
-            });
-        }
-        const steNumber = await this.generateUniqueSteNumber();
-        const address = await this.prisma.workspaceAddress.create({
-            data: {
-                workspaceId,
-                officeLocationId: createAddressDto.officeLocationId,
-                steNumber: steNumber,
-                isDefault: createAddressDto.isDefault || false
-            },
-            include: {
-                officeLocation: true
-            }
-        });
-
-        return address;
-    }
-
-    async updateWorkspaceAddress(workspaceId: string, addressId: string, userId: string, updateAddressDto: UpdateWorkspaceAddressDto) {
-        await this.checkUserPermission(workspaceId, userId, [PrismaWorkspaceRole.OWNER, PrismaWorkspaceRole.MEMBER]);
-
-        // Eğer varsayılan adres olarak işaretlenmişse, diğer varsayılan adresleri kaldır
-        if (updateAddressDto.isDefault) {
-            await this.prisma.workspaceAddress.updateMany({
-                where: { 
-                    workspaceId, 
-                    isDefault: true,
-                    id: { not: addressId }
-                },
-                data: { isDefault: false }
-            });
-        }
-
-        const address = await this.prisma.workspaceAddress.update({
-            where: { 
-                id: addressId,
-                workspaceId 
-            },
-            data: updateAddressDto,
-            include: {
-                officeLocation: true
-            }
-        });
-
-        return address;
-    }
-
-    async deleteWorkspaceAddress(workspaceId: string, addressId: string, userId: string) {
-        await this.checkUserPermission(workspaceId, userId, [PrismaWorkspaceRole.OWNER]);
-
-        await this.prisma.workspaceAddress.update({
-            where: { 
-                id: addressId,
-                workspaceId 
-            },
-            data: {
-                isActive: false,
-                deletedAt: new Date()
-            }
-        });
-
-        return { message: 'Adres başarıyla silindi' };
-    }
-
-    // Workspace teslimat adresi yönetimi
-    async createWorkspaceDeliveryAddress(workspaceId: string, userId: string, createDeliveryAddressDto: CreateWorkspaceDeliveryAddressDto) {
-        await this.checkUserPermission(workspaceId, userId, [PrismaWorkspaceRole.OWNER, PrismaWorkspaceRole.MEMBER]);
-
-        // Eğer varsayılan adres olarak işaretlenmişse, diğer varsayılan adresleri kaldır
-        if (createDeliveryAddressDto.isDefault) {
-            await this.prisma.workspaceDeliveryAddress.updateMany({
-                where: { workspaceId, isDefault: true },
-                data: { isDefault: false }
-            });
-        }
-
-        const deliveryAddress = await this.prisma.workspaceDeliveryAddress.create({
-            data: {
-                workspaceId,
-                ...createDeliveryAddressDto
-            }
-        });
-
-        return deliveryAddress;
-    }
-
-    async updateWorkspaceDeliveryAddress(workspaceId: string, deliveryAddressId: string, userId: string, updateDeliveryAddressDto: UpdateWorkspaceDeliveryAddressDto) {
-        await this.checkUserPermission(workspaceId, userId, [PrismaWorkspaceRole.OWNER, PrismaWorkspaceRole.MEMBER]);
-
-        // Eğer varsayılan adres olarak işaretlenmişse, diğer varsayılan adresleri kaldır
-        if (updateDeliveryAddressDto.isDefault) {
-            await this.prisma.workspaceDeliveryAddress.updateMany({
-                where: { 
-                    workspaceId, 
-                    isDefault: true,
-                    id: { not: deliveryAddressId }
-                },
-                data: { isDefault: false }
-            });
-        }
-
-        const deliveryAddress = await this.prisma.workspaceDeliveryAddress.update({
-            where: { 
-                id: deliveryAddressId,
-                workspaceId 
-            },
-            data: updateDeliveryAddressDto
-        });
-
-        return deliveryAddress;
-    }
-
-    async deleteWorkspaceDeliveryAddress(workspaceId: string, deliveryAddressId: string, userId: string) {
-        await this.checkUserPermission(workspaceId, userId, [PrismaWorkspaceRole.OWNER]);
-
-        await this.prisma.workspaceDeliveryAddress.delete({
-            where: { 
-                id: deliveryAddressId,
-                workspaceId 
-            }
-        });
-
-        return { message: 'Teslimat adresi başarıyla silindi' };
-    }
-
-    // Workspace abonelik yönetimi
-    async createWorkspaceSubscription(workspaceId: string, userId: string, createSubscriptionDto: CreateWorkspaceSubscriptionDto) {
-        await this.checkUserPermission(workspaceId, userId, [PrismaWorkspaceRole.OWNER]);
-
-        // Aynı lokasyon için aktif abonelik var mı kontrol et
-        const existingSubscription = await this.prisma.workspaceSubscription.findFirst({
-            where: {
-                workspaceId,
-                officeLocationId: createSubscriptionDto.officeLocationId,
-                isActive: true
-            }
-        });
-
-        if (existingSubscription) {
-            throw new BadRequestException('Bu lokasyon için zaten aktif bir abonelik var');
-        }
-
-        // TODO: Update to use new subscription service
-        throw new BadRequestException('Subscription creation temporarily disabled during migration');
-    }
-
-    // Yardımcı metodlar
-    private async checkUserPermission(workspaceId: string, userId: string, allowedRoles: PrismaWorkspaceRole[]) {
-        const member = await this.prisma.workspaceMember.findFirst({
-            where: {
-                workspaceId,
-                userId,
-                isDeleted: false
-            }
-        });
-
-        if (!member) {
-            throw new ForbiddenException('Bu workspace\'e erişim yetkiniz yok');
-        }
-
-        if (!allowedRoles.includes(member.role)) {
-            throw new ForbiddenException('Bu işlem için yetkiniz yok');
-        }
-
-        return member;
-    }
-
-    async getWorkspaceMembers(workspaceId: string, userId: string) {
-        await this.checkUserPermission(workspaceId, userId, [PrismaWorkspaceRole.OWNER, PrismaWorkspaceRole.MEMBER]);
-
-        const members = await this.prisma.workspaceMember.findMany({
-            where: {
-                workspaceId,
-                isDeleted: false
-            },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        email: true,
-                        firstName: true,
-                        lastName: true,
-                        profileImage: true
-                    }
-                }
-            },
-            orderBy: { joinedAt: 'asc' }
-        });
-
-        return members;
-    }
-
-    async getWorkspaceAddresses(workspaceId: string, userId: string) {
-        await this.checkUserPermission(workspaceId, userId, [PrismaWorkspaceRole.OWNER, PrismaWorkspaceRole.MEMBER]);
-
-        const addresses = await this.prisma.workspaceAddress.findMany({
-            where: {
-                workspaceId,
-                isActive: true
-            },
-            include: {
-                officeLocation: true
-            },
-            orderBy: { createdAt: 'desc' }
-        });
-
-        return addresses;
-    }
-
-    async getWorkspaceDeliveryAddresses(workspaceId: string, userId: string) {
-        await this.checkUserPermission(workspaceId, userId, [PrismaWorkspaceRole.OWNER, PrismaWorkspaceRole.MEMBER]);
-
-        const deliveryAddresses = await this.prisma.workspaceDeliveryAddress.findMany({
-            where: { workspaceId },
-            orderBy: { createdAt: 'desc' }
-        });
-
-        return deliveryAddresses;
-    }
-
-    async getWorkspaceSubscriptions(workspaceId: string, userId: string) {
-        await this.checkUserPermission(workspaceId, userId, [PrismaWorkspaceRole.OWNER, PrismaWorkspaceRole.MEMBER]);
-
-        const subscriptions = await this.prisma.workspaceSubscription.findMany({
-            where: { workspaceId },
-            include: {
-                officeLocation: {
-                    select: { id: true, label: true, city: true, state: true }
-                }
-            },
-            orderBy: { createdAt: 'desc' }
-        });
-
-        return subscriptions;
-    }
-
-    private async generateUniqueSteNumber(): Promise<string> {
-        let steNumber: string;
-        let isUnique = false;
-        
-        while (!isUnique) {
-          // Generate 6-digit random number
-          steNumber = Math.floor(100000 + Math.random() * 900000).toString();
-          
-          // Check if it already exists
-          const existing = await this.prisma.workspaceAddress.findUnique({
-            where: { steNumber }
-          });
-          
-          if (!existing) {
-            isUnique = true;
-          }
-        }
-        
-        return steNumber;
+      this.logger.log(`Member removed from workspace: ${memberId}`);
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
       }
-   
+      this.logger.error(`Failed to remove workspace member: ${error.message}`);
+      throw new BadRequestException('Failed to remove workspace member');
+    }
+  }
+
+  async getWorkspaceStatistics(workspaceId: string, userId: string) {
+    try {
+      await this.getWorkspaceById(workspaceId, userId);
+
+      const [
+        totalMailboxes,
+        activeMailboxes,
+        totalMembers,
+        totalMails,
+        pendingMails,
+      ] = await Promise.all([
+        this.prisma.mailbox.count({
+          where: { workspaceId },
+        }),
+        this.prisma.mailbox.count({
+          where: { workspaceId },
+        }),
+        this.prisma.workspaceMember.count({
+          where: { workspaceId, isDeleted: false },
+        }),
+        this.prisma.mail.count({
+                where: { 
+            mailbox: { workspaceId },
+          },
+        }),
+        this.prisma.mail.count({
+            where: { 
+            mailbox: { workspaceId },
+            status: 'PENDING',
+          },
+        }),
+      ]);
+
+      return {
+        mailboxes: {
+          total: totalMailboxes,
+          active: activeMailboxes,
+        },
+        members: {
+          total: totalMembers,
+        },
+        deliveryAddresses: {
+          total: 0, // Not tracked at workspace level
+        },
+        mails: {
+          total: totalMails,
+          pending: pendingMails,
+        },
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Failed to get workspace statistics: ${error.message}`);
+      throw new BadRequestException('Failed to get workspace statistics');
+    }
+  }
+
+
+
 }

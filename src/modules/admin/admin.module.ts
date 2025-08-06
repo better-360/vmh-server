@@ -6,10 +6,9 @@ import { AdminSupportController } from './support.controller';
 import { AdminMainController } from './admin.controller';
 import { SupportService } from '../support/support.service';
 import { StripeService } from '../stripe/stripe.service';
-import { AdminPackageController } from './package.controller';
-import { PackageService } from '../package/package.service';
-import { AddonsService } from '../catalog/addons.service';
-import { AdminAddonsController } from './addons.controller';
+import { AdminPackageController } from './mail.controller';
+import { MailService } from '../mail/mail.service';
+import { MarketService } from '../catalog/market.service';
 import { PlansService } from '../catalog/plans.service';
 import { FeaturesService } from '../catalog/features.service';
 import { AdminLocationController } from './location.controller';
@@ -26,10 +25,11 @@ import { AdminFeaturesController } from './features.controller';
     UserService,
     SupportService,
     StripeService,
-    PackageService,
-    AddonsService,
+    MailService,
+    MarketService,
     PlansService,
     FeaturesService,
+    MarketService,
   ],
 
   exports: [AdminService],
@@ -37,7 +37,6 @@ import { AdminFeaturesController } from './features.controller';
     AdminMainController,
     AdminSupportController,
     AdminPackageController,
-    AdminAddonsController,
     AdminLocationController,
     AdminPlansController,
     AdminFeaturesController,

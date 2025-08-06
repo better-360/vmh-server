@@ -14,7 +14,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Public } from 'src/common/decorators/public.decorator';
-import { BillingService } from './billing.service';
+// import { BillingService } from './billing.service'; // Disabled
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateInitialSubscriptionOrderDto, CreateOrderDto } from 'src/dtos/checkout.dto';
 import { StripeService } from '../stripe/stripe.service';
@@ -23,7 +23,7 @@ import { StripeService } from '../stripe/stripe.service';
 @Controller('billing')
 export class BillingController {
   constructor(
-    private readonly billingService: BillingService,
+    // private readonly billingService: BillingService, // Disabled
     private readonly stripeService: StripeService,
   ) {}
 
@@ -32,7 +32,7 @@ export class BillingController {
   @Public()
   @Post('create-initial-subscription-order')
   async createInitialSubscriptionOrder(@Body() createOrderDto: CreateInitialSubscriptionOrderDto) {
-    return await this.billingService.createInitialSubscriptionOrder(createOrderDto);
+    throw new BadRequestException('Billing service temporarily disabled during schema migration');
   }
 
   @ApiOperation({ summary: 'Create initial subscription order' })
@@ -41,7 +41,7 @@ export class BillingController {
   async createOrder(@Body() createOrderDto: CreateOrderDto, @Req() req: any) {
     const userId = req.user.id;
     const workspaceId = req.user.workspaces[0].workspaceId;
-    return await this.billingService.createOrder(createOrderDto, userId, workspaceId);
+    throw new BadRequestException('Billing service temporarily disabled during schema migration');
   }
 
   @Get('check-payment')

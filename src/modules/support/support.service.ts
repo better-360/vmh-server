@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Ticket, TicketStatus } from '@prisma/client';
 import { CreateTicketDto, EditTicketStatusDto, TicketMessageDto } from 'src/dtos/support.dto';
 import { PrismaService } from 'src/prisma.service';
-import { MailService } from '../mail/mail.service';
+import { EmailService } from '../email/email.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Events } from 'src/common/enums/event.enum';
 
@@ -10,7 +10,7 @@ import { Events } from 'src/common/enums/event.enum';
 export class SupportService {
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly emailService: MailService,
+    private readonly emailService: EmailService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 

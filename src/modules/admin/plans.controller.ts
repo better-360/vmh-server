@@ -27,17 +27,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   CreatePlanDto,
   UpdatePlanDto,
-  PlanQueryDto,
   CreatePlanPriceDto,
   UpdatePlanPriceDto,
-  PlanPriceQueryDto,
-  CreatePlanFromTemplateDto,
   CreatePlanWithFeaturesDto,
-  FormattedPlanResponseDto,
 } from 'src/dtos/plan.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { PlansService } from '../catalog/plans.service';
-import { AddonsService } from '../catalog/addons.service';
+import { MarketService } from '../catalog/market.service';
 
 @ApiTags('Admin Plan Management')
 @ApiBearerAuth()
@@ -47,7 +43,7 @@ import { AddonsService } from '../catalog/addons.service';
 export class AdminPlansController {
   constructor(
     private readonly plansService: PlansService,
-    private readonly addonsService: AddonsService,
+    private readonly marketService: MarketService,
   ) {}
 
   // =====================
@@ -82,7 +78,7 @@ export class AdminPlansController {
       }
     }
   })
-  async getPlans(@Query() query: PlanQueryDto) {
+  async getPlans(@Query() query: any) {
     return this.plansService.getPlans(query);
   }
 
@@ -118,7 +114,6 @@ export class AdminPlansController {
     description: 'Retrieve detailed information about a specific plan including prices and features'
   })
   @ApiParam({ name: 'id', description: 'Plan ID', type: 'string' })
-  @ApiOkResponse({ type: FormattedPlanResponseDto, description: 'Plan retrieved successfully' })
   @ApiNotFoundResponse({ description: 'Plan not found' })
   async getPlanById(@Param('id') id: string) {
     return this.plansService.getPlanById(id);
@@ -232,19 +227,7 @@ export class AdminPlansController {
     return this.plansService.createPlanWithFeatures(data);
   }
 
-  @Post('create-from-template')
-  @ApiOperation({ 
-    summary: 'Create plan from template',
-    description: 'Create a new plan by copying from an existing template with optional overrides'
-  })
-  @ApiBody({ type: CreatePlanFromTemplateDto, description: 'Plan from template creation data' })
-  @ApiResponse({ status: 201, description: 'Plan created from template successfully' })
-  @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiNotFoundResponse({ description: 'Template or office location not found' })
-  @ApiConflictResponse({ description: 'Plan with this slug already exists for this location' })
-  async createPlanFromTemplate(@Body() data: CreatePlanFromTemplateDto) {
-    return this.plansService.createPlanFromTemplate(data);
-  }
+
 
   @Put('/:id')
   @ApiOperation({ 
@@ -304,7 +287,7 @@ export class AdminPlansController {
       }
     }
   })
-  async getPlanPrices(@Query() query: PlanPriceQueryDto) {
+  async getPlanPrices(@Query() query: any) {
     console.log('raw',query)
     return this.plansService.getPlanPrices(query);
   }
@@ -397,7 +380,8 @@ export class AdminPlansController {
     }
   })
   async getAddonsByPlanId(@Param('planId') planId: string) {
-    return this.addonsService.getAddonsByPlanId(planId);
+    return this.marketService.getPlanAddons(planId);
   }
+
 
 }

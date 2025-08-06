@@ -10,11 +10,14 @@ export * from './workspace.interface';
 // Plan interfaces
 export * from './plan.interface';
 
-// Addon interfaces
-export * from './addons.interface';
+// Product interfaces
+export * from './product.interface';
 
-// Package interfaces
-export * from './package.interface';
+// Mailbox interfaces
+export * from './mailbox.interface';
+
+// Mail interfaces
+export * from './mail.interface';
 
 // Location interfaces
 export * from './location.interface';
@@ -33,3 +36,6 @@ export * from './shipping-speed.interface';
 
 // Packaging Option interfaces
 export * from './packaging-option.interface';
+
+// Token interfaces
+export { ITokenInterface } from './token.interface';

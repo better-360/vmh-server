@@ -15,7 +15,6 @@ import {
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { OrderType } from '@prisma/client';
-import { CreateWorkspaceSubscriptionItemDto } from './plan.dto';
 
 export class AddonDto {
   @IsUUID()

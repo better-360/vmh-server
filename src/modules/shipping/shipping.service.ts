@@ -12,6 +12,13 @@ import {
 } from '../../dtos/packaging-option.dto';
 import { CreateCarrierDto, UpdateCarrierDto } from 'src/dtos/carrier.dto';
 
+export interface Dimensions {
+  length: number;  // en
+  width: number;   // boy
+  height: number;  // yükseklik
+}
+
+
 /**
  * Service for managing shipping (delivery) speed options.
  */
@@ -334,5 +341,22 @@ export class CarrierService {
       this.logger.error('Failed to remove carrier from location', error);
       throw new BadRequestException('Unable to remove carrier from location.');
     }
+  }
+
+
+
+  /**
+   * Kutunun herhangi bir yönde limitleri aşıp aşmadığını kontrol eder.
+   * @param box  - Kontrol edilecek kutu ölçüleri
+   * @param limit - Maksimum izin verilen ölçüler
+   * @returns true ise oversize, false ise sığıyor
+   */
+  isOversized(box: Dimensions, limit: Dimensions): boolean {
+    const boxDims   = [box.length, box.width, box.height].sort((a, b) => a - b);
+    const limitDims = [limit.length, limit.width, limit.height].sort((a, b) => a - b);
+
+    // Sıralı her eksen limiti aşmıyor mu diye bak
+    const fits = boxDims.every((dim, i) => dim <= limitDims[i]);
+    return !fits;
   }
 }

@@ -52,7 +52,7 @@ export class BillingService {
       }
 
       // Validate office location
-      await this.locationService.getOfficeLocationById(createOrderDto.officeLocationId);
+      await this.locationService.getLocationById(createOrderDto.officeLocationId);
       const userFullName = `${createOrderDto.firstName} ${createOrderDto.lastName || ''}`.trim();
       const customerId = await this.stripeService.findOrCreateStripeCustomer(createOrderDto.email, userFullName);
       const paymentIntent = await this.stripeService.createPaymentIntentForOrder({
@@ -93,7 +93,7 @@ export class BillingService {
         },
         include: {
           items: true,
-          user: true,
+
         },
       });
       const mappedOrder=this.mapOrderToResponseDto(order);
@@ -116,7 +116,7 @@ export class BillingService {
       },
       include: {
         items: true,
-        user: true,
+
       },
     });
 
@@ -136,7 +136,7 @@ export class BillingService {
       where: { stripePaymentIntentId: paymentIntentId },
       include: {
         items: true,
-        user: true,
+
       },
     });
     return order ? this.mapOrderToResponseDto(order) : null;
@@ -195,15 +195,7 @@ export class BillingService {
       const newUser = await this.userService.createUser(order.email, firstName, lastName, order.stripeCustomerId);
       const workspace = newUser.workspaces[0];
 
-      // 2. Create workspace address
-       await this.workspaceService.createWorkspaceAddress(
-        workspace.workspaceId,
-        newUser.id,
-        { 
-          officeLocationId,
-          isDefault: true
-        }
-      );
+      // 2. Workspace address creation disabled - needs mailbox implementation
 
       // 3. Separate plan item from other items
       const planItem = order.items.find(item => item.itemType === 'PLAN');
@@ -216,23 +208,17 @@ export class BillingService {
       // 4. Prepare additional subscription items (addons/products)
       const subscriptionItems = await this.mapOrderItemsToSubscriptionItems(otherItems, officeLocationId);
 
-      // 5. Create initial subscription using SubscriptionService
-      const subscription = await this.subscriptionService.createInitialSubscription({
+      // 5. Create subscription items using SubscriptionService
+      // Note: This needs to be adapted based on actual mailbox creation
+      // For now, we'll create a placeholder or skip this step
+      console.log('Subscription creation temporarily disabled - needs mailbox integration');
+            console.log(`Successfully created initial order for user ${newUser.email}:`, {
         workspaceId: workspace.workspaceId,
-        officeLocationId,
-        planPriceId: planItem.itemId, // Plan item'ın itemId'si plan price ID'si
-        stripeSubscriptionId: null,
-        startDate: new Date(),
-        items: subscriptionItems
+        planItemId: planItem.itemId,
+        additionalItemCount: subscriptionItems.length
       });
-      console.log(`Successfully created initial subscription for user ${newUser.email}:`, {
-      workspaceId: workspace.workspaceId,
-       subscriptionId: subscription.id,
-         planItemId: planItem.itemId,
-         additionalItemCount: subscriptionItems.length
-       });
 
-      return subscription;
+      return { message: 'Initial order processed successfully', workspaceId: workspace.workspaceId };
     } catch (error) {
       console.error('Error handling initial subscription order:', error);
       throw new HttpException(error.message || 'Failed to create initial subscription', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -254,24 +240,9 @@ export class BillingService {
       }
 
       // Get existing subscription
-      const existingSubscriptions = await this.subscriptionService.getWorkspaceActiveSubscriptions(workspaceId);
-      const subscription = existingSubscriptions.find(sub => sub.officeLocationId === officeLocationId);
-
-      if (!subscription) {
-        throw new NotFoundException('No active subscription found for this workspace and office location');
-      }
-
-      // Add each order item to the subscription
-      for (const orderItem of order.items) {
-        const subscriptionItem = await this.mapOrderItemToSubscriptionItem(orderItem, officeLocationId);
-        
-        await this.subscriptionService.addItemToSubscription({
-          subscriptionId: subscription.id,
-          item: subscriptionItem
-        });
-      }
-
-      console.log(`Successfully added ${order.items.length} items to subscription ${subscription.id}`);
+      // Subscription item addition temporarily disabled - needs mailbox integration
+      console.log('Subscription item addition temporarily disabled - needs mailbox integration');
+      console.log(`Order ${order.id} processed with ${order.items.length} items`);
 
     } catch (error) {
       console.error('Error handling subscription order:', error);
@@ -319,7 +290,6 @@ export class BillingService {
           stripePaymentIntentId: paymentIntent.id,
           stripeClientSecret: paymentIntent.client_secret,
           stripeCustomerId: customerId,
-          userId,
           type: OrderType.SUBSCRIPTION,
           metadata: {
             workspaceId,
@@ -331,7 +301,7 @@ export class BillingService {
         },
         include: {
           items: true,
-          user: true,
+
         },
       });
       
@@ -366,21 +336,21 @@ export class BillingService {
 
     switch (orderItem.itemType) {
       case OrderItemType.ADDON:
-        const addonVariant = await this.prismaService.addonVariant.findUnique({
+         const addonVariant = await this.prismaService.price.findUnique({
           where: { id: orderItem.itemId },
-          include: { addon: true }
+          include: { product: true,recurring:true }
         });
         
         if (!addonVariant) {
           throw new NotFoundException(`Addon variant not found: ${orderItem.itemId}`);
         }
 
-        billingCycle = addonVariant.billingCycle;
+        billingCycle = addonVariant.recurring.interval as BillingCycle;
         endDate = this.calculateEndDate(startDate, billingCycle);
 
         return {
           itemType: 'ADDON' as const,
-          itemId: addonVariant.addonId,
+          itemId: addonVariant.productId,
           variantId: orderItem.itemId,
           billingCycle,
           quantity: orderItem.quantity,
@@ -394,16 +364,15 @@ export class BillingService {
         };
 
       case OrderItemType.PRODUCT:
-        const productVariant = await this.prismaService.productVariant.findUnique({
+         const productVariant = await this.prismaService.price.findUnique({
           where: { id: orderItem.itemId },
-          include: { product: true }
+          include: { product: true,recurring:true }
         });
-        
         if (!productVariant) {
           throw new NotFoundException(`Product variant not found: ${orderItem.itemId}`);
         }
 
-        billingCycle = productVariant.billingCycle;
+        billingCycle = productVariant.recurring.interval as BillingCycle;
         endDate = billingCycle === BillingCycle.ONE_TIME ? undefined : this.calculateEndDate(startDate, billingCycle);
 
         return {
@@ -486,9 +455,9 @@ export class BillingService {
         };
 
       case OrderItemType.ADDON:
-        const addonVariant = await this.prismaService.addonVariant.findUnique({
+        const addonVariant = await this.prismaService.price.findUnique({
           where: { id: item.itemId },
-          include: { addon: true },
+          include: { product: true,recurring:true },
         });
         if (!addonVariant) {
           throw new NotFoundException(`Addon variant with id ${item.itemId} not found`);
@@ -497,17 +466,17 @@ export class BillingService {
           itemType: item.itemType,
           itemId: item.itemId,
           quantity,
-          unitPrice: addonVariant.price,
-          totalPrice: addonVariant.price * quantity,
+          unitPrice: addonVariant.unit_amount,
+          totalPrice: addonVariant.unit_amount * quantity,
           currency: addonVariant.currency,
-          itemName: `${addonVariant.addon.name} - ${addonVariant.name}`,
+          itemName: `${addonVariant.product.name} - ${addonVariant.name}`,
           itemDescription: addonVariant.description,
         };
 
       case OrderItemType.PRODUCT:
-        const productVariant = await this.prismaService.productVariant.findUnique({
+        const productVariant = await this.prismaService.price.findUnique({
           where: { id: item.itemId },
-          include: { product: true },
+          include: { product: true,recurring:true },
         });
         if (!productVariant) {
           throw new NotFoundException(`Product variant with id ${item.itemId} not found`);
@@ -516,8 +485,8 @@ export class BillingService {
           itemType: item.itemType,
           itemId: item.itemId,
           quantity,
-          unitPrice: productVariant.amount,
-          totalPrice: productVariant.amount * quantity,
+          unitPrice: productVariant.unit_amount,
+          totalPrice: productVariant.unit_amount * quantity,
           currency: productVariant.currency,
           itemName: `${productVariant.product.name} - ${productVariant.name}`,
           itemDescription: productVariant.description,
