@@ -38,7 +38,7 @@ export class MarketService {
             },
             include: {
               recurring: {
-                select: { interval: true, intervalCount: true },
+                select: { interval: true, interval_count: true },
               },
             },
             orderBy: {

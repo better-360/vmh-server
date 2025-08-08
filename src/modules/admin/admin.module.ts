@@ -6,7 +6,6 @@ import { AdminSupportController } from './support.controller';
 import { AdminMainController } from './admin.controller';
 import { SupportService } from '../support/support.service';
 import { StripeService } from '../stripe/stripe.service';
-import { AdminPackageController } from './mail.controller';
 import { MailService } from '../mail/mail.service';
 import { MarketService } from '../catalog/market.service';
 import { PlansService } from '../catalog/plans.service';
@@ -36,7 +35,6 @@ import { AdminFeaturesController } from './features.controller';
   controllers: [
     AdminMainController,
     AdminSupportController,
-    AdminPackageController,
     AdminLocationController,
     AdminPlansController,
     AdminFeaturesController,

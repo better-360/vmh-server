@@ -1,55 +1,25 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { 
   CreatePriceDto, 
   UpdatePriceDto, 
-  PriceResponseDto 
+  PriceResponseDto,
+  ProductPriceDto,
+  ProductResponseDto
 } from 'src/dtos/product.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, RecurringInterval } from '@prisma/client';
+import { StripeService } from '../stripe/stripe.service';
 
 @Injectable()
 export class PriceService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService,
+    private stripeService: StripeService,
 
-  async create(createPriceDto: CreatePriceDto): Promise<PriceResponseDto> {
-    try {
-      // If this is set as default, unset other default prices for the same product
-      if (createPriceDto.isDefault) {
-        await this.prisma.price.updateMany({
-          where: {
-            productId: createPriceDto.productId,
-            isDefault: true,
-          },
-          data: {
-            isDefault: false,
-          },
-        });
-      }
-
-      const price = await this.prisma.price.create({
-        data: createPriceDto,
-        include: {
-          product: true,
-          recurring: true,
-        },
-      });
-
-      return price;
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2003') {
-          throw new BadRequestException('Invalid product ID or recurring ID provided');
-        }
-      }
-      throw error;
-    }
-  }
+  ) {}
 
   async findAll(
     productId?: string,
     active?: boolean,
-    limit: number = 50,
-    offset: number = 0,
   ): Promise<PriceResponseDto[]> {
     const where: Prisma.PriceWhereInput = {};
     
@@ -75,8 +45,6 @@ export class PriceService {
       orderBy: {
         unit_amount: 'asc',
       },
-      take: limit,
-      skip: offset,
     });
   }
 
@@ -194,39 +162,123 @@ export class PriceService {
     return this.update(id, { isDefault: true });
   }
 
-  async createRecurringPrice(
-    productId: string,
-    unitAmount: number,
-    currency: string,
-    interval: string,
-    intervalCount: number = 1,
-    name?: string,
-  ): Promise<PriceResponseDto> {
-    try {
-      // First create the recurring configuration
-      const recurring = await this.prisma.recurring.create({
+
+  async createPrice(productId: string, priceData: ProductPriceDto): Promise<ProductResponseDto> {
+    return await this.prisma.$transaction(async (tx) => {
+      const product = await this.findProductOrThrow(tx, productId);
+  
+      const stripeProduct = await this.stripeService.getProduct(product.stripeProductId);
+      if (!stripeProduct) {
+        throw new InternalServerErrorException("Stripe product not found, please check Stripe product ID");
+      }
+  
+      if (priceData.priceType === 'recurring' && !priceData.recurring) {
+        throw new BadRequestException('Recurring information is required for recurring prices.');
+      }
+  
+      if (priceData.isDefault) {
+        await this.unsetCurrentDefaultPrice(tx, product.id);
+      }
+  
+      let stripePriceId = priceData.stripePriceId;
+      if (stripePriceId) {
+        await this.validateAndActivateStripePrice(stripePriceId, priceData);
+      } else {
+        const createdStripePrice = await this.createStripePrice(product.stripeProductId, priceData);
+        stripePriceId = createdStripePrice.id;
+      }
+  
+      const createdPrice = await tx.price.create({
         data: {
-          interval: interval as any,
-          intervalCount,
+          product: { connect: { id: product.id } },
+          isDefault: priceData.isDefault ?? false,
+          stripePriceId,
+          name: priceData.name,
+          description: priceData.description,
+          unit_amount: priceData.unit_amount,
+          currency: priceData.currency,
+          priceType: priceData.priceType,
+          recurring: priceData.recurring
+            ? {
+                create: {
+                  interval: priceData.recurring.interval as RecurringInterval,
+                  interval_count: priceData.recurring.interval_count,
+                },
+              }
+            : undefined,
         },
       });
-
-      // Then create the price with recurring
-      return this.create({
-        productId,
-        unit_amount: unitAmount,
-        currency,
-        recurringId: recurring.id,
-        name,
-        // priceType field doesn't exist in schema
-      });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2003') {
-          throw new BadRequestException('Invalid product ID provided');
-        }
+  
+      if (priceData.isDefault) {
+        await this.updateDefaultPrice(tx, product, stripePriceId, createdPrice.id);
       }
-      throw error;
+  
+      return this.prisma.product.findUnique({
+        where: { id: productId },
+        include: { prices: { include: { recurring: true } } },
+      });
+    });
+  }
+
+  private async unsetCurrentDefaultPrice(tx: Prisma.TransactionClient, productId: string) {
+    await tx.price.updateMany({
+      where: { productId, isDefault: true },
+      data: { isDefault: false },
+    });
+  }
+  
+  private async findProductOrThrow(tx: Prisma.TransactionClient, productId: string) {
+    const product = await tx.product.findUnique({
+      where: { id: productId },
+      include: { prices: true },
+    });
+    if (!product) throw new NotFoundException('Product not found');
+    return product;
+  }
+  
+  private async validateAndActivateStripePrice(stripePriceId: string, priceData: ProductPriceDto) {
+    const price = await this.stripeService.getPrice(stripePriceId);
+    if (!price) {
+      throw new NotFoundException('Stripe Price bulunamadı. ID kontrol edin.');
+    }
+  
+    if (!price.active) {
+      await this.stripeService.updatePrice(stripePriceId, { active: true });
+    }
+  
+    if (
+      priceData.priceType === 'recurring' &&
+      (!price.recurring ||
+        price.recurring.interval !== priceData.recurring?.interval ||
+        price.recurring.interval_count !== priceData.recurring?.interval_count)
+    ) {
+      throw new BadRequestException('Stripe Price ID ile gönderilen recurring bilgileri uyuşmuyor');
     }
   }
+  
+  private async createStripePrice(stripeProductId: string, priceData: ProductPriceDto) {
+    return this.stripeService.createPrice({
+      unit_amount: priceData.unit_amount,
+      currency: priceData.currency,
+      product: stripeProductId,
+      recurring:
+        priceData.priceType === 'recurring' && priceData.recurring
+          ? {
+              interval: priceData.recurring.interval as RecurringInterval,
+              interval_count: priceData.recurring.interval_count,
+            }
+          : undefined,
+    });
+  }
+  
+  private async updateDefaultPrice(tx: Prisma.TransactionClient, product: any, stripePriceId: string, dbPriceId: string) {
+    await this.stripeService.updateProduct(product.stripeProductId, {
+      default_price: stripePriceId,
+    });
+    await tx.product.update({
+      where: { id: product.id },
+      data: { defaultPriceId: dbPriceId },
+    });
+  }
+  
 }

@@ -13,7 +13,7 @@ import {
   IsEnum,
   IsInt,
 } from 'class-validator';
-import { ProductType } from '@prisma/client';
+import { PriceType, ProductType, RecurringInterval } from '@prisma/client';
 
 // =====================
 // PRODUCT DTOs
@@ -374,4 +374,82 @@ export class PriceResponseDto {
     type: [Object],
   })
   planAddons?: any[];
+}
+
+export class RecurringDto {
+  @ApiProperty({ description: 'Recurring interval (örn: day, week, month, year)', enum: RecurringInterval })
+  @IsString()
+  @IsNotEmpty()
+  interval: RecurringInterval;
+
+  @ApiProperty({ description: 'Interval count', example: 1 })
+  @IsInt()
+  interval_count: number;
+}
+
+export class ProductPriceDto {
+  @ApiPropertyOptional({
+    description: 'Fiyat adı veya takma adı',
+    example: 'Gold Monthly',
+  })
+  @IsOptional()
+  @IsString()
+  name?: string;
+  
+  @ApiPropertyOptional({
+    description: 'Fiyat açıklaması',
+    example: 'Monthly subscription price',
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Varsayılan fiyat mı?',
+    example: false,
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isDefault?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Stripe Price ID’si (varsa)',
+    example: 'price_1MoBy5LkdIwHu7ixZhnattbh',
+  })
+
+  @IsOptional()
+  @IsString()
+  stripePriceId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Fiyat tipi: "one_time" veya "recurring"',
+    example: 'one_time',
+    enum: PriceType,
+    default: PriceType.one_time,
+  })
+  @IsOptional()
+  @IsString()
+  priceType?: PriceType;
+
+  @ApiPropertyOptional({
+    description: 'Recurring bilgileri (sadece recurring tipindeki fiyatlarda geçerli)',
+  })
+  @IsOptional()
+  recurring?: RecurringDto;
+
+  @ApiProperty({
+    description: 'Fiyat miktarı en küçük para birimi cinsinden (ör: 1000 = $10.00)',
+    example: 1000,
+  })
+  @IsInt()
+  unit_amount: number;
+
+  @ApiProperty({
+    description: 'Para birimi (örneğin: "usd")',
+    example: 'usd',
+  })
+  @IsString()
+  currency: string;
+  
 }

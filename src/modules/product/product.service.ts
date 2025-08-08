@@ -1,15 +1,19 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { 
   CreateProductDto, 
   UpdateProductDto, 
-  ProductResponseDto 
+  ProductResponseDto,
+  ProductPriceDto
 } from 'src/dtos/product.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, RecurringInterval } from '@prisma/client';
+import { StripeService } from '../stripe/stripe.service';
 
 @Injectable()
 export class ProductService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService,
+    private stripeService: StripeService,
+  ) {}
 
   async create(createProductDto: CreateProductDto): Promise<ProductResponseDto> {
     try {
@@ -219,4 +223,7 @@ export class ProductService {
       throw error;
     }
   }
+
+  
+  
 }

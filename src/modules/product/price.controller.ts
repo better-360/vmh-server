@@ -14,34 +14,35 @@ import { PriceService } from './price.service';
 import { 
   CreatePriceDto, 
   UpdatePriceDto, 
-  PriceResponseDto 
+  PriceResponseDto,
+  ProductPriceDto,
+  ProductResponseDto
 } from 'src/dtos/product.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from 'src/common/decorators/public.decorator';
+
 
 @ApiTags('prices')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@Public()
 @Controller('prices')
 export class PriceController {
   constructor(private readonly priceService: PriceService) {}
 
-  @Post()
+  @Post(':productId')
   @ApiOperation({ summary: 'Create a new price' })
   @ApiResponse({
     status: 201,
     description: 'Price created successfully',
-    type: PriceResponseDto,
+    type: ProductResponseDto,
   })
-  create(@Body() createPriceDto: CreatePriceDto): Promise<PriceResponseDto> {
-    return this.priceService.create(createPriceDto);
+  create(@Body() createPriceDto: ProductPriceDto, @Param('productId') productId: string): Promise<ProductResponseDto> {
+    return this.priceService.createPrice(productId, createPriceDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all prices' })
   @ApiQuery({ name: 'productId', required: false, type: String })
   @ApiQuery({ name: 'active', required: false, type: Boolean })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'offset', required: false, type: Number })
   @ApiResponse({
     status: 200,
     description: 'Prices retrieved successfully',
@@ -50,10 +51,8 @@ export class PriceController {
   findAll(
     @Query('productId') productId?: string,
     @Query('active') active?: boolean,
-    @Query('limit') limit?: number,
-    @Query('offset') offset?: number,
   ): Promise<PriceResponseDto[]> {
-    return this.priceService.findAll(productId, active, limit, offset);
+    return this.priceService.findAll(productId, active);
   }
 
   @Get('active')
@@ -125,30 +124,4 @@ export class PriceController {
     return this.priceService.setAsDefault(id);
   }
 
-  @Post('recurring')
-  @ApiOperation({ summary: 'Create a recurring price' })
-  @ApiResponse({
-    status: 201,
-    description: 'Recurring price created successfully',
-    type: PriceResponseDto,
-  })
-  createRecurringPrice(
-    @Body() data: {
-      productId: string;
-      unitAmount: number;
-      currency: string;
-      interval: string;
-      intervalCount?: number;
-      name?: string;
-    },
-  ): Promise<PriceResponseDto> {
-    return this.priceService.createRecurringPrice(
-      data.productId,
-      data.unitAmount,
-      data.currency,
-      data.interval,
-      data.intervalCount,
-      data.name,
-    );
-  }
 }

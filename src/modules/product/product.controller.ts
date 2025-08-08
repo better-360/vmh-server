@@ -17,10 +17,10 @@ import {
   ProductResponseDto 
 } from 'src/dtos/product.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiTags('products')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@Public()
 @Controller('products')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}

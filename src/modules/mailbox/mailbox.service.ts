@@ -28,11 +28,14 @@ export class MailboxService {
         );
       }
 
+      const steNumber = await this.generateSteNumber();
+
       const mailbox = await this.prisma.mailbox.create({
         data: {
           ...createMailboxDto,
           startDate: new Date(createMailboxDto.startDate),
           endDate: createMailboxDto.endDate ? new Date(createMailboxDto.endDate) : null,
+          steNumber: steNumber,
         },
         include: {
           workspace: true,
@@ -251,5 +254,10 @@ export class MailboxService {
         usedCount: 1,
       },
     });
+  }
+
+  async generateSteNumber(): Promise<string> {
+    const steNumber = Math.random().toString(36).substring(2, 2 + 6);
+    return steNumber;
   }
 }

@@ -439,803 +439,6 @@
         ]
       }
     },
-    "/api/admin/packages/all": {
-      "get": {
-        "operationId": "AdminPackageController_getPackages",
-        "summary": "Get all packages",
-        "description": "Retrieve a paginated list of all packages with filtering options",
-        "parameters": [
-          {
-            "name": "subscriptionId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by mailbox ID (subscription ID)",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "workspaceId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by workspace ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "officeLocationId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by office location ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "type",
-            "required": false,
-            "in": "query",
-            "description": "Filter by package type",
-            "schema": {
-              "enum": [
-                "BANK_CHECK",
-                "LEGAL_DOCUMENT",
-                "ENVELOPE",
-                "PACKAGE",
-                "OTHER"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "description": "Filter by package status",
-            "schema": {
-              "enum": [
-                "PENDING",
-                "FORWARDED",
-                "SHREDDED",
-                "COMPLETED",
-                "CANCELLED",
-                "IN_PROCESS"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "steNumber",
-            "required": false,
-            "in": "query",
-            "description": "Filter by STE number",
-            "schema": {
-              "example": "004712",
-              "type": "string"
-            }
-          },
-          {
-            "name": "senderName",
-            "required": false,
-            "in": "query",
-            "description": "Filter by sender name",
-            "schema": {
-              "example": "John Doe",
-              "type": "string"
-            }
-          },
-          {
-            "name": "carrier",
-            "required": false,
-            "in": "query",
-            "description": "Filter by carrier",
-            "schema": {
-              "example": "UPS",
-              "type": "string"
-            }
-          },
-          {
-            "name": "isShereded",
-            "required": false,
-            "in": "query",
-            "description": "Filter by shredded status",
-            "schema": {
-              "example": false,
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "isForwarded",
-            "required": false,
-            "in": "query",
-            "description": "Filter by forwarded status",
-            "schema": {
-              "example": false,
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "receivedAtStart",
-            "required": false,
-            "in": "query",
-            "description": "Filter by received date start (YYYY-MM-DD)",
-            "schema": {
-              "example": "2024-01-01",
-              "type": "string"
-            }
-          },
-          {
-            "name": "receivedAtEnd",
-            "required": false,
-            "in": "query",
-            "description": "Filter by received date end (YYYY-MM-DD)",
-            "schema": {
-              "example": "2024-12-31",
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "description": "Page number for pagination (default: 1)",
-            "schema": {
-              "minimum": 1,
-              "example": 1,
-              "type": "number"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Number of items per page (default: 10)",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "example": 10,
-              "type": "number"
-            }
-          },
-          {
-            "name": "workspaceAddressId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by workspace address ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Packages retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/PackageResponseDto"
-                      }
-                    },
-                    "meta": {
-                      "type": "object",
-                      "properties": {
-                        "total": {
-                          "type": "number"
-                        },
-                        "page": {
-                          "type": "number"
-                        },
-                        "limit": {
-                          "type": "number"
-                        },
-                        "totalPages": {
-                          "type": "number"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Admin Package Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/admin/packages/{id}": {
-      "get": {
-        "operationId": "AdminPackageController_getPackageById",
-        "summary": "Get package by ID",
-        "description": "Retrieve a specific package with all its items and related information",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Package ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Package found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PackageResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Package not found"
-          }
-        },
-        "tags": [
-          "Admin Package Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "put": {
-        "operationId": "AdminPackageController_updatePackage",
-        "summary": "Update package",
-        "description": "Update an existing package by ID",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Package ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "description": "Package update data",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateMailDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Package updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PackageResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid input data"
-          },
-          "404": {
-            "description": "Package not found"
-          }
-        },
-        "tags": [
-          "Admin Package Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/admin/packages/workspace-address/{workspaceAddressId}": {
-      "get": {
-        "operationId": "AdminPackageController_getPackagesByWorkspaceAddress",
-        "summary": "Get packages by workspace address",
-        "description": "Retrieve all packages for a specific workspace address",
-        "parameters": [
-          {
-            "name": "workspaceAddressId",
-            "required": true,
-            "in": "path",
-            "description": "Workspace address ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "subscriptionId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by mailbox ID (subscription ID)",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "workspaceId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by workspace ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "officeLocationId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by office location ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "type",
-            "required": false,
-            "in": "query",
-            "description": "Filter by package type",
-            "schema": {
-              "example": "PACKAGE",
-              "enum": [
-                "BANK_CHECK",
-                "LEGAL_DOCUMENT",
-                "ENVELOPE",
-                "PACKAGE",
-                "OTHER"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "description": "Filter by package status",
-            "schema": {
-              "example": "PENDING",
-              "enum": [
-                "PENDING",
-                "FORWARDED",
-                "SHREDDED",
-                "COMPLETED",
-                "CANCELLED",
-                "IN_PROCESS"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "steNumber",
-            "required": false,
-            "in": "query",
-            "description": "Filter by STE number",
-            "schema": {
-              "example": "004712",
-              "type": "string"
-            }
-          },
-          {
-            "name": "senderName",
-            "required": false,
-            "in": "query",
-            "description": "Filter by sender name",
-            "schema": {
-              "example": "John Doe",
-              "type": "string"
-            }
-          },
-          {
-            "name": "carrier",
-            "required": false,
-            "in": "query",
-            "description": "Filter by carrier",
-            "schema": {
-              "example": "UPS",
-              "type": "string"
-            }
-          },
-          {
-            "name": "isShereded",
-            "required": false,
-            "in": "query",
-            "description": "Filter by shredded status",
-            "schema": {
-              "example": false,
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "isForwarded",
-            "required": false,
-            "in": "query",
-            "description": "Filter by forwarded status",
-            "schema": {
-              "example": false,
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "receivedAtStart",
-            "required": false,
-            "in": "query",
-            "description": "Filter by received date start",
-            "schema": {
-              "example": "2024-01-01",
-              "type": "string"
-            }
-          },
-          {
-            "name": "receivedAtEnd",
-            "required": false,
-            "in": "query",
-            "description": "Filter by received date end",
-            "schema": {
-              "example": "2024-12-31",
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "description": "Page number for pagination (default: 1)",
-            "schema": {
-              "minimum": 1,
-              "example": 1,
-              "type": "number"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Number of items per page (default: 10)",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "example": 10,
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Packages retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/PackageResponseDto"
-                      }
-                    },
-                    "meta": {
-                      "type": "object",
-                      "properties": {
-                        "total": {
-                          "type": "number"
-                        },
-                        "page": {
-                          "type": "number"
-                        },
-                        "limit": {
-                          "type": "number"
-                        },
-                        "totalPages": {
-                          "type": "number"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Admin Package Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/admin/packages/office-location/{officeLocationId}": {
-      "get": {
-        "operationId": "AdminPackageController_getPackagesByOfficeLocation",
-        "summary": "Get packages by office location",
-        "description": "Retrieve all packages for a specific office location",
-        "parameters": [
-          {
-            "name": "officeLocationId",
-            "required": true,
-            "in": "path",
-            "description": "Office location ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "subscriptionId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by mailbox ID (subscription ID)",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "workspaceId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by workspace ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "type",
-            "required": false,
-            "in": "query",
-            "description": "Filter by package type",
-            "schema": {
-              "example": "PACKAGE",
-              "enum": [
-                "BANK_CHECK",
-                "LEGAL_DOCUMENT",
-                "ENVELOPE",
-                "PACKAGE",
-                "OTHER"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "description": "Filter by package status",
-            "schema": {
-              "example": "PENDING",
-              "enum": [
-                "PENDING",
-                "FORWARDED",
-                "SHREDDED",
-                "COMPLETED",
-                "CANCELLED",
-                "IN_PROCESS"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "steNumber",
-            "required": false,
-            "in": "query",
-            "description": "Filter by STE number",
-            "schema": {
-              "example": "004712",
-              "type": "string"
-            }
-          },
-          {
-            "name": "senderName",
-            "required": false,
-            "in": "query",
-            "description": "Filter by sender name",
-            "schema": {
-              "example": "John Doe",
-              "type": "string"
-            }
-          },
-          {
-            "name": "carrier",
-            "required": false,
-            "in": "query",
-            "description": "Filter by carrier",
-            "schema": {
-              "example": "UPS",
-              "type": "string"
-            }
-          },
-          {
-            "name": "isShereded",
-            "required": false,
-            "in": "query",
-            "description": "Filter by shredded status",
-            "schema": {
-              "example": false,
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "isForwarded",
-            "required": false,
-            "in": "query",
-            "description": "Filter by forwarded status",
-            "schema": {
-              "example": false,
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "receivedAtStart",
-            "required": false,
-            "in": "query",
-            "description": "Filter by received date start",
-            "schema": {
-              "example": "2024-01-01",
-              "type": "string"
-            }
-          },
-          {
-            "name": "receivedAtEnd",
-            "required": false,
-            "in": "query",
-            "description": "Filter by received date end",
-            "schema": {
-              "example": "2024-12-31",
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "description": "Page number for pagination (default: 1)",
-            "schema": {
-              "minimum": 1,
-              "example": 1,
-              "type": "number"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Number of items per page (default: 10)",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "example": 10,
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Packages retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/PackageResponseDto"
-                      }
-                    },
-                    "meta": {
-                      "type": "object",
-                      "properties": {
-                        "total": {
-                          "type": "number"
-                        },
-                        "page": {
-                          "type": "number"
-                        },
-                        "limit": {
-                          "type": "number"
-                        },
-                        "totalPages": {
-                          "type": "number"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Admin Package Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/admin/packages/create-package": {
-      "post": {
-        "operationId": "AdminPackageController_createPackage",
-        "summary": "Create a new package",
-        "description": "Register a new package in the system without items",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "description": "Package creation data",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateMailDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Package created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PackageResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid input data"
-          },
-          "404": {
-            "description": "Workspace address or office location not found"
-          },
-          "409": {
-            "description": "Package with this STE number already exists"
-          }
-        },
-        "tags": [
-          "Admin Package Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
     "/api/admin/locations/all": {
       "get": {
         "operationId": "AdminLocationController_getAllOfficeLocations",
@@ -3670,189 +2873,6 @@
         ]
       }
     },
-    "/api/subscription": {
-      "get": {
-        "operationId": "SubscriptionController_getSubscriptionItems",
-        "summary": "Get subscription items",
-        "description": "Retrieve subscription items with filtering and pagination",
-        "parameters": [
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Items per page (default: 10)",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "description": "Page number (default: 1)",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "isActive",
-            "required": false,
-            "in": "query",
-            "description": "Filter by active status",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "description": "Filter by status",
-            "schema": {
-              "enum": [
-                "ACTIVE",
-                "INACTIVE",
-                "PENDING",
-                "CANCELLED",
-                "EXPIRED",
-                "SUSPENDED"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "itemType",
-            "required": false,
-            "in": "query",
-            "description": "Filter by item type",
-            "schema": {
-              "enum": [
-                "ADDON",
-                "PRODUCT",
-                "OTHER"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "mailboxId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by mailbox ID",
-            "schema": {}
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Subscription items retrieved successfully"
-          }
-        },
-        "tags": [
-          "Subscription Items"
-        ]
-      },
-      "post": {
-        "operationId": "SubscriptionController_createSubscriptionItem",
-        "summary": "Create subscription item",
-        "description": "Add a new item to a mailbox subscription",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "description": "Subscription item creation data",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "mailboxId": {
-                    "type": "string",
-                    "description": "Mailbox ID"
-                  },
-                  "itemType": {
-                    "type": "string",
-                    "enum": [
-                      "ADDON",
-                      "PRODUCT",
-                      "OTHER"
-                    ],
-                    "description": "Item type"
-                  },
-                  "itemId": {
-                    "type": "string",
-                    "description": "Product or Addon ID"
-                  },
-                  "priceId": {
-                    "type": "string",
-                    "description": "Price variant ID",
-                    "nullable": true
-                  },
-                  "billingCycle": {
-                    "type": "string",
-                    "description": "Billing cycle"
-                  },
-                  "quantity": {
-                    "type": "number",
-                    "description": "Quantity",
-                    "default": 1
-                  },
-                  "unitPrice": {
-                    "type": "number",
-                    "description": "Unit price in cents"
-                  },
-                  "currency": {
-                    "type": "string",
-                    "description": "Currency",
-                    "default": "USD"
-                  },
-                  "startDate": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "Start date"
-                  },
-                  "endDate": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "End date",
-                    "nullable": true
-                  },
-                  "itemName": {
-                    "type": "string",
-                    "description": "Item name"
-                  },
-                  "itemDescription": {
-                    "type": "string",
-                    "description": "Item description",
-                    "nullable": true
-                  }
-                },
-                "required": [
-                  "mailboxId",
-                  "itemType",
-                  "itemId",
-                  "unitPrice",
-                  "startDate",
-                  "itemName"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Subscription item created successfully"
-          },
-          "400": {
-            "description": "Invalid input data"
-          },
-          "404": {
-            "description": "Mailbox not found"
-          }
-        },
-        "tags": [
-          "Subscription Items"
-        ]
-      }
-    },
     "/api/subscription/{id}": {
       "get": {
         "operationId": "SubscriptionController_getSubscriptionItemById",
@@ -4800,54 +3820,6 @@
         },
         "tags": [
           "Carriers"
-        ]
-      }
-    },
-    "/api/workspaces": {
-      "post": {
-        "operationId": "WorkspaceController_createWorkspace",
-        "summary": "Yeni workspace oluşturur",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateWorkspaceDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Workspace başarıyla oluşturuldu"
-          }
-        },
-        "tags": [
-          "Workspace Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "get": {
-        "operationId": "WorkspaceController_getUserWorkspaces",
-        "summary": "Kullanıcının workspace'lerini listeler",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Workspace listesi başarıyla alındı"
-          }
-        },
-        "tags": [
-          "Workspace Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       }
     },
@@ -5822,11 +4794,6 @@
         },
         "tags": [
           "products"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       },
       "get": {
@@ -5888,11 +4855,6 @@
         },
         "tags": [
           "products"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       }
     },
@@ -5918,11 +4880,6 @@
         },
         "tags": [
           "products"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       }
     },
@@ -5948,11 +4905,6 @@
         },
         "tags": [
           "products"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       }
     },
@@ -5987,11 +4939,6 @@
         },
         "tags": [
           "products"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       },
       "patch": {
@@ -6034,11 +4981,6 @@
         },
         "tags": [
           "products"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       },
       "delete": {
@@ -6064,11 +5006,6 @@
         },
         "tags": [
           "products"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       }
     },
@@ -6104,11 +5041,6 @@
         },
         "tags": [
           "products"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       },
       "delete": {
@@ -6142,25 +5074,29 @@
         },
         "tags": [
           "products"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       }
     },
-    "/api/prices": {
+    "/api/prices/{productId}": {
       "post": {
         "operationId": "PriceController_create",
         "summary": "Create a new price",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreatePriceDto"
+                "$ref": "#/components/schemas/ProductPriceDto"
               }
             }
           }
@@ -6171,7 +5107,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PriceResponseDto"
+                  "$ref": "#/components/schemas/ProductResponseDto"
                 }
               }
             }
@@ -6179,13 +5115,10 @@
         },
         "tags": [
           "prices"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
-      },
+      }
+    },
+    "/api/prices": {
       "get": {
         "operationId": "PriceController_findAll",
         "summary": "Get all prices",
@@ -6204,22 +5137,6 @@
             "in": "query",
             "schema": {
               "type": "boolean"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "offset",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "number"
             }
           }
         ],
@@ -6240,11 +5157,6 @@
         },
         "tags": [
           "prices"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       }
     },
@@ -6270,11 +5182,6 @@
         },
         "tags": [
           "prices"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       }
     },
@@ -6309,11 +5216,6 @@
         },
         "tags": [
           "prices"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       }
     },
@@ -6348,11 +5250,6 @@
         },
         "tags": [
           "prices"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       },
       "patch": {
@@ -6395,11 +5292,6 @@
         },
         "tags": [
           "prices"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       },
       "delete": {
@@ -6425,11 +5317,6 @@
         },
         "tags": [
           "prices"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       }
     },
@@ -6464,6 +5351,49 @@
         },
         "tags": [
           "prices"
+        ]
+      }
+    },
+    "/api/handler/mail": {
+      "post": {
+        "operationId": "HandlerMailController_createMail",
+        "summary": "Create a new package",
+        "description": "Register a new package in the system without items",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Package creation data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMailDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Package created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "404": {
+            "description": "Workspace address or office location not found"
+          },
+          "409": {
+            "description": "Package with this STE number already exists"
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
         ],
         "security": [
           {
@@ -6472,25 +5402,747 @@
         ]
       }
     },
-    "/api/prices/recurring": {
-      "post": {
-        "operationId": "PriceController_createRecurringPrice",
-        "summary": "Create a recurring price",
-        "parameters": [],
+    "/api/handler/mail/{id}": {
+      "put": {
+        "operationId": "HandlerMailController_updatePackage",
+        "summary": "Update package",
+        "description": "Update an existing package by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Package ID",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Package update data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMailDto"
+              }
+            }
+          }
+        },
         "responses": {
-          "201": {
-            "description": "Recurring price created successfully",
+          "200": {
+            "description": "Package updated successfully",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PriceResponseDto"
+                  "$ref": "#/components/schemas/PackageResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "404": {
+            "description": "Package not found"
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "HandlerMailController_getPackageById",
+        "summary": "Get package by ID",
+        "description": "Retrieve a specific package with all its items and related information",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Package ID",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Package not found"
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/handler/mail/all": {
+      "get": {
+        "operationId": "HandlerMailController_getPackages",
+        "summary": "Get all packages",
+        "description": "Retrieve a paginated list of all packages with filtering options",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by mailbox ID (subscription ID)",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          },
+          {
+            "name": "workspaceId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by workspace ID",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          },
+          {
+            "name": "officeLocationId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by office location ID",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "description": "Filter by package type",
+            "schema": {
+              "enum": [
+                "BANK_CHECK",
+                "LEGAL_DOCUMENT",
+                "ENVELOPE",
+                "PACKAGE",
+                "OTHER"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by package status",
+            "schema": {
+              "enum": [
+                "PENDING",
+                "FORWARDED",
+                "SHREDDED",
+                "COMPLETED",
+                "CANCELLED",
+                "IN_PROCESS"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "steNumber",
+            "required": false,
+            "in": "query",
+            "description": "Filter by STE number",
+            "schema": {
+              "example": "004712",
+              "type": "string"
+            }
+          },
+          {
+            "name": "senderName",
+            "required": false,
+            "in": "query",
+            "description": "Filter by sender name",
+            "schema": {
+              "example": "John Doe",
+              "type": "string"
+            }
+          },
+          {
+            "name": "carrier",
+            "required": false,
+            "in": "query",
+            "description": "Filter by carrier",
+            "schema": {
+              "example": "UPS",
+              "type": "string"
+            }
+          },
+          {
+            "name": "isShereded",
+            "required": false,
+            "in": "query",
+            "description": "Filter by shredded status",
+            "schema": {
+              "example": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "isForwarded",
+            "required": false,
+            "in": "query",
+            "description": "Filter by forwarded status",
+            "schema": {
+              "example": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "receivedAtStart",
+            "required": false,
+            "in": "query",
+            "description": "Filter by received date start (YYYY-MM-DD)",
+            "schema": {
+              "example": "2024-01-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "receivedAtEnd",
+            "required": false,
+            "in": "query",
+            "description": "Filter by received date end (YYYY-MM-DD)",
+            "schema": {
+              "example": "2024-12-31",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number for pagination (default: 1)",
+            "schema": {
+              "minimum": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items per page (default: 10)",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "mailboxId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by mailbox ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Packages retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PackageResponseDto"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "page": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "totalPages": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
           }
         },
         "tags": [
-          "prices"
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/handler/mail/mailbox/{mailboxId}": {
+      "get": {
+        "operationId": "HandlerMailController_getPackagesByWorkspaceAddress",
+        "summary": "Get packages by mailbox",
+        "description": "Retrieve all packages for a specific mailbox",
+        "parameters": [
+          {
+            "name": "workspaceAddressId",
+            "required": true,
+            "in": "path",
+            "description": "Workspace address ID",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          },
+          {
+            "name": "subscriptionId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by mailbox ID (subscription ID)",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          },
+          {
+            "name": "workspaceId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by workspace ID",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          },
+          {
+            "name": "officeLocationId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by office location ID",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "description": "Filter by package type",
+            "schema": {
+              "example": "PACKAGE",
+              "enum": [
+                "BANK_CHECK",
+                "LEGAL_DOCUMENT",
+                "ENVELOPE",
+                "PACKAGE",
+                "OTHER"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by package status",
+            "schema": {
+              "example": "PENDING",
+              "enum": [
+                "PENDING",
+                "FORWARDED",
+                "SHREDDED",
+                "COMPLETED",
+                "CANCELLED",
+                "IN_PROCESS"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "steNumber",
+            "required": false,
+            "in": "query",
+            "description": "Filter by STE number",
+            "schema": {
+              "example": "004712",
+              "type": "string"
+            }
+          },
+          {
+            "name": "senderName",
+            "required": false,
+            "in": "query",
+            "description": "Filter by sender name",
+            "schema": {
+              "example": "John Doe",
+              "type": "string"
+            }
+          },
+          {
+            "name": "carrier",
+            "required": false,
+            "in": "query",
+            "description": "Filter by carrier",
+            "schema": {
+              "example": "UPS",
+              "type": "string"
+            }
+          },
+          {
+            "name": "isShereded",
+            "required": false,
+            "in": "query",
+            "description": "Filter by shredded status",
+            "schema": {
+              "example": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "isForwarded",
+            "required": false,
+            "in": "query",
+            "description": "Filter by forwarded status",
+            "schema": {
+              "example": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "receivedAtStart",
+            "required": false,
+            "in": "query",
+            "description": "Filter by received date start",
+            "schema": {
+              "example": "2024-01-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "receivedAtEnd",
+            "required": false,
+            "in": "query",
+            "description": "Filter by received date end",
+            "schema": {
+              "example": "2024-12-31",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number for pagination (default: 1)",
+            "schema": {
+              "minimum": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items per page (default: 10)",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "example": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Packages retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PackageResponseDto"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "page": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "totalPages": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/handler/mail/office-location/{officeLocationId}": {
+      "get": {
+        "operationId": "HandlerMailController_getPackagesByOfficeLocation",
+        "summary": "Get packages by office location",
+        "description": "Retrieve all packages for a specific office location",
+        "parameters": [
+          {
+            "name": "officeLocationId",
+            "required": true,
+            "in": "path",
+            "description": "Office location ID",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          },
+          {
+            "name": "subscriptionId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by mailbox ID (subscription ID)",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          },
+          {
+            "name": "workspaceId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by workspace ID",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "description": "Filter by package type",
+            "schema": {
+              "example": "PACKAGE",
+              "enum": [
+                "BANK_CHECK",
+                "LEGAL_DOCUMENT",
+                "ENVELOPE",
+                "PACKAGE",
+                "OTHER"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by package status",
+            "schema": {
+              "example": "PENDING",
+              "enum": [
+                "PENDING",
+                "FORWARDED",
+                "SHREDDED",
+                "COMPLETED",
+                "CANCELLED",
+                "IN_PROCESS"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "steNumber",
+            "required": false,
+            "in": "query",
+            "description": "Filter by STE number",
+            "schema": {
+              "example": "004712",
+              "type": "string"
+            }
+          },
+          {
+            "name": "senderName",
+            "required": false,
+            "in": "query",
+            "description": "Filter by sender name",
+            "schema": {
+              "example": "John Doe",
+              "type": "string"
+            }
+          },
+          {
+            "name": "carrier",
+            "required": false,
+            "in": "query",
+            "description": "Filter by carrier",
+            "schema": {
+              "example": "UPS",
+              "type": "string"
+            }
+          },
+          {
+            "name": "isShereded",
+            "required": false,
+            "in": "query",
+            "description": "Filter by shredded status",
+            "schema": {
+              "example": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "isForwarded",
+            "required": false,
+            "in": "query",
+            "description": "Filter by forwarded status",
+            "schema": {
+              "example": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "receivedAtStart",
+            "required": false,
+            "in": "query",
+            "description": "Filter by received date start",
+            "schema": {
+              "example": "2024-01-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "receivedAtEnd",
+            "required": false,
+            "in": "query",
+            "description": "Filter by received date end",
+            "schema": {
+              "example": "2024-12-31",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number for pagination (default: 1)",
+            "schema": {
+              "minimum": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items per page (default: 10)",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "example": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Packages retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PackageResponseDto"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "page": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "totalPages": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
         ],
         "security": [
           {
@@ -6700,549 +6352,6 @@
           "status",
           "priority"
         ]
-      },
-      "PackageItemResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Item ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "packageId": {
-            "type": "string",
-            "description": "Package ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "name": {
-            "type": "string",
-            "description": "Item name",
-            "example": "Legal Document"
-          },
-          "description": {
-            "type": "string",
-            "description": "Item description",
-            "example": "Important legal document from law firm"
-          },
-          "quantity": {
-            "type": "number",
-            "description": "Quantity of items",
-            "example": 1
-          },
-          "weightKg": {
-            "type": "number",
-            "description": "Weight in kilograms",
-            "example": 0.5
-          },
-          "width": {
-            "type": "number",
-            "description": "Width in centimeters",
-            "example": 21
-          },
-          "height": {
-            "type": "number",
-            "description": "Height in centimeters",
-            "example": 29.7
-          },
-          "length": {
-            "type": "number",
-            "description": "Length in centimeters",
-            "example": 0.1
-          },
-          "volumeDesi": {
-            "type": "number",
-            "description": "Volume in desi",
-            "example": 0.1
-          },
-          "photoUrls": {
-            "description": "Photo URLs",
-            "example": [
-              "https://s3.amazonaws.com/bucket/photo1.jpg"
-            ],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "isShereded": {
-            "type": "boolean",
-            "description": "Is item shredded",
-            "example": false
-          },
-          "isForwarded": {
-            "type": "boolean",
-            "description": "Is item forwarded",
-            "example": false
-          },
-          "isDeleted": {
-            "type": "boolean",
-            "description": "Is item deleted",
-            "example": false
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string",
-            "description": "Creation date",
-            "example": "2024-01-01T00:00:00.000Z"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string",
-            "description": "Last update date",
-            "example": "2024-01-01T00:00:00.000Z"
-          },
-          "deletedAt": {
-            "format": "date-time",
-            "type": "string",
-            "description": "Deletion date",
-            "example": "2024-01-01T00:00:00.000Z"
-          },
-          "package": {
-            "type": "object",
-            "description": "Package details"
-          }
-        },
-        "required": [
-          "id",
-          "packageId",
-          "name",
-          "quantity",
-          "isShereded",
-          "isForwarded",
-          "isDeleted",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
-      "PackageResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Package ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "steNumber": {
-            "type": "string",
-            "description": "STE number on the package",
-            "example": "004712"
-          },
-          "workspaceAddressId": {
-            "type": "string",
-            "description": "Workspace address ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "officeLocationId": {
-            "type": "string",
-            "description": "Office location ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "type": {
-            "type": "string",
-            "description": "Package type",
-            "enum": [
-              "BANK_CHECK",
-              "LEGAL_DOCUMENT",
-              "ENVELOPE",
-              "PACKAGE",
-              "OTHER"
-            ],
-            "example": "PACKAGE"
-          },
-          "receivedAt": {
-            "format": "date-time",
-            "type": "string",
-            "description": "Date when package was received",
-            "example": "2024-01-01T10:00:00.000Z"
-          },
-          "senderName": {
-            "type": "string",
-            "description": "Sender name",
-            "example": "John Doe Company"
-          },
-          "senderAddress": {
-            "type": "string",
-            "description": "Sender address",
-            "example": "123 Main St, New York, NY 10001"
-          },
-          "carrier": {
-            "type": "string",
-            "description": "Carrier company",
-            "example": "UPS"
-          },
-          "width": {
-            "type": "number",
-            "description": "Width in centimeters",
-            "example": 30
-          },
-          "height": {
-            "type": "number",
-            "description": "Height in centimeters",
-            "example": 20
-          },
-          "length": {
-            "type": "number",
-            "description": "Length in centimeters",
-            "example": 15
-          },
-          "weightKg": {
-            "type": "number",
-            "description": "Weight in kilograms",
-            "example": 2.5
-          },
-          "volumeDesi": {
-            "type": "number",
-            "description": "Volume in desi",
-            "example": 9
-          },
-          "photoUrls": {
-            "description": "Photo URLs",
-            "example": [
-              "https://s3.amazonaws.com/bucket/package1.jpg"
-            ],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "status": {
-            "type": "string",
-            "description": "Package status",
-            "enum": [
-              "PENDING",
-              "FORWARDED",
-              "SHREDDED",
-              "COMPLETED",
-              "CANCELLED",
-              "IN_PROCESS"
-            ],
-            "example": "PENDING"
-          },
-          "isShereded": {
-            "type": "boolean",
-            "description": "Is package shredded",
-            "example": false
-          },
-          "isForwarded": {
-            "type": "boolean",
-            "description": "Is package forwarded",
-            "example": false
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string",
-            "description": "Creation date",
-            "example": "2024-01-01T00:00:00.000Z"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string",
-            "description": "Last update date",
-            "example": "2024-01-01T00:00:00.000Z"
-          },
-          "items": {
-            "description": "Package items",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PackageItemResponseDto"
-            }
-          },
-          "workspaceAddress": {
-            "type": "object",
-            "description": "Workspace address details"
-          },
-          "officeLocation": {
-            "type": "object",
-            "description": "Office location details"
-          },
-          "actions": {
-            "description": "Package actions",
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "forwardRequests": {
-            "description": "Forward requests",
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "steNumber",
-          "workspaceAddressId",
-          "officeLocationId",
-          "type",
-          "receivedAt",
-          "status",
-          "isShereded",
-          "isForwarded",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
-      "CreateMailDto": {
-        "type": "object",
-        "properties": {
-          "steNumber": {
-            "type": "string",
-            "description": "STE number on the mail/package",
-            "example": "004712"
-          },
-          "subscriptionId": {
-            "type": "string",
-            "description": "Mailbox ID (subscription ID)",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "receivedAt": {
-            "type": "string",
-            "description": "Date when mail was received",
-            "example": "2024-01-01T10:00:00.000Z"
-          },
-          "type": {
-            "type": "string",
-            "description": "Mail type",
-            "enum": [
-              "BANK_CHECK",
-              "LEGAL_DOCUMENT",
-              "ENVELOPE",
-              "PACKAGE",
-              "OTHER"
-            ],
-            "example": "PACKAGE"
-          },
-          "senderName": {
-            "type": "string",
-            "description": "Sender name",
-            "example": "John Doe Company"
-          },
-          "senderAddress": {
-            "type": "string",
-            "description": "Sender address",
-            "example": "123 Main St, New York, NY 10001"
-          },
-          "carrier": {
-            "type": "string",
-            "description": "Carrier company",
-            "example": "UPS"
-          },
-          "width": {
-            "type": "number",
-            "description": "Width in centimeters",
-            "example": 30,
-            "minimum": 0
-          },
-          "height": {
-            "type": "number",
-            "description": "Height in centimeters",
-            "example": 20,
-            "minimum": 0
-          },
-          "length": {
-            "type": "number",
-            "description": "Length in centimeters",
-            "example": 15,
-            "minimum": 0
-          },
-          "weightKg": {
-            "type": "number",
-            "description": "Weight in kilograms",
-            "example": 2.5,
-            "minimum": 0
-          },
-          "volumeDesi": {
-            "type": "number",
-            "description": "Volume in desi",
-            "example": 9,
-            "minimum": 0
-          },
-          "photoUrls": {
-            "description": "Photo URLs",
-            "example": [
-              "https://s3.amazonaws.com/bucket/mail1.jpg"
-            ],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "status": {
-            "type": "string",
-            "description": "Mail status",
-            "enum": [
-              "PENDING",
-              "FORWARDED",
-              "SHREDDED",
-              "COMPLETED",
-              "CANCELLED",
-              "IN_PROCESS"
-            ],
-            "example": "PENDING",
-            "default": "PENDING"
-          },
-          "currentStatus": {
-            "type": "string",
-            "description": "Current status",
-            "enum": [
-              "PENDING",
-              "FORWARDED",
-              "SHREDDED",
-              "COMPLETED",
-              "CANCELLED",
-              "IN_PROCESS"
-            ],
-            "example": "PENDING",
-            "default": "PENDING"
-          },
-          "isShereded": {
-            "type": "boolean",
-            "description": "Is mail shredded",
-            "example": false,
-            "default": false
-          },
-          "isForwarded": {
-            "type": "boolean",
-            "description": "Is mail forwarded",
-            "example": false,
-            "default": false
-          }
-        },
-        "required": [
-          "steNumber",
-          "subscriptionId",
-          "receivedAt",
-          "type"
-        ]
-      },
-      "UpdateMailDto": {
-        "type": "object",
-        "properties": {
-          "steNumber": {
-            "type": "string",
-            "description": "STE number on the mail/package",
-            "example": "004712"
-          },
-          "subscriptionId": {
-            "type": "string",
-            "description": "Mailbox ID (subscription ID)",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "receivedAt": {
-            "type": "string",
-            "description": "Date when mail was received",
-            "example": "2024-01-01T10:00:00.000Z"
-          },
-          "type": {
-            "type": "string",
-            "description": "Mail type",
-            "enum": [
-              "BANK_CHECK",
-              "LEGAL_DOCUMENT",
-              "ENVELOPE",
-              "PACKAGE",
-              "OTHER"
-            ],
-            "example": "PACKAGE"
-          },
-          "senderName": {
-            "type": "string",
-            "description": "Sender name",
-            "example": "John Doe Company"
-          },
-          "senderAddress": {
-            "type": "string",
-            "description": "Sender address",
-            "example": "123 Main St, New York, NY 10001"
-          },
-          "carrier": {
-            "type": "string",
-            "description": "Carrier company",
-            "example": "UPS"
-          },
-          "width": {
-            "type": "number",
-            "description": "Width in centimeters",
-            "example": 30,
-            "minimum": 0
-          },
-          "height": {
-            "type": "number",
-            "description": "Height in centimeters",
-            "example": 20,
-            "minimum": 0
-          },
-          "length": {
-            "type": "number",
-            "description": "Length in centimeters",
-            "example": 15,
-            "minimum": 0
-          },
-          "weightKg": {
-            "type": "number",
-            "description": "Weight in kilograms",
-            "example": 2.5,
-            "minimum": 0
-          },
-          "volumeDesi": {
-            "type": "number",
-            "description": "Volume in desi",
-            "example": 9,
-            "minimum": 0
-          },
-          "photoUrls": {
-            "description": "Photo URLs",
-            "example": [
-              "https://s3.amazonaws.com/bucket/mail1.jpg"
-            ],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "status": {
-            "type": "string",
-            "description": "Mail status",
-            "enum": [
-              "PENDING",
-              "FORWARDED",
-              "SHREDDED",
-              "COMPLETED",
-              "CANCELLED",
-              "IN_PROCESS"
-            ],
-            "example": "PENDING",
-            "default": "PENDING"
-          },
-          "currentStatus": {
-            "type": "string",
-            "description": "Current status",
-            "enum": [
-              "PENDING",
-              "FORWARDED",
-              "SHREDDED",
-              "COMPLETED",
-              "CANCELLED",
-              "IN_PROCESS"
-            ],
-            "example": "PENDING",
-            "default": "PENDING"
-          },
-          "isShereded": {
-            "type": "boolean",
-            "description": "Is mail shredded",
-            "example": false,
-            "default": false
-          },
-          "isForwarded": {
-            "type": "boolean",
-            "description": "Is mail forwarded",
-            "example": false,
-            "default": false
-          }
-        }
       },
       "OfficeLocationResponseDto": {
         "type": "object",
@@ -8634,25 +7743,6 @@
           }
         }
       },
-      "CreateWorkspaceDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Workspace name",
-            "example": "My Company"
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "Is workspace active",
-            "example": true,
-            "default": true
-          }
-        },
-        "required": [
-          "name"
-        ]
-      },
       "UpdateWorkspaceDto": {
         "type": "object",
         "properties": {
@@ -8743,6 +7833,289 @@
             "example": false
           }
         }
+      },
+      "PackageItemResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Item ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "packageId": {
+            "type": "string",
+            "description": "Package ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "name": {
+            "type": "string",
+            "description": "Item name",
+            "example": "Legal Document"
+          },
+          "description": {
+            "type": "string",
+            "description": "Item description",
+            "example": "Important legal document from law firm"
+          },
+          "quantity": {
+            "type": "number",
+            "description": "Quantity of items",
+            "example": 1
+          },
+          "weightKg": {
+            "type": "number",
+            "description": "Weight in kilograms",
+            "example": 0.5
+          },
+          "width": {
+            "type": "number",
+            "description": "Width in centimeters",
+            "example": 21
+          },
+          "height": {
+            "type": "number",
+            "description": "Height in centimeters",
+            "example": 29.7
+          },
+          "length": {
+            "type": "number",
+            "description": "Length in centimeters",
+            "example": 0.1
+          },
+          "volumeDesi": {
+            "type": "number",
+            "description": "Volume in desi",
+            "example": 0.1
+          },
+          "photoUrls": {
+            "description": "Photo URLs",
+            "example": [
+              "https://s3.amazonaws.com/bucket/photo1.jpg"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "isShereded": {
+            "type": "boolean",
+            "description": "Is item shredded",
+            "example": false
+          },
+          "isForwarded": {
+            "type": "boolean",
+            "description": "Is item forwarded",
+            "example": false
+          },
+          "isDeleted": {
+            "type": "boolean",
+            "description": "Is item deleted",
+            "example": false
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Creation date",
+            "example": "2024-01-01T00:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Last update date",
+            "example": "2024-01-01T00:00:00.000Z"
+          },
+          "deletedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Deletion date",
+            "example": "2024-01-01T00:00:00.000Z"
+          },
+          "package": {
+            "type": "object",
+            "description": "Package details"
+          }
+        },
+        "required": [
+          "id",
+          "packageId",
+          "name",
+          "quantity",
+          "isShereded",
+          "isForwarded",
+          "isDeleted",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "PackageResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Package ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "steNumber": {
+            "type": "string",
+            "description": "STE number on the package",
+            "example": "004712"
+          },
+          "workspaceAddressId": {
+            "type": "string",
+            "description": "Workspace address ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "officeLocationId": {
+            "type": "string",
+            "description": "Office location ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "type": {
+            "type": "string",
+            "description": "Package type",
+            "enum": [
+              "BANK_CHECK",
+              "LEGAL_DOCUMENT",
+              "ENVELOPE",
+              "PACKAGE",
+              "OTHER"
+            ],
+            "example": "PACKAGE"
+          },
+          "receivedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Date when package was received",
+            "example": "2024-01-01T10:00:00.000Z"
+          },
+          "senderName": {
+            "type": "string",
+            "description": "Sender name",
+            "example": "John Doe Company"
+          },
+          "senderAddress": {
+            "type": "string",
+            "description": "Sender address",
+            "example": "123 Main St, New York, NY 10001"
+          },
+          "carrier": {
+            "type": "string",
+            "description": "Carrier company",
+            "example": "UPS"
+          },
+          "width": {
+            "type": "number",
+            "description": "Width in centimeters",
+            "example": 30
+          },
+          "height": {
+            "type": "number",
+            "description": "Height in centimeters",
+            "example": 20
+          },
+          "length": {
+            "type": "number",
+            "description": "Length in centimeters",
+            "example": 15
+          },
+          "weightKg": {
+            "type": "number",
+            "description": "Weight in kilograms",
+            "example": 2.5
+          },
+          "volumeDesi": {
+            "type": "number",
+            "description": "Volume in desi",
+            "example": 9
+          },
+          "photoUrls": {
+            "description": "Photo URLs",
+            "example": [
+              "https://s3.amazonaws.com/bucket/package1.jpg"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "description": "Package status",
+            "enum": [
+              "PENDING",
+              "FORWARDED",
+              "SHREDDED",
+              "COMPLETED",
+              "CANCELLED",
+              "IN_PROCESS"
+            ],
+            "example": "PENDING"
+          },
+          "isShereded": {
+            "type": "boolean",
+            "description": "Is package shredded",
+            "example": false
+          },
+          "isForwarded": {
+            "type": "boolean",
+            "description": "Is package forwarded",
+            "example": false
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Creation date",
+            "example": "2024-01-01T00:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Last update date",
+            "example": "2024-01-01T00:00:00.000Z"
+          },
+          "items": {
+            "description": "Package items",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageItemResponseDto"
+            }
+          },
+          "workspaceAddress": {
+            "type": "object",
+            "description": "Workspace address details"
+          },
+          "officeLocation": {
+            "type": "object",
+            "description": "Office location details"
+          },
+          "actions": {
+            "description": "Package actions",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "forwardRequests": {
+            "description": "Forward requests",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "steNumber",
+          "workspaceAddressId",
+          "officeLocationId",
+          "type",
+          "receivedAt",
+          "status",
+          "isShereded",
+          "isForwarded",
+          "createdAt",
+          "updatedAt"
+        ]
       },
       "CreateOrderItemDto": {
         "type": "object",
@@ -9336,61 +8709,86 @@
           }
         }
       },
-      "CreatePriceDto": {
+      "RecurringDto": {
+        "type": "object",
+        "properties": {
+          "interval": {
+            "type": "string",
+            "description": "Recurring interval (örn: day, week, month, year)",
+            "enum": [
+              "day",
+              "week",
+              "month",
+              "year"
+            ]
+          },
+          "interval_count": {
+            "type": "number",
+            "description": "Interval count",
+            "example": 1
+          }
+        },
+        "required": [
+          "interval",
+          "interval_count"
+        ]
+      },
+      "ProductPriceDto": {
         "type": "object",
         "properties": {
           "name": {
             "type": "string",
-            "description": "Price name",
-            "example": "Monthly Extra Recipient"
-          },
-          "isDefault": {
-            "type": "boolean",
-            "description": "Is default price",
-            "example": false,
-            "default": false
-          },
-          "additionalFees": {
-            "type": "number",
-            "description": "Additional fees in cents",
-            "example": 50
-          },
-          "stripePriceId": {
-            "type": "string",
-            "description": "Stripe price ID",
-            "example": "price_1234567890"
-          },
-          "unit_amount": {
-            "type": "number",
-            "description": "Unit amount in cents",
-            "example": 299
-          },
-          "currency": {
-            "type": "string",
-            "description": "Currency",
-            "example": "USD",
-            "default": "USD"
-          },
-          "productId": {
-            "type": "string",
-            "description": "Product ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
+            "description": "Fiyat adı veya takma adı",
+            "example": "Gold Monthly"
           },
           "description": {
             "type": "string",
-            "description": "Price description",
-            "example": "Monthly subscription for extra recipient"
+            "description": "Fiyat açıklaması",
+            "example": "Monthly subscription price"
           },
-          "recurringId": {
+          "isDefault": {
+            "type": "boolean",
+            "description": "Varsayılan fiyat mı?",
+            "example": false,
+            "default": false
+          },
+          "stripePriceId": {
             "type": "string",
-            "description": "Recurring ID for recurring prices",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
+            "description": "Stripe Price ID’si (varsa)",
+            "example": "price_1MoBy5LkdIwHu7ixZhnattbh"
+          },
+          "priceType": {
+            "type": "string",
+            "description": "Fiyat tipi: \"one_time\" veya \"recurring\"",
+            "example": "one_time",
+            "enum": [
+              "one_time",
+              "recurring"
+            ],
+            "default": "one_time"
+          },
+          "recurring": {
+            "description": "Recurring bilgileri (sadece recurring tipindeki fiyatlarda geçerli)",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RecurringDto"
+              }
+            ]
+          },
+          "unit_amount": {
+            "type": "number",
+            "description": "Fiyat miktarı en küçük para birimi cinsinden (ör: 1000 = $10.00)",
+            "example": 1000
+          },
+          "currency": {
+            "type": "string",
+            "description": "Para birimi (örneğin: \"usd\")",
+            "example": "usd"
           }
         },
         "required": [
           "unit_amount",
-          "currency",
-          "productId"
+          "currency"
         ]
       },
       "PriceResponseDto": {
@@ -9561,6 +8959,255 @@
             "type": "boolean",
             "description": "Is price deleted",
             "example": false
+          }
+        }
+      },
+      "CreateMailDto": {
+        "type": "object",
+        "properties": {
+          "mailboxId": {
+            "type": "string",
+            "description": "Mailbox ID (subscription ID)",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "receivedAt": {
+            "type": "string",
+            "description": "Date when mail was received",
+            "example": "2024-01-01T10:00:00.000Z"
+          },
+          "type": {
+            "type": "string",
+            "description": "Mail type",
+            "enum": [
+              "BANK_CHECK",
+              "LEGAL_DOCUMENT",
+              "ENVELOPE",
+              "PACKAGE",
+              "OTHER"
+            ],
+            "example": "PACKAGE"
+          },
+          "senderName": {
+            "type": "string",
+            "description": "Sender name",
+            "example": "John Doe Company"
+          },
+          "senderAddress": {
+            "type": "string",
+            "description": "Sender address",
+            "example": "123 Main St, New York, NY 10001"
+          },
+          "carrier": {
+            "type": "string",
+            "description": "Carrier company",
+            "example": "UPS"
+          },
+          "width": {
+            "type": "number",
+            "description": "Width in centimeters",
+            "example": 30,
+            "minimum": 0
+          },
+          "height": {
+            "type": "number",
+            "description": "Height in centimeters",
+            "example": 20,
+            "minimum": 0
+          },
+          "length": {
+            "type": "number",
+            "description": "Length in centimeters",
+            "example": 15,
+            "minimum": 0
+          },
+          "weightKg": {
+            "type": "number",
+            "description": "Weight in kilograms",
+            "example": 2.5,
+            "minimum": 0
+          },
+          "volumeDesi": {
+            "type": "number",
+            "description": "Volume in desi",
+            "example": 9,
+            "minimum": 0
+          },
+          "photoUrls": {
+            "description": "Photo URLs",
+            "example": [
+              "https://s3.amazonaws.com/bucket/mail1.jpg"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "description": "Mail status",
+            "enum": [
+              "PENDING",
+              "FORWARDED",
+              "SHREDDED",
+              "COMPLETED",
+              "CANCELLED",
+              "IN_PROCESS"
+            ],
+            "example": "PENDING",
+            "default": "PENDING"
+          },
+          "currentStatus": {
+            "type": "string",
+            "description": "Current status",
+            "enum": [
+              "PENDING",
+              "FORWARDED",
+              "SHREDDED",
+              "COMPLETED",
+              "CANCELLED",
+              "IN_PROCESS"
+            ],
+            "example": "PENDING",
+            "default": "PENDING"
+          },
+          "isShereded": {
+            "type": "boolean",
+            "description": "Is mail shredded",
+            "example": false,
+            "default": false
+          },
+          "isForwarded": {
+            "type": "boolean",
+            "description": "Is mail forwarded",
+            "example": false,
+            "default": false
+          }
+        },
+        "required": [
+          "mailboxId",
+          "receivedAt",
+          "type"
+        ]
+      },
+      "UpdateMailDto": {
+        "type": "object",
+        "properties": {
+          "mailboxId": {
+            "type": "string",
+            "description": "Mailbox ID (subscription ID)",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "receivedAt": {
+            "type": "string",
+            "description": "Date when mail was received",
+            "example": "2024-01-01T10:00:00.000Z"
+          },
+          "type": {
+            "type": "string",
+            "description": "Mail type",
+            "enum": [
+              "BANK_CHECK",
+              "LEGAL_DOCUMENT",
+              "ENVELOPE",
+              "PACKAGE",
+              "OTHER"
+            ],
+            "example": "PACKAGE"
+          },
+          "senderName": {
+            "type": "string",
+            "description": "Sender name",
+            "example": "John Doe Company"
+          },
+          "senderAddress": {
+            "type": "string",
+            "description": "Sender address",
+            "example": "123 Main St, New York, NY 10001"
+          },
+          "carrier": {
+            "type": "string",
+            "description": "Carrier company",
+            "example": "UPS"
+          },
+          "width": {
+            "type": "number",
+            "description": "Width in centimeters",
+            "example": 30,
+            "minimum": 0
+          },
+          "height": {
+            "type": "number",
+            "description": "Height in centimeters",
+            "example": 20,
+            "minimum": 0
+          },
+          "length": {
+            "type": "number",
+            "description": "Length in centimeters",
+            "example": 15,
+            "minimum": 0
+          },
+          "weightKg": {
+            "type": "number",
+            "description": "Weight in kilograms",
+            "example": 2.5,
+            "minimum": 0
+          },
+          "volumeDesi": {
+            "type": "number",
+            "description": "Volume in desi",
+            "example": 9,
+            "minimum": 0
+          },
+          "photoUrls": {
+            "description": "Photo URLs",
+            "example": [
+              "https://s3.amazonaws.com/bucket/mail1.jpg"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "description": "Mail status",
+            "enum": [
+              "PENDING",
+              "FORWARDED",
+              "SHREDDED",
+              "COMPLETED",
+              "CANCELLED",
+              "IN_PROCESS"
+            ],
+            "example": "PENDING",
+            "default": "PENDING"
+          },
+          "currentStatus": {
+            "type": "string",
+            "description": "Current status",
+            "enum": [
+              "PENDING",
+              "FORWARDED",
+              "SHREDDED",
+              "COMPLETED",
+              "CANCELLED",
+              "IN_PROCESS"
+            ],
+            "example": "PENDING",
+            "default": "PENDING"
+          },
+          "isShereded": {
+            "type": "boolean",
+            "description": "Is mail shredded",
+            "example": false,
+            "default": false
+          },
+          "isForwarded": {
+            "type": "boolean",
+            "description": "Is mail forwarded",
+            "example": false,
+            "default": false
           }
         }
       }

@@ -28,17 +28,22 @@ export class MailService {
 
   async create(createMailDto: CreateMailDto): Promise<MailResponseDto> {
     try {
-      const existingMail = await this.prisma.mail.findFirst({
-        where: { steNumber: createMailDto.steNumber },
-      });
 
-      if (existingMail) {
-        throw new BadRequestException(`Mail with STE number ${createMailDto.steNumber} already exists`);
+      const mailbox=await  this.prisma.mailbox.findUnique({
+        where: { id: createMailDto.mailboxId },
+        select: {
+         steNumber : true,
+         id: true,
+        },
+      });
+      if (!mailbox) {
+        throw new BadRequestException('Mailbox not found');
       }
+
 
       const mail = await this.prisma.mail.create({
         data: {
-          steNumber: createMailDto.steNumber,
+          steNumber: mailbox.steNumber,
           type: createMailDto.type,
           receivedAt: new Date(createMailDto.receivedAt),
           photoUrls: createMailDto.photoUrls || [],
@@ -53,7 +58,7 @@ export class MailService {
           isShereded: createMailDto.isShereded || false,
           isForwarded: createMailDto.isForwarded || false,
           mailbox: {
-            connect: { id: createMailDto.subscriptionId }
+            connect: { id: createMailDto.mailboxId }
           }
         },
         include: {
@@ -84,7 +89,7 @@ export class MailService {
   async findAll(filters: any = {}): Promise<MailResponseDto[]> {
     const where: Prisma.MailWhereInput = {};
     
-    if (filters.subscriptionId) where.subscriptionId = filters.subscriptionId;
+    if (filters.mailboxId) where.mailboxId = filters.mailboxId;
     if (filters.status) where.status = filters.status;
     if (filters.type) where.type = filters.type;
     if (filters.steNumber) {
@@ -160,7 +165,6 @@ export class MailService {
       const mail = await this.prisma.mail.update({
         where: { id },
         data: {
-          ...(updateMailDto.steNumber && { steNumber: updateMailDto.steNumber }),
           ...(updateMailDto.type && { type: updateMailDto.type }),
           ...(updateMailDto.receivedAt && { receivedAt: new Date(updateMailDto.receivedAt) }),
           ...(updateMailDto.senderName !== undefined && { senderName: updateMailDto.senderName }),
@@ -174,8 +178,8 @@ export class MailService {
           ...(updateMailDto.photoUrls !== undefined && { photoUrls: updateMailDto.photoUrls }),
           ...(updateMailDto.isShereded !== undefined && { isShereded: updateMailDto.isShereded }),
           ...(updateMailDto.isForwarded !== undefined && { isForwarded: updateMailDto.isForwarded }),
-          ...(updateMailDto.subscriptionId && { 
-            mailbox: { connect: { id: updateMailDto.subscriptionId } }
+          ...(updateMailDto.mailboxId && { 
+            mailbox: { connect: { id: updateMailDto.mailboxId } }
           }),
         },
         include: {

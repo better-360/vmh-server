@@ -23,22 +23,6 @@ export class SubscriptionController {
   // SUBSCRIPTION ITEM ENDPOINTS
   // =====================
 
-  @Get()
-  @ApiOperation({ 
-    summary: 'Get subscription items',
-    description: 'Retrieve subscription items with filtering and pagination'
-  })
-  @ApiQuery({ name: 'mailboxId', required: false, description: 'Filter by mailbox ID' })
-  @ApiQuery({ name: 'itemType', required: false, enum: ProductType, description: 'Filter by item type' })
-  @ApiQuery({ name: 'status', required: false, enum: SubscriptionItemStatus, description: 'Filter by status' })
-  @ApiQuery({ name: 'isActive', required: false, type: Boolean, description: 'Filter by active status' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (default: 10)' })
-  @ApiResponse({ status: 200, description: 'Subscription items retrieved successfully' })
-  async getSubscriptionItems(@Query() query: SubscriptionItemQueryDto) {
-    return this.subscriptionService.getSubscriptionItems(query);
-  }
-
   @Get(':id')
   @ApiOperation({ 
     summary: 'Get subscription item by ID',
@@ -69,38 +53,6 @@ export class SubscriptionController {
     return this.subscriptionService.getSubscriptionItemsByMailbox(mailboxId, query);
   }
 
-  @Post()
-  @ApiOperation({ 
-    summary: 'Create subscription item',
-    description: 'Add a new item to a mailbox subscription'
-  })
-  @ApiBody({ 
-    description: 'Subscription item creation data',
-    schema: {
-      type: 'object',
-      properties: {
-        mailboxId: { type: 'string', description: 'Mailbox ID' },
-        itemType: { type: 'string', enum: Object.values(ProductType), description: 'Item type' },
-        itemId: { type: 'string', description: 'Product or Addon ID' },
-        priceId: { type: 'string', description: 'Price variant ID', nullable: true },
-        billingCycle: { type: 'string', description: 'Billing cycle' },
-        quantity: { type: 'number', description: 'Quantity', default: 1 },
-        unitPrice: { type: 'number', description: 'Unit price in cents' },
-        currency: { type: 'string', description: 'Currency', default: 'USD' },
-        startDate: { type: 'string', format: 'date-time', description: 'Start date' },
-        endDate: { type: 'string', format: 'date-time', description: 'End date', nullable: true },
-        itemName: { type: 'string', description: 'Item name' },
-        itemDescription: { type: 'string', description: 'Item description', nullable: true },
-      },
-      required: ['mailboxId', 'itemType', 'itemId', 'unitPrice', 'startDate', 'itemName']
-    }
-  })
-  @ApiResponse({ status: 201, description: 'Subscription item created successfully' })
-  @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiNotFoundResponse({ description: 'Mailbox not found' })
-  async createSubscriptionItem(@Body() createDto: CreateSubscriptionItemDto) {
-    return this.subscriptionService.createSubscriptionItem(createDto);
-  }
 
   @Put(':id')
   @ApiOperation({ 

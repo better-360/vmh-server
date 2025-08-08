@@ -27,33 +27,69 @@ import {
     UpdateMailDto,
     PackageQueryDto,
     PackageResponseDto,
-    CreatePackageItemDto,
-    UpdatePackageItemDto,
-    PackageItemQueryDto,
-    PackageItemResponseDto,
-    BulkCreatePackageItemsDto,
-    BulkUpdatePackageItemsDto,
     MailType,
     PackageStatus,
   } from 'src/dtos/mail.dto';
   import { Public } from 'src/common/decorators/public.decorator';
 import { MailService } from '../mail/mail.service';
   
-  @ApiTags('Admin Package Management')
+  @ApiTags('Mail Handler Panel')
   @ApiBearerAuth()
-  @Controller('admin/packages')
+  @Controller('handler/mail')
   @UseGuards(JwtAuthGuard)
   @Public()
-  export class AdminPackageController {
+  export class HandlerMailController {
     constructor(private readonly mailService: MailService) {}
+
+    @Post()
+    @ApiOperation({ 
+      summary: 'Create a new package',
+      description: 'Register a new package in the system without items'
+    })
+    @ApiBody({ 
+      type: CreateMailDto,
+      description: 'Package creation data'
+    })
+    @ApiResponse({ 
+      status: HttpStatus.CREATED, 
+      description: 'Package created successfully',
+      type: PackageResponseDto
+    })
+    @ApiBadRequestResponse({ description: 'Invalid input data' })
+    @ApiNotFoundResponse({ description: 'Workspace address or office location not found' })
+    @ApiConflictResponse({ description: 'Package with this STE number already exists' })
+    async createMail(@Body() createMailDto: CreateMailDto) {
+      return this.mailService.create(createMailDto);
+    }
+  
+    @Put(':id')
+    @ApiOperation({ 
+      summary: 'Update package',
+      description: 'Update an existing package by ID'
+    })
+    @ApiParam({ name: 'id', description: 'Package ID', example: '123e4567-e89b-12d3-a456-426614174000' })
+    @ApiBody({ 
+      type: UpdateMailDto,
+      description: 'Package update data'
+    })
+    @ApiResponse({ 
+      status: HttpStatus.OK, 
+      description: 'Package updated successfully',
+      type: PackageResponseDto
+    })
+    @ApiNotFoundResponse({ description: 'Package not found' })
+    @ApiBadRequestResponse({ description: 'Invalid input data' })
+    async updatePackage(@Param('id') id: string, @Body() updateMailDto: UpdateMailDto) {
+      return this.mailService.update(id, updateMailDto);
+    }
+  
 
     @Get('all')
     @ApiOperation({ 
       summary: 'Get all packages',
       description: 'Retrieve a paginated list of all packages with filtering options'
     })
-    @ApiQuery({ name: 'workspaceAddressId', required: false, type: String, description: 'Filter by workspace address ID' })
-    @ApiQuery({ name: 'officeLocationId', required: false, type: String, description: 'Filter by office location ID' })
+    @ApiQuery({ name: 'mailboxId', required: false, type: String, description: 'Filter by mailbox ID' })
     @ApiQuery({ name: 'type', required: false, enum: MailType, description: 'Filter by package type' })
     @ApiQuery({ name: 'status', required: false, enum: PackageStatus, description: 'Filter by package status' })
     @ApiQuery({ name: 'steNumber', required: false, type: String, description: 'Filter by STE number' })
@@ -109,10 +145,10 @@ import { MailService } from '../mail/mail.service';
       return this.mailService.findOne(id);
     }
   
-    @Get('workspace-address/:workspaceAddressId')
+    @Get('mailbox/:mailboxId')
     @ApiOperation({ 
-      summary: 'Get packages by workspace address',
-      description: 'Retrieve all packages for a specific workspace address'
+      summary: 'Get packages by mailbox',
+      description: 'Retrieve all packages for a specific mailbox'
     })
     @ApiParam({ name: 'workspaceAddressId', description: 'Workspace address ID', example: '123e4567-e89b-12d3-a456-426614174000' })
     @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number for pagination (default: 1)' })
@@ -187,46 +223,5 @@ import { MailService } from '../mail/mail.service';
       return this.mailService.findAll({ officeLocationId, ...query });
     }
   
-    @Post('create-package')
-    @ApiOperation({ 
-      summary: 'Create a new package',
-      description: 'Register a new package in the system without items'
-    })
-    @ApiBody({ 
-      type: CreateMailDto,
-      description: 'Package creation data'
-    })
-    @ApiResponse({ 
-      status: HttpStatus.CREATED, 
-      description: 'Package created successfully',
-      type: PackageResponseDto
-    })
-    @ApiBadRequestResponse({ description: 'Invalid input data' })
-    @ApiNotFoundResponse({ description: 'Workspace address or office location not found' })
-    @ApiConflictResponse({ description: 'Package with this STE number already exists' })
-    async createPackage(@Body() createMailDto: CreateMailDto) {
-      return this.mailService.create(createMailDto);
-    }
-  
-    @Put(':id')
-    @ApiOperation({ 
-      summary: 'Update package',
-      description: 'Update an existing package by ID'
-    })
-    @ApiParam({ name: 'id', description: 'Package ID', example: '123e4567-e89b-12d3-a456-426614174000' })
-    @ApiBody({ 
-      type: UpdateMailDto,
-      description: 'Package update data'
-    })
-    @ApiResponse({ 
-      status: HttpStatus.OK, 
-      description: 'Package updated successfully',
-      type: PackageResponseDto
-    })
-    @ApiNotFoundResponse({ description: 'Package not found' })
-    @ApiBadRequestResponse({ description: 'Invalid input data' })
-    async updatePackage(@Param('id') id: string, @Body() updateMailDto: UpdateMailDto) {
-      return this.mailService.update(id, updateMailDto);
-    }
-  
+    
   } 

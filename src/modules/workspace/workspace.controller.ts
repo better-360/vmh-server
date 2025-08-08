@@ -30,29 +30,6 @@ import { validateAndTransform } from 'src/utils/validate';
 export class WorkspaceController {
   constructor(private readonly workspaceService: WorkspaceService) {}
 
-  @ApiOperation({ summary: 'Yeni workspace oluşturur' })
-  @ApiResponse({ status: 201, description: 'Workspace başarıyla oluşturuldu' })
-  @Post()
-  async createWorkspace(@Request() req, @Body() createWorkspaceDto: CreateWorkspaceDto) {
-    const dtoInstance = await validateAndTransform(CreateWorkspaceDto, createWorkspaceDto);
-    const workspace = await this.workspaceService.createWorkspace(dtoInstance, req.user.id);
-    return {
-      message: 'Workspace başarıyla oluşturuldu',
-      data: workspace,
-    };
-  }
-
-  @ApiOperation({ summary: 'Kullanıcının workspace\'lerini listeler' })
-  @ApiResponse({ status: 200, description: 'Workspace listesi başarıyla alındı' })
-  @Get()
-  async getUserWorkspaces(@Request() req, @Query() query: any) {
-    // const queryInstance = await validateAndTransform(WorkspaceQueryDto, query);
-    const result = await this.workspaceService.getUserWorkspaces(req.user.id);
-    return {
-      message: 'Workspace listesi başarıyla alındı',
-      data: result,
-    };
-  }
 
   @ApiOperation({ summary: 'Workspace detayını getirir' })
   @ApiResponse({ status: 200, description: 'Workspace detayı başarıyla alındı' })

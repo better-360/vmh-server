@@ -936,13 +936,6 @@ export class BulkUpdatePackageItemsDto {
 } 
 
 export class CreateMailDto {
-  @ApiProperty({
-    description: 'STE number on the mail/package',
-    example: '004712',
-  })
-  @IsString()
-  @IsNotEmpty()
-  steNumber: string;
 
   @ApiProperty({
     description: 'Mailbox ID (subscription ID)',
@@ -950,7 +943,7 @@ export class CreateMailDto {
   })
   @IsUUID()
   @IsNotEmpty()
-  subscriptionId: string;
+  mailboxId: string;
 
   @ApiProperty({
     description: 'Date when mail was received',
@@ -1106,10 +1099,10 @@ export class MailResponseDto {
   steNumber: string;
 
   @ApiProperty({
-    description: 'Mailbox ID (subscription ID)',
+    description: 'Mailbox ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
-  subscriptionId: string;
+  mailboxId: string;
 
   @ApiProperty({
     description: 'Date when mail was received',
