@@ -81,10 +81,28 @@
     subscriptionItems SubscriptionItem[]
     mails             Mail[]
     orders            Order[]
+    recipients        Recipient[]
 
     @@unique([workspaceId, officeLocationId, isActive], name: "OneActiveSubscriptionPerOffice")
     @@index([workspaceId, isActive])
     @@index([officeLocationId, isActive])
+  }
+
+  model Recipient {
+    id String @id @default(uuid()) @db.Uuid
+    mailboxId String @db.Uuid
+    name String
+    lastName String?
+    email String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    deletedAt DateTime?
+    isDeleted Boolean @default(false)
+    isActive Boolean @default(true)
+    isDefault Boolean @default(false)
+    isConfirmed Boolean @default(false)
+    mailbox Mailbox @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
+    mails Mail[]
   }
 
   model Plan {
@@ -489,7 +507,8 @@
     actions         PackageAction[] // Paketle ilgili aksiyonlar (forward, shred, vs.)
     mailbox         Mailbox             @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
     forwardRequests ForwardingRequest[]
-
+    recipient      Recipient? @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+    recipientId    String?    @db.Uuid
     @@index([mailboxId])
     @@index([steNumber])
   }

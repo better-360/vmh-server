@@ -81,6 +81,7 @@ export class MailboxService {
           },
         },
         subscriptionItems: true,
+        recipients: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -111,6 +112,7 @@ export class MailboxService {
           },
         },
         subscriptionItems: true,
+        recipients: true,
         mails: {
           take: 10,
           orderBy: {
@@ -140,6 +142,7 @@ export class MailboxService {
           officeLocation: true,
           plan: true,
           planPrice: true,
+          recipients: true,
         },
       });
 
@@ -259,5 +262,55 @@ export class MailboxService {
   async generateSteNumber(): Promise<string> {
     const steNumber = Math.random().toString(36).substring(2, 2 + 6);
     return steNumber;
+  }
+
+  async findBySteNumber(steNumber: string): Promise<MailboxResponseDto[]> {
+    try {
+      const mailboxes = await this.prisma.mailbox.findMany({
+        where: {
+          steNumber: {
+            contains: steNumber,
+            mode: 'insensitive',
+          },
+          isActive: true,
+        },
+        include: {
+          workspace: {
+            include: {
+              members: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      email: true,
+                      firstName: true,
+                      lastName: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          officeLocation: true,
+          plan: true,
+          planPrice: true,
+          recipients: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      if (mailboxes.length === 0) {
+        throw new NotFoundException(`No mailboxes found for STE number: ${steNumber}`);
+      }
+
+      return mailboxes;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException(`Failed to find mailboxes by STE number: ${error.message}`);
+    }
   }
 }

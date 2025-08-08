@@ -695,7 +695,15 @@ export class PackageResponseDto {
 // QUERY DTOs
 // =====================
 
-export class PackageQueryDto {
+export class MailQueryDto {
+  @ApiPropertyOptional({
+    description: 'Filter by mailbox ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsOptional()
+  mailboxId?: string;
+
   @ApiPropertyOptional({
     description: 'Filter by mailbox ID (subscription ID)',
     example: '123e4567-e89b-12d3-a456-426614174000',
@@ -944,6 +952,15 @@ export class CreateMailDto {
   @IsUUID()
   @IsNotEmpty()
   mailboxId: string;
+
+  @ApiProperty({
+    description: 'Recipient ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  recipientId: string;
+
 
   @ApiProperty({
     description: 'Date when mail was received',

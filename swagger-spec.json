@@ -5354,11 +5354,129 @@
         ]
       }
     },
-    "/api/handler/mail": {
+    "/api/handler/office-locations": {
+      "get": {
+        "operationId": "HandlerMailController_getOfficeLocations",
+        "summary": "Get all active office locations for handler",
+        "description": "Handler selects which office location to work with",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Active office locations retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OfficeLocationResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/handler/mailboxes/{officeLocationId}": {
+      "get": {
+        "operationId": "HandlerMailController_getMailboxesByOfficeLocation",
+        "summary": "Get mailboxes by office location",
+        "description": "Get mailboxes by office location",
+        "parameters": [
+          {
+            "name": "officeLocationId",
+            "required": true,
+            "in": "path",
+            "description": "Office location ID",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mailboxes retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MailboxResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/handler/mailboxes/by-ste/{steNumber}": {
+      "get": {
+        "operationId": "HandlerMailController_getMailboxesBySteNumber",
+        "summary": "Find mailboxes by STE number",
+        "description": "Search for mailboxes using STE number to identify the correct recipient",
+        "parameters": [
+          {
+            "name": "steNumber",
+            "required": true,
+            "in": "path",
+            "description": "STE number to search for",
+            "schema": {
+              "example": "abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mailboxes found for the STE number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MailboxResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No mailboxes found for this STE number"
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/handler/mails/new": {
       "post": {
         "operationId": "HandlerMailController_createMail",
-        "summary": "Create a new package",
-        "description": "Register a new package in the system without items",
+        "summary": "Create a new mail package",
+        "description": "Register a new mail package in the system after selecting office location, mailbox and recipient",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -5402,17 +5520,17 @@
         ]
       }
     },
-    "/api/handler/mail/{id}": {
+    "/api/handler/{id}": {
       "put": {
-        "operationId": "HandlerMailController_updatePackage",
-        "summary": "Update package",
-        "description": "Update an existing package by ID",
+        "operationId": "HandlerMailController_updateMail",
+        "summary": "Update mail",
+        "description": "Update an existing mail by ID",
         "parameters": [
           {
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "Package ID",
+            "description": "Mail ID",
             "schema": {
               "example": "123e4567-e89b-12d3-a456-426614174000",
               "type": "string"
@@ -5421,7 +5539,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Package update data",
+          "description": "Mail update data",
           "content": {
             "application/json": {
               "schema": {
@@ -5432,7 +5550,7 @@
         },
         "responses": {
           "200": {
-            "description": "Package updated successfully",
+            "description": "Mail updated successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -5445,7 +5563,7 @@
             "description": "Invalid input data"
           },
           "404": {
-            "description": "Package not found"
+            "description": "Mail not found"
           }
         },
         "tags": [
@@ -5459,8 +5577,8 @@
       },
       "get": {
         "operationId": "HandlerMailController_getPackageById",
-        "summary": "Get package by ID",
-        "description": "Retrieve a specific package with all its items and related information",
+        "summary": "Get mail package by ID",
+        "description": "Retrieve a specific mail package with all its items and related information",
         "parameters": [
           {
             "name": "id",
@@ -5498,12 +5616,22 @@
         ]
       }
     },
-    "/api/handler/mail/all": {
+    "/api/handler/all": {
       "get": {
-        "operationId": "HandlerMailController_getPackages",
-        "summary": "Get all packages",
-        "description": "Retrieve a paginated list of all packages with filtering options",
+        "operationId": "HandlerMailController_getMails",
+        "summary": "Get all mail packages",
+        "description": "Retrieve a paginated list of all mail packages with filtering options",
         "parameters": [
+          {
+            "name": "mailboxId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by mailbox ID",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          },
           {
             "name": "subscriptionId",
             "required": false,
@@ -5659,15 +5787,6 @@
               "example": 10,
               "type": "number"
             }
-          },
-          {
-            "name": "mailboxId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by mailbox ID",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -5717,17 +5836,17 @@
         ]
       }
     },
-    "/api/handler/mail/mailbox/{mailboxId}": {
+    "/api/handler/mailbox/{mailboxId}/mails": {
       "get": {
-        "operationId": "HandlerMailController_getPackagesByWorkspaceAddress",
-        "summary": "Get packages by mailbox",
-        "description": "Retrieve all packages for a specific mailbox",
+        "operationId": "HandlerMailController_getPackagesByMailbox",
+        "summary": "Get mail packages by mailbox",
+        "description": "Retrieve all mail packages for a specific mailbox",
         "parameters": [
           {
-            "name": "workspaceAddressId",
+            "name": "mailboxId",
             "required": true,
             "in": "path",
-            "description": "Workspace address ID",
+            "description": "Mailbox ID",
             "schema": {
               "example": "123e4567-e89b-12d3-a456-426614174000",
               "type": "string"
@@ -5939,17 +6058,27 @@
         ]
       }
     },
-    "/api/handler/mail/office-location/{officeLocationId}": {
+    "/api/handler/{officeLocationId}/mails": {
       "get": {
-        "operationId": "HandlerMailController_getPackagesByOfficeLocation",
-        "summary": "Get packages by office location",
-        "description": "Retrieve all packages for a specific office location",
+        "operationId": "HandlerMailController_getMailsByOfficeLocation",
+        "summary": "Get mail packages by office location",
+        "description": "Retrieve all mail packages for a specific office location",
         "parameters": [
           {
             "name": "officeLocationId",
             "required": true,
             "in": "path",
             "description": "Office location ID",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          },
+          {
+            "name": "mailboxId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by mailbox ID",
             "schema": {
               "example": "123e4567-e89b-12d3-a456-426614174000",
               "type": "string"
@@ -8420,6 +8549,13 @@
             "items": {
               "type": "object"
             }
+          },
+          "recipients": {
+            "description": "Recipients",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
           }
         },
         "required": [
@@ -8970,6 +9106,11 @@
             "description": "Mailbox ID (subscription ID)",
             "example": "123e4567-e89b-12d3-a456-426614174000"
           },
+          "recipientId": {
+            "type": "string",
+            "description": "Recipient ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
           "receivedAt": {
             "type": "string",
             "description": "Date when mail was received",
@@ -9085,6 +9226,7 @@
         },
         "required": [
           "mailboxId",
+          "recipientId",
           "receivedAt",
           "type"
         ]
@@ -9095,6 +9237,11 @@
           "mailboxId": {
             "type": "string",
             "description": "Mailbox ID (subscription ID)",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "recipientId": {
+            "type": "string",
+            "description": "Recipient ID",
             "example": "123e4567-e89b-12d3-a456-426614174000"
           },
           "receivedAt": {

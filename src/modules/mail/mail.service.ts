@@ -31,13 +31,19 @@ export class MailService {
 
       const mailbox=await  this.prisma.mailbox.findUnique({
         where: { id: createMailDto.mailboxId },
-        select: {
-         steNumber : true,
-         id: true,
+        include: {
+          recipients: true,
         },
       });
       if (!mailbox) {
         throw new BadRequestException('Mailbox not found');
+      }
+
+      const recipient=await this.prisma.recipient.findUnique({
+        where: { id: createMailDto.recipientId },
+      });
+      if (!recipient) {
+        throw new BadRequestException('Recipient not found');
       }
 
 
@@ -59,6 +65,9 @@ export class MailService {
           isForwarded: createMailDto.isForwarded || false,
           mailbox: {
             connect: { id: createMailDto.mailboxId }
+          },
+          recipient: {
+            connect: { id: createMailDto.recipientId }
           }
         },
         include: {

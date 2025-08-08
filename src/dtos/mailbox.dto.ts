@@ -20,6 +20,38 @@ import { BillingCycle, SubscriptionStatus } from '@prisma/client';
 // MAILBOX DTOs
 // =====================
 
+export class RecipientResponseDto {
+  @ApiProperty({
+    description: 'Recipient ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'Recipient name',
+    example: 'John',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'Recipient last name',
+    example: 'Doe',
+  })
+  lastName?: string;
+
+  @ApiProperty({
+    description: 'Recipient email',
+    example: 'john.doe@example.com',
+  })
+  email: string;
+
+  @ApiProperty({
+    description: 'Recipient created at',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  createdAt: Date;
+  
+}
 export class CreateMailboxDto {
   @ApiProperty({
     description: 'Workspace ID',
@@ -261,4 +293,11 @@ export class MailboxResponseDto {
     type: [Object],
   })
   mails?: any[];
+
+  @ApiPropertyOptional({
+    description: 'Recipients',
+    type: [Object],
+  })
+  recipients?: RecipientResponseDto[];
 }
+
