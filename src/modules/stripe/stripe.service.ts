@@ -282,7 +282,6 @@ export class StripeService {
 
   async deactivePrice(priceId: string) {
     try {
-      // Önce price bilgisini al
       const price = await this.stripe.prices.retrieve(priceId);
       if (!price) {
         throw new Error('Price not found');
@@ -368,7 +367,7 @@ export class StripeService {
       // Eğer hata mesajı default price ile ilgiliyse daha açıklayıcı hata ver
       if (error.message && error.message.includes('default price')) {
         throw new HttpException(
-          `Bu fiyat ürünün varsayılan fiyatıdır ve silinemez. Önce başka bir fiyatı varsayılan yapın veya ürünü tamamen silin.`,
+          `This price is the default price of the product and cannot be deleted. Please set another price as default or delete the product.`,
           400,
         );
       }

@@ -1,129 +1,17 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from 'src/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Injectable, NotFoundException, BadRequestException, Logger } from "@nestjs/common";
+import { CreatePlanAddonDto, UpdatePlanAddonDto } from "src/dtos/plan_entitlements.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
-export class MarketService {
-  private readonly logger = new Logger('MarketService');
+export class PlanAddonsService {
+  private readonly logger = new Logger(PlanAddonsService.name);
 
-  constructor(
-    private readonly prismaService: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  // =====================
-  // PRODUCT OPERATIONS
-  // =====================
 
-  async getProducts(type?: string, isActive: boolean = true) {
+  async assignProductToPlanAddon(data: CreatePlanAddonDto) {
     try {
-      const where: Prisma.ProductWhereInput = {
-        isDeleted: false,
-      };
-
-      if (isActive !== undefined) {
-        where.isActive = isActive;
-      }
-
-      if (type) {
-        where.type = type as any;
-      }
-
-      return await this.prismaService.product.findMany({
-        where,
-        include: {
-          prices: {
-            where: {
-              isDeleted: false,
-              active: true,
-            },
-            include: {
-              recurring: {
-                select: { interval: true, interval_count: true },
-              },
-            },
-            orderBy: {
-              unit_amount: 'asc',
-            },
-          },
-          productFeature: {
-            include: {
-              feature: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-    } catch (error) {
-      this.logger.error(`Failed to get products: ${error.message}`);
-      throw new BadRequestException('Failed to get products');
-    }
-  }
-
-  async getProductById(id: string) {
-    try {
-      const product = await this.prismaService.product.findUnique({
-        where: { id },
-        include: {
-          prices: {
-            where: {
-              isDeleted: false,
-              active: true,
-            },
-            include: {
-              recurring: true,
-            },
-          },
-          productFeature: {
-            include: {
-              feature: true,
-            },
-          },
-          planAddon: {
-            include: {
-              plan: {
-                include: {
-                  officeLocation: true,
-                },
-              },
-            },
-          },
-        },
-      });
-
-      if (!product || product.isDeleted) {
-        throw new NotFoundException('Product not found');
-      }
-
-      return product;
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(`Failed to get product by ID: ${error.message}`);
-      throw new BadRequestException('Failed to get product');
-    }
-  }
-
-  async getAddonProducts() {
-    return this.getProducts('ADDON', true);
-  }
-
-  async getStandaloneProducts() {
-    return this.getProducts('PRODUCT', true);
-  }
-
-  // =====================
-  // PLAN ADDON OPERATIONS
-  // =====================
-
-  async assignProductToPlanAddon(data: {
-    planId: string;
-    productId: string;
-    productPriceId: string;
-    displayOrder?: number;
-  }) {
-    try {
-      return await this.prismaService.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         // Verify plan and product exist
         const [plan, product, price] = await Promise.all([
           tx.plan.findUnique({ where: { id: data.planId } }),
@@ -192,7 +80,7 @@ export class MarketService {
 
   async getPlanAddons(planId: string) {
     try {
-      const addons = await this.prismaService.planAddon.findMany({
+      const addons = await this.prisma.planAddon.findMany({
         where: {
           planId,
           isActive: true,
@@ -263,9 +151,9 @@ export class MarketService {
     }
   }
 
-  async updatePlanAddon(id: string, data: { displayOrder?: number; isActive?: boolean }) {
+  async updatePlanAddon(id: string, data: UpdatePlanAddonDto) {
     try {
-      const existingAddon = await this.prismaService.planAddon.findUnique({
+      const existingAddon = await this.prisma.planAddon.findUnique({
         where: { id },
       });
 
@@ -273,7 +161,7 @@ export class MarketService {
         throw new NotFoundException('Plan addon not found');
       }
 
-      return await this.prismaService.planAddon.update({
+      return await this.prisma.planAddon.update({
         where: { id },
         data,
         include: {
@@ -292,7 +180,7 @@ export class MarketService {
 
   async removePlanAddon(id: string) {
     try {
-      const existingAddon = await this.prismaService.planAddon.findUnique({
+      const existingAddon = await this.prisma.planAddon.findUnique({
         where: { id },
       });
 
@@ -300,7 +188,7 @@ export class MarketService {
         throw new NotFoundException('Plan addon not found');
       }
 
-      return await this.prismaService.planAddon.update({
+      return await this.prisma.planAddon.update({
         where: { id },
         data: {
           isDeleted: true,
@@ -319,7 +207,7 @@ export class MarketService {
 
   async removeAllPlanAddons(planId: string) {
     try {
-      return await this.prismaService.planAddon.updateMany({
+    return await this.prisma.planAddon.updateMany({
         where: {
           planId,
           isDeleted: false,
@@ -333,58 +221,6 @@ export class MarketService {
     } catch (error) {
       this.logger.error(`Failed to remove all plan addons: ${error.message}`);
       throw new BadRequestException('Failed to remove all plan addons');
-    }
-  }
-
-  // =====================
-  // MARKETPLACE OPERATIONS
-  // =====================
-
-  async getMarketplaceProducts(officeLocationId?: string) {
-    try {
-      const where: Prisma.ProductWhereInput = {
-        isActive: true,
-        isDeleted: false,
-        type: 'PRODUCT',
-      };
-
-      return await this.prismaService.product.findMany({
-        where,
-        include: {
-          prices: {
-            where: {
-              active: true,
-              isDeleted: false,
-            },
-            include: {
-              recurring: true,
-            },
-            orderBy: {
-              unit_amount: 'asc',
-            },
-          },
-          productFeature: {
-            include: {
-              feature: true,
-            },
-          },
-        },
-        orderBy: {
-          name: 'asc',
-        },
-      });
-    } catch (error) {
-      this.logger.error(`Failed to get marketplace products: ${error.message}`);
-      throw new BadRequestException('Failed to get marketplace products');
-    }
-  }
-
-  async getMarketplaceAddons(officeLocationId?: string) {
-    try {
-      return await this.getProducts('ADDON', true);
-    } catch (error) {
-      this.logger.error(`Failed to get marketplace addons: ${error.message}`);
-      throw new BadRequestException('Failed to get marketplace addons');
     }
   }
 }

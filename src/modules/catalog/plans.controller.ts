@@ -16,22 +16,13 @@ import {
   ApiResponse, 
   ApiParam, 
   ApiQuery, 
-  ApiBody,
   ApiBearerAuth,
   ApiNotFoundResponse,
-  ApiBadRequestResponse,
-  ApiConflictResponse,
   ApiOkResponse
 } from '@nestjs/swagger';
 import { PlansService } from './plans.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import {
-  CreatePlanDto,
-  UpdatePlanDto,
-  CreatePlanPriceDto,
-  UpdatePlanPriceDto,
-  PlanResponseDto,
-} from 'src/dtos/plan.dto';
+import { PlanResponseDto } from 'src/dtos/plan.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiTags('Plan Management')
@@ -138,7 +129,6 @@ export class PlansController {
   async getPlanPriceById(@Param('id') id: string) {
     return this.plansService.getPlanPriceById(id);
   }
-
 
 
 }

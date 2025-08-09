@@ -33,9 +33,9 @@ import {
 } from 'src/dtos/plan.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { PlansService } from '../catalog/plans.service';
-import { MarketService } from '../catalog/market.service';
+import { PlanAddonsService } from '../entitlements/plan_addons.service';
 
-@ApiTags('Admin Plan Management')
+@ApiTags('Admin Plans Management')
 @ApiBearerAuth()
 @Controller('admin/plans')
 @UseGuards(JwtAuthGuard)
@@ -43,7 +43,7 @@ import { MarketService } from '../catalog/market.service';
 export class AdminPlansController {
   constructor(
     private readonly plansService: PlansService,
-    private readonly marketService: MarketService,
+    private readonly planAddonsService: PlanAddonsService,
   ) {}
 
   // =====================
@@ -380,7 +380,7 @@ export class AdminPlansController {
     }
   })
   async getAddonsByPlanId(@Param('planId') planId: string) {
-    return this.marketService.getPlanAddons(planId);
+    return this.planAddonsService.getPlanAddons(planId);
   }
 
 

@@ -7,19 +7,17 @@ import {
   Param,
   Delete,
   Query,
-  UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { ProductService } from './product.service';
 import { 
   CreateProductDto, 
   UpdateProductDto, 
   ProductResponseDto 
-} from 'src/dtos/product.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+} from 'src/dtos/items.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 
-@ApiTags('products')
+@ApiTags('Product Management')
 @Public()
 @Controller('products')
 export class ProductController {
@@ -33,15 +31,13 @@ export class ProductController {
     type: ProductResponseDto,
   })
   create(@Body() createProductDto: CreateProductDto): Promise<ProductResponseDto> {
-    return this.productService.create(createProductDto);
+    return this.productService.createProduct(createProductDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all products' })
   @ApiQuery({ name: 'type', required: false, enum: ['ADDON', 'PRODUCT', 'OTHER'] })
   @ApiQuery({ name: 'isActive', required: false, type: Boolean })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'offset', required: false, type: Number })
   @ApiResponse({
     status: 200,
     description: 'Products retrieved successfully',
@@ -50,10 +46,8 @@ export class ProductController {
   findAll(
     @Query('type') type?: string,
     @Query('isActive') isActive?: boolean,
-    @Query('limit') limit?: number,
-    @Query('offset') offset?: number,
   ): Promise<ProductResponseDto[]> {
-    return this.productService.findAll(type, isActive, limit, offset);
+    return this.productService.findAll(type, isActive);
   }
 
   @Get('addons')
@@ -98,41 +92,16 @@ export class ProductController {
     type: ProductResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Product not found' })
-  update(
-    @Param('id') id: string,
-    @Body() updateProductDto: UpdateProductDto,
-  ): Promise<ProductResponseDto> {
-    return this.productService.update(id, updateProductDto);
+  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto){
+    return this.productService.updateProduct(id, updateProductDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Soft delete product' })
   @ApiResponse({ status: 200, description: 'Product deleted successfully' })
   @ApiResponse({ status: 404, description: 'Product not found' })
-  remove(@Param('id') id: string): Promise<void> {
-    return this.productService.remove(id);
+  deleteProduct(@Param('id') id: string){
+    return this.productService.deleteProduct(id);
   }
 
-  @Post(':id/features/:featureId')
-  @ApiOperation({ summary: 'Add feature to product' })
-  @ApiResponse({ status: 201, description: 'Feature added to product successfully' })
-  @ApiResponse({ status: 404, description: 'Product or feature not found' })
-  addFeature(
-    @Param('id') productId: string,
-    @Param('featureId') featureId: string,
-    @Body('includedLimit') includedLimit?: number,
-  ) {
-    return this.productService.addFeature(productId, featureId, includedLimit);
-  }
-
-  @Delete(':id/features/:featureId')
-  @ApiOperation({ summary: 'Remove feature from product' })
-  @ApiResponse({ status: 200, description: 'Feature removed from product successfully' })
-  @ApiResponse({ status: 404, description: 'Product feature relationship not found' })
-  removeFeature(
-    @Param('id') productId: string,
-    @Param('featureId') featureId: string,
-  ): Promise<void> {
-    return this.productService.removeFeature(productId, featureId);
-  }
 }

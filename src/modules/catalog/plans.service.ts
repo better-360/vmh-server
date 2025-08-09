@@ -8,13 +8,15 @@ import {
   PlanResponseDto,
 } from 'src/dtos/plan.dto';
 import { Prisma } from '@prisma/client';
-import { TIMEOUT } from 'dns';
+import { StripeService } from '../stripe/stripe.service';
 
 @Injectable()
 export class PlansService {
   private readonly logger = new Logger('PlansService');
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService,
+    private readonly stripeService: StripeService,
+  ) {}
 
   async getPlans(query?: any) {
     const {
@@ -30,6 +32,7 @@ export class PlansService {
     const where: Prisma.PlanWhereInput = {
       isDeleted,
       ...(isActive !== undefined && { isActive }),
+      ...(officeLocationId && { officeLocationId }),
       ...(search && {
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
@@ -420,47 +423,6 @@ export class PlansService {
       throw new BadRequestException('Failed to update plan');
     }
   }
-
-
-   /**
-   * Get addons for a specific plan
-   */
-   async getPlanAddonsByPlanId(planId: string) {
-    const planAddons = await this.prisma.planAddon.findMany({
-      where: {
-        planId,
-        isActive: true,
-        isDeleted: false,
-      },
-      include: {
-        product: {
-          include: {
-            prices: {
-              where: { isDeleted: false, active: true },
-              orderBy: { unit_amount: 'asc' },
-            },
-          },
-        },
-        prices: {
-          include: {
-            recurring: true,
-          },
-        },
-      },
-      orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
-    });
-
-    return planAddons.map(planAddon => ({
-      ...planAddon.product,
-      planAddonConfig: {
-        id: planAddon.id,
-        displayOrder: planAddon.displayOrder,
-        selectedPriceId: planAddon.productPriceId,
-        selectedPrice: planAddon.prices,
-      },
-    }));
-  }
-
 
   async deletePlan(id: string) {
     await this.getPlanById(id); // Check if exists

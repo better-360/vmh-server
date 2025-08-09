@@ -182,7 +182,8 @@
     prices          Price[]          @relation("ProductPrices")
     productFeature  ProductFeature[]
     planAddon       PlanAddon[]      @relation("ProductPlanAddons")
-  }
+    subscriptions SubscriptionItem[] @relation("ProductSubscriptions")
+}
 
   model ProductFeature {
     id            String       @id @default(uuid()) @db.Uuid
@@ -307,15 +308,12 @@
     createdAt    DateTime               @default(now())
     updatedAt    DateTime               @updatedAt
 
-    // Item Details (for reference)
-    itemName        String
-    itemDescription String?
-
     mailbox Mailbox @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
+    item Product @relation("ProductSubscriptions",fields: [itemId], references: [id], onDelete: Cascade)
 
     @@index([mailboxId])
     @@index([itemId])
-  }
+}
 
   model Order {
     id                    String      @id @default(uuid()) @db.Uuid

@@ -329,6 +329,32 @@ export class LocationService {
     }
   }
 
+  async getActiveLocations(): Promise<OfficeLocationResponseDto[]> {
+    try {
+      return await this.prisma.officeLocation.findMany({
+        where: {
+          isActive: true,
+          isDeleted: false,
+        },
+        include: {
+          plans: {
+            where: { isActive: true, isDeleted: false },
+            select: { id: true, name: true, slug: true },
+          },
+        },
+        orderBy: [
+          { country: 'asc' },
+          { state: 'asc' },
+          { city: 'asc' },
+          { label: 'asc' },
+        ],
+      });
+    } catch (error) {
+      this.logger.error(`Failed to get active locations: ${error.message}`);
+      throw new BadRequestException('Failed to get active locations');
+    }
+  }
+
   async getLocationStatistics(id: string) {
     try {
       const location = await this.getLocationById(id);
@@ -371,32 +397,6 @@ export class LocationService {
       }
       this.logger.error(`Failed to get location statistics: ${error.message}`);
       throw new BadRequestException('Failed to get location statistics');
-    }
-  }
-
-  async getActiveLocations(): Promise<OfficeLocationResponseDto[]> {
-    try {
-      return await this.prisma.officeLocation.findMany({
-        where: {
-          isActive: true,
-          isDeleted: false,
-        },
-        include: {
-          plans: {
-            where: { isActive: true, isDeleted: false },
-            select: { id: true, name: true, slug: true },
-          },
-        },
-        orderBy: [
-          { country: 'asc' },
-          { state: 'asc' },
-          { city: 'asc' },
-          { label: 'asc' },
-        ],
-      });
-    } catch (error) {
-      this.logger.error(`Failed to get active locations: ${error.message}`);
-      throw new BadRequestException('Failed to get active locations');
     }
   }
 

@@ -524,7 +524,7 @@
           }
         },
         "tags": [
-          "Office Locations"
+          "Admin Office Locations"
         ]
       }
     },
@@ -549,7 +549,7 @@
           }
         },
         "tags": [
-          "Office Locations"
+          "Admin Office Locations"
         ]
       }
     },
@@ -584,7 +584,7 @@
           }
         },
         "tags": [
-          "Office Locations"
+          "Admin Office Locations"
         ]
       },
       "put": {
@@ -633,7 +633,7 @@
           }
         },
         "tags": [
-          "Office Locations"
+          "Admin Office Locations"
         ]
       },
       "delete": {
@@ -662,7 +662,7 @@
           }
         },
         "tags": [
-          "Office Locations"
+          "Admin Office Locations"
         ]
       }
     },
@@ -690,7 +690,7 @@
           }
         },
         "tags": [
-          "Office Locations"
+          "Admin Office Locations"
         ]
       }
     },
@@ -728,7 +728,349 @@
           }
         },
         "tags": [
-          "Office Locations"
+          "Admin Office Locations"
+        ]
+      }
+    },
+    "/api/admin/features/plan-features/{id}": {
+      "get": {
+        "operationId": "AdminFeaturesController_getPlanFeatureById",
+        "summary": "Get plan feature by ID",
+        "description": "Retrieve detailed information about a specific plan-feature relationship",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Plan Feature ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plan feature retrieved successfully"
+          },
+          "404": {
+            "description": "Plan feature not found"
+          }
+        },
+        "tags": [
+          "Admin Feature Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/features/all": {
+      "get": {
+        "operationId": "AdminFeaturesController_getFeatures",
+        "summary": "Get all features",
+        "description": "Retrieve a paginated list of all features with optional filtering and search capabilities",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items per page (default: 10)",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number for pagination (default: 1)",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search in feature name and description",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isActive",
+            "required": false,
+            "in": "query",
+            "description": "Filter by active status",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Features retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "page": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "totalPages": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Admin Feature Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/features/{id}": {
+      "get": {
+        "operationId": "AdminFeaturesController_getFeatureById",
+        "summary": "Get feature by ID",
+        "description": "Retrieve detailed information about a specific feature",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Feature ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feature retrieved successfully"
+          },
+          "404": {
+            "description": "Feature not found"
+          }
+        },
+        "tags": [
+          "Admin Feature Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/features/create": {
+      "post": {
+        "operationId": "AdminFeaturesController_createFeature",
+        "summary": "Create a new feature",
+        "description": "Create a new feature with name, description and other properties",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Feature creation data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFeatureDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Feature created successfully"
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "409": {
+            "description": "Feature with this name already exists"
+          }
+        },
+        "tags": [
+          "Admin Feature Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/features/{id}/update": {
+      "put": {
+        "operationId": "AdminFeaturesController_updateFeature",
+        "summary": "Update an existing feature",
+        "description": "Update feature properties such as name, description, or active status",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Feature ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Feature update data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFeatureDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Feature updated successfully"
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "404": {
+            "description": "Feature not found"
+          },
+          "409": {
+            "description": "Feature with this name already exists"
+          }
+        },
+        "tags": [
+          "Admin Feature Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/features/{id}/delete": {
+      "delete": {
+        "operationId": "AdminFeaturesController_deleteFeature",
+        "summary": "Delete a feature",
+        "description": "Soft delete a feature and all its associated plan features",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Feature ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feature deleted successfully"
+          },
+          "400": {
+            "description": "Failed to delete feature"
+          },
+          "404": {
+            "description": "Feature not found"
+          }
+        },
+        "tags": [
+          "Admin Feature Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/features/{id}/usage-in-plans": {
+      "get": {
+        "operationId": "AdminFeaturesController_getFeatureUsageInPlans",
+        "summary": "Get feature usage in plans",
+        "description": "Retrieve all plans that use a specific feature",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Feature ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feature usage in plans retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "planId": {
+                        "type": "string"
+                      },
+                      "featureId": {
+                        "type": "string"
+                      },
+                      "plan": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Feature not found"
+          }
+        },
+        "tags": [
+          "Admin Feature Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -813,7 +1155,7 @@
           }
         },
         "tags": [
-          "Admin Plan Management"
+          "Admin Plans Management"
         ],
         "security": [
           {
@@ -867,7 +1209,7 @@
           }
         },
         "tags": [
-          "Admin Plan Management"
+          "Admin Plans Management"
         ],
         "security": [
           {
@@ -898,7 +1240,7 @@
           }
         },
         "tags": [
-          "Admin Plan Management"
+          "Admin Plans Management"
         ],
         "security": [
           {
@@ -947,7 +1289,7 @@
           }
         },
         "tags": [
-          "Admin Plan Management"
+          "Admin Plans Management"
         ],
         "security": [
           {
@@ -982,7 +1324,7 @@
           }
         },
         "tags": [
-          "Admin Plan Management"
+          "Admin Plans Management"
         ],
         "security": [
           {
@@ -1020,7 +1362,7 @@
           }
         },
         "tags": [
-          "Admin Plan Management"
+          "Admin Plans Management"
         ],
         "security": [
           {
@@ -1170,7 +1512,7 @@
           }
         },
         "tags": [
-          "Admin Plan Management"
+          "Admin Plans Management"
         ],
         "security": [
           {
@@ -1249,7 +1591,7 @@
           }
         },
         "tags": [
-          "Admin Plan Management"
+          "Admin Plans Management"
         ],
         "security": [
           {
@@ -1283,7 +1625,7 @@
           }
         },
         "tags": [
-          "Admin Plan Management"
+          "Admin Plans Management"
         ],
         "security": [
           {
@@ -1329,7 +1671,7 @@
           }
         },
         "tags": [
-          "Admin Plan Management"
+          "Admin Plans Management"
         ],
         "security": [
           {
@@ -1364,7 +1706,7 @@
           }
         },
         "tags": [
-          "Admin Plan Management"
+          "Admin Plans Management"
         ],
         "security": [
           {
@@ -1405,7 +1747,7 @@
           }
         },
         "tags": [
-          "Admin Plan Management"
+          "Admin Plans Management"
         ],
         "security": [
           {
@@ -1476,7 +1818,7 @@
           }
         },
         "tags": [
-          "Admin Plan Management"
+          "Admin Plans Management"
         ],
         "security": [
           {
@@ -1485,9 +1827,126 @@
         ]
       }
     },
-    "/api/admin/features/plan-features": {
+    "/api/admin/plan-addons/assign": {
+      "post": {
+        "operationId": "PlanAddonsController_addAddon",
+        "summary": "Add addon to plan",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlanAddonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Addon added to plan successfully"
+          },
+          "404": {
+            "description": "Plan or addon not found"
+          }
+        },
+        "tags": [
+          "Admin Plan Addon Management"
+        ]
+      }
+    },
+    "/api/admin/plan-addons/plan/{id}": {
       "get": {
-        "operationId": "AdminFeaturesController_getPlanFeatures",
+        "operationId": "PlanAddonsController_getAddons",
+        "summary": "Get addons by plan ID",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Addons retrieved successfully"
+          },
+          "404": {
+            "description": "Addons not found"
+          }
+        },
+        "tags": [
+          "Admin Plan Addon Management"
+        ]
+      }
+    },
+    "/api/admin/plan-addons/{id}": {
+      "patch": {
+        "operationId": "PlanAddonsController_updateAddon",
+        "summary": "Update addon",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlanAddonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Addon updated successfully"
+          },
+          "404": {
+            "description": "Addon not found"
+          }
+        },
+        "tags": [
+          "Admin Plan Addon Management"
+        ]
+      },
+      "delete": {
+        "operationId": "PlanAddonsController_deleteAddon",
+        "summary": "Delete addon",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Addon deleted successfully"
+          },
+          "404": {
+            "description": "Addon not found"
+          }
+        },
+        "tags": [
+          "Admin Plan Addon Management"
+        ]
+      }
+    },
+    "/api/admin/plan-features/plan-features": {
+      "get": {
+        "operationId": "PlanFeaturesController_getPlanFeatures",
         "summary": "Get plan features",
         "description": "Retrieve plan-feature relationships with optional filtering by plan or feature",
         "parameters": [
@@ -1549,7 +2008,7 @@
           }
         },
         "tags": [
-          "Feature Management"
+          "Admin Plan Feature Management"
         ],
         "security": [
           {
@@ -1558,7 +2017,7 @@
         ]
       },
       "post": {
-        "operationId": "AdminFeaturesController_createPlanFeature",
+        "operationId": "PlanFeaturesController_createPlanFeature",
         "summary": "Add feature to plan",
         "description": "Create a new plan-feature relationship with limits and pricing",
         "parameters": [],
@@ -1588,7 +2047,7 @@
           }
         },
         "tags": [
-          "Feature Management"
+          "Admin Plan Feature Management"
         ],
         "security": [
           {
@@ -1597,41 +2056,9 @@
         ]
       }
     },
-    "/api/admin/features/plan-features/{id}": {
-      "get": {
-        "operationId": "AdminFeaturesController_getPlanFeatureById",
-        "summary": "Get plan feature by ID",
-        "description": "Retrieve detailed information about a specific plan-feature relationship",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Plan Feature ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Plan feature retrieved successfully"
-          },
-          "404": {
-            "description": "Plan feature not found"
-          }
-        },
-        "tags": [
-          "Feature Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
+    "/api/admin/plan-features/plan-features/{id}": {
       "put": {
-        "operationId": "AdminFeaturesController_updatePlanFeature",
+        "operationId": "PlanFeaturesController_updatePlanFeature",
         "summary": "Update plan feature",
         "description": "Update plan-feature relationship properties like limits and pricing",
         "parameters": [
@@ -1668,7 +2095,7 @@
           }
         },
         "tags": [
-          "Feature Management"
+          "Admin Plan Feature Management"
         ],
         "security": [
           {
@@ -1677,7 +2104,7 @@
         ]
       },
       "delete": {
-        "operationId": "AdminFeaturesController_deletePlanFeature",
+        "operationId": "PlanFeaturesController_deletePlanFeature",
         "summary": "Remove feature from plan",
         "description": "Soft delete a plan-feature relationship",
         "parameters": [
@@ -1703,7 +2130,7 @@
           }
         },
         "tags": [
-          "Feature Management"
+          "Admin Plan Feature Management"
         ],
         "security": [
           {
@@ -1712,9 +2139,9 @@
         ]
       }
     },
-    "/api/admin/features/plan-features/bulk-create": {
+    "/api/admin/plan-features/plan-features/bulk-create": {
       "post": {
-        "operationId": "AdminFeaturesController_bulkCreatePlanFeatures",
+        "operationId": "PlanFeaturesController_bulkCreatePlanFeatures",
         "summary": "Bulk add features to plan",
         "description": "Add multiple features to a plan in a single transaction",
         "parameters": [],
@@ -1754,7 +2181,7 @@
           }
         },
         "tags": [
-          "Feature Management"
+          "Admin Plan Feature Management"
         ],
         "security": [
           {
@@ -1763,9 +2190,9 @@
         ]
       }
     },
-    "/api/admin/features/plan-features/bulk-update": {
+    "/api/admin/plan-features/plan-features/bulk-update": {
       "put": {
-        "operationId": "AdminFeaturesController_bulkUpdatePlanFeatures",
+        "operationId": "PlanFeaturesController_bulkUpdatePlanFeatures",
         "summary": "Bulk update plan features",
         "description": "Update multiple plan-feature relationships in a single transaction",
         "parameters": [],
@@ -1802,315 +2229,7 @@
           }
         },
         "tags": [
-          "Feature Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/admin/features/all": {
-      "get": {
-        "operationId": "AdminFeaturesController_getFeatures",
-        "summary": "Get all features",
-        "description": "Retrieve a paginated list of all features with optional filtering and search capabilities",
-        "parameters": [
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Number of items per page (default: 10)",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "description": "Page number for pagination (default: 1)",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "search",
-            "required": false,
-            "in": "query",
-            "description": "Search in feature name and description",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "isActive",
-            "required": false,
-            "in": "query",
-            "description": "Filter by active status",
-            "schema": {
-              "type": "boolean"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Features retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object"
-                      }
-                    },
-                    "meta": {
-                      "type": "object",
-                      "properties": {
-                        "total": {
-                          "type": "number"
-                        },
-                        "page": {
-                          "type": "number"
-                        },
-                        "limit": {
-                          "type": "number"
-                        },
-                        "totalPages": {
-                          "type": "number"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Feature Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/admin/features/{id}": {
-      "get": {
-        "operationId": "AdminFeaturesController_getFeatureById",
-        "summary": "Get feature by ID",
-        "description": "Retrieve detailed information about a specific feature",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Feature ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Feature retrieved successfully"
-          },
-          "404": {
-            "description": "Feature not found"
-          }
-        },
-        "tags": [
-          "Feature Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/admin/features/create": {
-      "post": {
-        "operationId": "AdminFeaturesController_createFeature",
-        "summary": "Create a new feature",
-        "description": "Create a new feature with name, description and other properties",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "description": "Feature creation data",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateFeatureDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Feature created successfully"
-          },
-          "400": {
-            "description": "Invalid input data"
-          },
-          "409": {
-            "description": "Feature with this name already exists"
-          }
-        },
-        "tags": [
-          "Feature Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/admin/features/{id}/update": {
-      "put": {
-        "operationId": "AdminFeaturesController_updateFeature",
-        "summary": "Update an existing feature",
-        "description": "Update feature properties such as name, description, or active status",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Feature ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "description": "Feature update data",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateFeatureDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Feature updated successfully"
-          },
-          "400": {
-            "description": "Invalid input data"
-          },
-          "404": {
-            "description": "Feature not found"
-          },
-          "409": {
-            "description": "Feature with this name already exists"
-          }
-        },
-        "tags": [
-          "Feature Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/admin/features/{id}/delete": {
-      "delete": {
-        "operationId": "AdminFeaturesController_deleteFeature",
-        "summary": "Delete a feature",
-        "description": "Soft delete a feature and all its associated plan features",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Feature ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Feature deleted successfully"
-          },
-          "400": {
-            "description": "Failed to delete feature"
-          },
-          "404": {
-            "description": "Feature not found"
-          }
-        },
-        "tags": [
-          "Feature Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/admin/features/{id}/usage-in-plans": {
-      "get": {
-        "operationId": "AdminFeaturesController_getFeatureUsageInPlans",
-        "summary": "Get feature usage in plans",
-        "description": "Retrieve all plans that use a specific feature",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Feature ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Feature usage in plans retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      },
-                      "planId": {
-                        "type": "string"
-                      },
-                      "featureId": {
-                        "type": "string"
-                      },
-                      "plan": {
-                        "type": "object"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Feature not found"
-          }
-        },
-        "tags": [
-          "Feature Management"
+          "Admin Plan Feature Management"
         ],
         "security": [
           {
@@ -4793,7 +4912,7 @@
           }
         },
         "tags": [
-          "products"
+          "Product Management"
         ]
       },
       "get": {
@@ -4820,22 +4939,6 @@
             "schema": {
               "type": "boolean"
             }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "offset",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "number"
-            }
           }
         ],
         "responses": {
@@ -4854,7 +4957,7 @@
           }
         },
         "tags": [
-          "products"
+          "Product Management"
         ]
       }
     },
@@ -4879,7 +4982,7 @@
           }
         },
         "tags": [
-          "products"
+          "Product Management"
         ]
       }
     },
@@ -4904,7 +5007,7 @@
           }
         },
         "tags": [
-          "products"
+          "Product Management"
         ]
       }
     },
@@ -4938,7 +5041,7 @@
           }
         },
         "tags": [
-          "products"
+          "Product Management"
         ]
       },
       "patch": {
@@ -4980,11 +5083,11 @@
           }
         },
         "tags": [
-          "products"
+          "Product Management"
         ]
       },
       "delete": {
-        "operationId": "ProductController_remove",
+        "operationId": "ProductController_deleteProduct",
         "summary": "Soft delete product",
         "parameters": [
           {
@@ -5005,75 +5108,7 @@
           }
         },
         "tags": [
-          "products"
-        ]
-      }
-    },
-    "/api/products/{id}/features/{featureId}": {
-      "post": {
-        "operationId": "ProductController_addFeature",
-        "summary": "Add feature to product",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "featureId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Feature added to product successfully"
-          },
-          "404": {
-            "description": "Product or feature not found"
-          }
-        },
-        "tags": [
-          "products"
-        ]
-      },
-      "delete": {
-        "operationId": "ProductController_removeFeature",
-        "summary": "Remove feature from product",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "featureId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Feature removed from product successfully"
-          },
-          "404": {
-            "description": "Product feature relationship not found"
-          }
-        },
-        "tags": [
-          "products"
+          "Product Management"
         ]
       }
     },
@@ -5096,7 +5131,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProductPriceDto"
+                "$ref": "#/components/schemas/CreatePriceDto"
               }
             }
           }
@@ -5114,7 +5149,7 @@
           }
         },
         "tags": [
-          "prices"
+          "Price Management"
         ]
       }
     },
@@ -5156,32 +5191,7 @@
           }
         },
         "tags": [
-          "prices"
-        ]
-      }
-    },
-    "/api/prices/active": {
-      "get": {
-        "operationId": "PriceController_findActivePrices",
-        "summary": "Get all active prices",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Active prices retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PriceResponseDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "prices"
+          "Price Management"
         ]
       }
     },
@@ -5215,7 +5225,7 @@
           }
         },
         "tags": [
-          "prices"
+          "Price Management"
         ]
       }
     },
@@ -5249,53 +5259,11 @@
           }
         },
         "tags": [
-          "prices"
-        ]
-      },
-      "patch": {
-        "operationId": "PriceController_update",
-        "summary": "Update price",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdatePriceDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Price updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PriceResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Price not found"
-          }
-        },
-        "tags": [
-          "prices"
+          "Price Management"
         ]
       },
       "delete": {
-        "operationId": "PriceController_remove",
+        "operationId": "PriceController_deletePrice",
         "summary": "Soft delete price",
         "parameters": [
           {
@@ -5316,7 +5284,7 @@
           }
         },
         "tags": [
-          "prices"
+          "Price Management"
         ]
       }
     },
@@ -5350,7 +5318,7 @@
           }
         },
         "tags": [
-          "prices"
+          "Price Management"
         ]
       }
     },
@@ -6819,6 +6787,66 @@
           }
         }
       },
+      "CreateFeatureDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Feature name",
+            "example": "Mail Forwarding"
+          },
+          "description": {
+            "type": "string",
+            "description": "Feature description",
+            "example": "Forward your mail to any address worldwide"
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "Feature image URL",
+            "example": "https://example.com/feature-image.png"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Is feature active",
+            "example": true,
+            "default": true
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateFeatureDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Feature name",
+            "example": "Mail Forwarding"
+          },
+          "description": {
+            "type": "string",
+            "description": "Feature description",
+            "example": "Forward your mail to any address worldwide"
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "Feature image URL",
+            "example": "https://example.com/feature-image.png"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Is feature active",
+            "example": true,
+            "default": true
+          },
+          "isDeleted": {
+            "type": "boolean",
+            "description": "Is feature deleted",
+            "example": false
+          }
+        }
+      },
       "CreatePlanDto": {
         "type": "object",
         "properties": {
@@ -7139,6 +7167,79 @@
           }
         }
       },
+      "CreatePlanAddonDto": {
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string",
+            "description": "Plan ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "productId": {
+            "type": "string",
+            "description": "Product ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "productPriceId": {
+            "type": "string",
+            "description": "Product Price ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "displayOrder": {
+            "type": "number",
+            "description": "Display order in plan addons list",
+            "example": 1
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Is addon active",
+            "example": true,
+            "default": true
+          }
+        },
+        "required": [
+          "planId",
+          "productId",
+          "productPriceId",
+          "displayOrder"
+        ]
+      },
+      "UpdatePlanAddonDto": {
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string",
+            "description": "Plan ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "productId": {
+            "type": "string",
+            "description": "Product ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "productPriceId": {
+            "type": "string",
+            "description": "Product Price ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "displayOrder": {
+            "type": "number",
+            "description": "Display order in plan addons list",
+            "example": 1
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Is addon active",
+            "example": true,
+            "default": true
+          },
+          "isDeleted": {
+            "type": "boolean",
+            "description": "Is plan addon deleted",
+            "example": false
+          }
+        }
+      },
       "UpdatePlanFeatureDto": {
         "type": "object",
         "properties": {
@@ -7199,66 +7300,6 @@
           "isDeleted": {
             "type": "boolean",
             "description": "Is plan feature deleted",
-            "example": false
-          }
-        }
-      },
-      "CreateFeatureDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Feature name",
-            "example": "Mail Forwarding"
-          },
-          "description": {
-            "type": "string",
-            "description": "Feature description",
-            "example": "Forward your mail to any address worldwide"
-          },
-          "imageUrl": {
-            "type": "string",
-            "description": "Feature image URL",
-            "example": "https://example.com/feature-image.png"
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "Is feature active",
-            "example": true,
-            "default": true
-          }
-        },
-        "required": [
-          "name"
-        ]
-      },
-      "UpdateFeatureDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Feature name",
-            "example": "Mail Forwarding"
-          },
-          "description": {
-            "type": "string",
-            "description": "Feature description",
-            "example": "Forward your mail to any address worldwide"
-          },
-          "imageUrl": {
-            "type": "string",
-            "description": "Feature image URL",
-            "example": "https://example.com/feature-image.png"
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "Is feature active",
-            "example": true,
-            "default": true
-          },
-          "isDeleted": {
-            "type": "boolean",
-            "description": "Is feature deleted",
             "example": false
           }
         }
@@ -7526,8 +7567,11 @@
             "description": "Product details"
           },
           "prices": {
-            "type": "object",
-            "description": "Price details"
+            "description": "Price details",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -8324,12 +8368,11 @@
             "example": "123e4567-e89b-12d3-a456-426614174000"
           },
           "items": {
-            "description": "Item",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/CreateOrderItemDto"
-              }
-            ]
+            "description": "Items to add to the order",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateOrderItemDto"
+            }
           }
         },
         "required": [
@@ -8656,6 +8699,140 @@
           }
         }
       },
+      "RecurringDto": {
+        "type": "object",
+        "properties": {
+          "interval": {
+            "type": "string",
+            "description": "Recurring interval (örn: day, week, month, year)",
+            "enum": [
+              "day",
+              "week",
+              "month",
+              "year"
+            ]
+          },
+          "interval_count": {
+            "type": "number",
+            "description": "Interval count",
+            "example": 1
+          }
+        },
+        "required": [
+          "interval",
+          "interval_count"
+        ]
+      },
+      "CreatePriceDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Price name",
+            "example": "Monthly Extra Recipient"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Is default price",
+            "example": false,
+            "default": false
+          },
+          "additionalFees": {
+            "type": "number",
+            "description": "Additional fees in cents",
+            "example": 50
+          },
+          "stripePriceId": {
+            "type": "string",
+            "description": "Stripe price ID",
+            "example": "price_1234567890"
+          },
+          "unit_amount": {
+            "type": "number",
+            "description": "Unit amount in cents",
+            "example": 299
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency",
+            "example": "USD",
+            "default": "USD"
+          },
+          "productId": {
+            "type": "string",
+            "description": "Product ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "description": {
+            "type": "string",
+            "description": "Price description",
+            "example": "Monthly subscription for extra recipient"
+          },
+          "priceType": {
+            "type": "string",
+            "description": "Price type: \"one_time\" or \"recurring\"",
+            "example": "recurring",
+            "enum": [
+              "one_time",
+              "recurring"
+            ],
+            "default": "one_time"
+          },
+          "recurring": {
+            "description": "Recurring information (only for recurring prices)",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RecurringDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "unit_amount",
+          "currency",
+          "productId"
+        ]
+      },
+      "CreateProductFeatureDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "description": "Product ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "featureId": {
+            "type": "string",
+            "description": "Feature ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "includedLimit": {
+            "type": "number",
+            "description": "Included limit",
+            "example": 1
+          },
+          "resetCycle": {
+            "type": "string",
+            "description": "Reset cycle",
+            "enum": [
+              "MONTHLY",
+              "YEARLY",
+              "WEEKLY",
+              "QUARTERLY",
+              "ONE_TIME",
+              "DAILY",
+              "NO_RESET"
+            ],
+            "example": "MONTHLY"
+          }
+        },
+        "required": [
+          "productId",
+          "featureId",
+          "includedLimit",
+          "resetCycle"
+        ]
+      },
       "CreateProductDto": {
         "type": "object",
         "properties": {
@@ -8671,7 +8848,7 @@
           },
           "stripeProductId": {
             "type": "string",
-            "description": "Stripe product ID",
+            "description": "Stripe product ID if product is created in stripe and not in local database",
             "example": "prod_1234567890"
           },
           "type": {
@@ -8694,6 +8871,20 @@
             "description": "Is product active",
             "example": true,
             "default": true
+          },
+          "prices": {
+            "description": "Product prices",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreatePriceDto"
+            }
+          },
+          "features": {
+            "description": "Product features",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateProductFeatureDto"
+            }
           }
         },
         "required": [
@@ -8767,6 +8958,11 @@
             "description": "Deleted at",
             "example": "2024-01-01T00:00:00.000Z"
           },
+          "defaultPriceId": {
+            "type": "string",
+            "description": "Default price ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
           "prices": {
             "description": "Product prices",
             "type": "array",
@@ -8814,7 +9010,7 @@
           },
           "stripeProductId": {
             "type": "string",
-            "description": "Stripe product ID",
+            "description": "Stripe product ID if product is created in stripe and not in local database",
             "example": "prod_1234567890"
           },
           "type": {
@@ -8838,94 +9034,26 @@
             "example": true,
             "default": true
           },
+          "prices": {
+            "description": "Product prices",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreatePriceDto"
+            }
+          },
+          "features": {
+            "description": "Product features",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateProductFeatureDto"
+            }
+          },
           "isDeleted": {
             "type": "boolean",
             "description": "Is product deleted",
             "example": false
           }
         }
-      },
-      "RecurringDto": {
-        "type": "object",
-        "properties": {
-          "interval": {
-            "type": "string",
-            "description": "Recurring interval (örn: day, week, month, year)",
-            "enum": [
-              "day",
-              "week",
-              "month",
-              "year"
-            ]
-          },
-          "interval_count": {
-            "type": "number",
-            "description": "Interval count",
-            "example": 1
-          }
-        },
-        "required": [
-          "interval",
-          "interval_count"
-        ]
-      },
-      "ProductPriceDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Fiyat adı veya takma adı",
-            "example": "Gold Monthly"
-          },
-          "description": {
-            "type": "string",
-            "description": "Fiyat açıklaması",
-            "example": "Monthly subscription price"
-          },
-          "isDefault": {
-            "type": "boolean",
-            "description": "Varsayılan fiyat mı?",
-            "example": false,
-            "default": false
-          },
-          "stripePriceId": {
-            "type": "string",
-            "description": "Stripe Price ID’si (varsa)",
-            "example": "price_1MoBy5LkdIwHu7ixZhnattbh"
-          },
-          "priceType": {
-            "type": "string",
-            "description": "Fiyat tipi: \"one_time\" veya \"recurring\"",
-            "example": "one_time",
-            "enum": [
-              "one_time",
-              "recurring"
-            ],
-            "default": "one_time"
-          },
-          "recurring": {
-            "description": "Recurring bilgileri (sadece recurring tipindeki fiyatlarda geçerli)",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/RecurringDto"
-              }
-            ]
-          },
-          "unit_amount": {
-            "type": "number",
-            "description": "Fiyat miktarı en küçük para birimi cinsinden (ör: 1000 = $10.00)",
-            "example": 1000
-          },
-          "currency": {
-            "type": "string",
-            "description": "Para birimi (örneğin: \"usd\")",
-            "example": "usd"
-          }
-        },
-        "required": [
-          "unit_amount",
-          "currency"
-        ]
       },
       "PriceResponseDto": {
         "type": "object",
@@ -9035,68 +9163,6 @@
           "createdAt",
           "updatedAt"
         ]
-      },
-      "UpdatePriceDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Price name",
-            "example": "Monthly Extra Recipient"
-          },
-          "isDefault": {
-            "type": "boolean",
-            "description": "Is default price",
-            "example": false,
-            "default": false
-          },
-          "additionalFees": {
-            "type": "number",
-            "description": "Additional fees in cents",
-            "example": 50
-          },
-          "stripePriceId": {
-            "type": "string",
-            "description": "Stripe price ID",
-            "example": "price_1234567890"
-          },
-          "unit_amount": {
-            "type": "number",
-            "description": "Unit amount in cents",
-            "example": 299
-          },
-          "currency": {
-            "type": "string",
-            "description": "Currency",
-            "example": "USD",
-            "default": "USD"
-          },
-          "productId": {
-            "type": "string",
-            "description": "Product ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "description": {
-            "type": "string",
-            "description": "Price description",
-            "example": "Monthly subscription for extra recipient"
-          },
-          "recurringId": {
-            "type": "string",
-            "description": "Recurring ID for recurring prices",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "active": {
-            "type": "boolean",
-            "description": "Is price active",
-            "example": true
-          },
-          "isDeleted": {
-            "type": "boolean",
-            "description": "Is price deleted",
-            "example": false
-          }
-        }
       },
       "CreateMailDto": {
         "type": "object",

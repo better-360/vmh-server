@@ -1,38 +1,7 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { Prisma, SubscriptionItemStatus, ProductType, BillingCycle } from '@prisma/client';
-
-export interface CreateSubscriptionItemDto {
-  mailboxId: string;
-  itemType: ProductType;
-  itemId: string;
-  priceId?: string;
-  billingCycle?: BillingCycle;
-  quantity?: number;
-  unitPrice: number;
-  currency?: string;
-  startDate: Date;
-  endDate?: Date;
-  itemName: string;
-  itemDescription?: string;
-}
-
-export interface UpdateSubscriptionItemDto {
-  quantity?: number;
-  unitPrice?: number;
-  endDate?: Date;
-  status?: SubscriptionItemStatus;
-  isActive?: boolean;
-}
-
-export interface SubscriptionItemQueryDto {
-  mailboxId?: string;
-  itemType?: ProductType;
-  status?: SubscriptionItemStatus;
-  isActive?: boolean;
-  page?: number;
-  limit?: number;
-}
+import { Prisma, SubscriptionItemStatus,  BillingCycle } from '@prisma/client';
+import { SubscriptionItemQueryDto, CreateSubscriptionItemDto, UpdateSubscriptionItemDto } from 'src/dtos/checkout.dto';
 
 @Injectable()
 export class SubscriptionService {
@@ -144,9 +113,17 @@ export class SubscriptionService {
 
       const item = await this.prisma.subscriptionItem.create({
         data: {
-          mailboxId: createDto.mailboxId,
+          mailbox: {
+            connect: {
+              id: createDto.mailboxId
+            }
+          },
           itemType: createDto.itemType,
-          itemId: createDto.itemId,
+          item: {
+            connect: {
+              id: createDto.itemId
+            }
+          },
           priceId: createDto.priceId,
           billingCycle: createDto.billingCycle || BillingCycle.MONTHLY,
           quantity,
@@ -155,8 +132,6 @@ export class SubscriptionService {
           currency: createDto.currency || 'USD',
           startDate: createDto.startDate,
           endDate: createDto.endDate,
-          itemName: createDto.itemName,
-          itemDescription: createDto.itemDescription,
           status: SubscriptionItemStatus.ACTIVE,
           isActive: true,
         },

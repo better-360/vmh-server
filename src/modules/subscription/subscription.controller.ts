@@ -9,7 +9,8 @@ import {
   ApiParam,
   ApiQuery 
 } from '@nestjs/swagger';
-import { SubscriptionService, CreateSubscriptionItemDto, UpdateSubscriptionItemDto, SubscriptionItemQueryDto } from './subscription.service';
+import { SubscriptionService } from './subscription.service';
+import { CreateSubscriptionItemDto, UpdateSubscriptionItemDto, SubscriptionItemQueryDto } from 'src/dtos/checkout.dto';
 import { SubscriptionItemStatus, ProductType } from '@prisma/client';
 
 @ApiTags('Subscription Items')

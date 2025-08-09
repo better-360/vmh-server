@@ -21,7 +21,7 @@ import { CheckPolicies } from 'src/authorization/decorators/check-policies.decor
 import { Public } from 'src/common/decorators/public.decorator';
 import { LocationService } from '../catalog/location.service';
 
-@ApiTags('Office Locations')
+@ApiTags('Admin Office Locations')
 @Controller('admin/locations')
 @Public() // TODO: Remove this when auth is implemented
 // @UseGuards(PoliciesGuard)

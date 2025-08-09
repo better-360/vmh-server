@@ -7,23 +7,18 @@ import {
   Param,
   Delete,
   Query,
-  UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { PriceService } from './price.service';
 import { 
   CreatePriceDto, 
-  UpdatePriceDto, 
   PriceResponseDto,
-  ProductPriceDto,
   ProductResponseDto
-} from 'src/dtos/product.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+} from 'src/dtos/items.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 
-
-@ApiTags('prices')
 @Public()
+@ApiTags('Price Management')
 @Controller('prices')
 export class PriceController {
   constructor(private readonly priceService: PriceService) {}
@@ -35,7 +30,7 @@ export class PriceController {
     description: 'Price created successfully',
     type: ProductResponseDto,
   })
-  create(@Body() createPriceDto: ProductPriceDto, @Param('productId') productId: string): Promise<ProductResponseDto> {
+  create(@Body() createPriceDto: CreatePriceDto, @Param('productId') productId: string) {
     return this.priceService.createPrice(productId, createPriceDto);
   }
 
@@ -52,19 +47,10 @@ export class PriceController {
     @Query('productId') productId?: string,
     @Query('active') active?: boolean,
   ): Promise<PriceResponseDto[]> {
-    return this.priceService.findAll(productId, active);
+    return this.priceService.findAllPrices(productId, active);
   }
 
-  @Get('active')
-  @ApiOperation({ summary: 'Get all active prices' })
-  @ApiResponse({
-    status: 200,
-    description: 'Active prices retrieved successfully',
-    type: [PriceResponseDto],
-  })
-  findActivePrices(): Promise<PriceResponseDto[]> {
-    return this.priceService.findActivePrices();
-  }
+
 
   @Get('product/:productId')
   @ApiOperation({ summary: 'Get prices by product ID' })
@@ -74,7 +60,7 @@ export class PriceController {
     type: [PriceResponseDto],
   })
   findByProduct(@Param('productId') productId: string): Promise<PriceResponseDto[]> {
-    return this.priceService.findByProduct(productId);
+    return this.priceService.findAllPrices(productId, true);
   }
 
   @Get(':id')
@@ -86,30 +72,16 @@ export class PriceController {
   })
   @ApiResponse({ status: 404, description: 'Price not found' })
   findOne(@Param('id') id: string): Promise<PriceResponseDto> {
-    return this.priceService.findOne(id);
+    return this.priceService.findPriceById(id);
   }
 
-  @Patch(':id')
-  @ApiOperation({ summary: 'Update price' })
-  @ApiResponse({
-    status: 200,
-    description: 'Price updated successfully',
-    type: PriceResponseDto,
-  })
-  @ApiResponse({ status: 404, description: 'Price not found' })
-  update(
-    @Param('id') id: string,
-    @Body() updatePriceDto: UpdatePriceDto,
-  ): Promise<PriceResponseDto> {
-    return this.priceService.update(id, updatePriceDto);
-  }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Soft delete price' })
   @ApiResponse({ status: 200, description: 'Price deleted successfully' })
   @ApiResponse({ status: 404, description: 'Price not found' })
-  remove(@Param('id') id: string): Promise<void> {
-    return this.priceService.remove(id);
+  deletePrice(@Param('id') id: string) {
+    return this.priceService.deletePrice(id);
   }
 
   @Patch(':id/set-default')
@@ -120,7 +92,7 @@ export class PriceController {
     type: PriceResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Price not found' })
-  setAsDefault(@Param('id') id: string): Promise<PriceResponseDto> {
+  setAsDefault(@Param('id') id: string) {
     return this.priceService.setAsDefault(id);
   }
 

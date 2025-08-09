@@ -6,24 +6,39 @@ import {
   ValidateNested,
   IsEmail,
   IsNotEmpty,
-  IsNumber,
-  IsDate,
   IsEnum,
   Min,
   IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { OrderType } from '@prisma/client';
+import {
+  BillingCycle,
+  OrderType,
+  ProductType,
+  SubscriptionItemStatus,
+  OrderStatus,
+  OrderItemType,
+} from '@prisma/client';
+
+// Re-export Prisma enums so other modules can import from this DTO without changes
+export { OrderItemType, OrderStatus } from '@prisma/client';
 
 export class AddonDto {
+  @ApiProperty({
+    description: 'Addon product ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
   @IsUUID()
   productId: string;
 
-  // Eğer ürünün varyasyonları varsa, seçilen fiyatın ID'si
+  @ApiPropertyOptional({
+    description: 'Selected price ID for the chosen variant (optional)',
+    example: '123e4567-e89b-12d3-a456-426614174999',
+  })
   @IsOptional()
   @IsUUID()
-  selectedPriceId: string;
+  selectedPriceId?: string;
 }
 
 export interface CheckoutAddon{
@@ -80,28 +95,7 @@ export interface FillingOption{
 // ORDER DTOs
 // =====================
 
-export enum OrderItemType {
-  PLAN = 'PLAN',
-  ADDON = 'ADDON', 
-  PRODUCT = 'PRODUCT',
-}
-
-export enum OrderStatus {
-  PAYMENT_PENDING = 'PAYMENT_PENDING',
-  PAYMENT_PROCESSING = 'PAYMENT_PROCESSING',
-  PAYMENT_SUCCEEDED = 'PAYMENT_SUCCEEDED',
-  PAYMENT_FAILED = 'PAYMENT_FAILED',
-  PAYMENT_CANCELLED = 'PAYMENT_CANCELLED',
-  PENDING = 'PENDING',
-  IN_PROGRESS = 'IN_PROGRESS',
-  COMPLETED = 'COMPLETED',
-  REJECTED = 'REJECTED',
-  CANCELLED = 'CANCELLED',
-  REFUNDED = 'REFUNDED',
-  ERROR = 'ERROR',
-  PROGRESS_ERROR = 'PROGRESS_ERROR',
-  FAILED = 'FAILED',
-}
+// Use Prisma enums for full schema alignment
 
 export class CreateOrderItemDto {
   @ApiProperty({
@@ -179,9 +173,10 @@ export class CreateOrderDto {
   subscriptionId: string;
 
   @ApiProperty({
-    description: 'Item',
-    type: CreateOrderItemDto,
+    description: 'Items to add to the order',
+    type: [CreateOrderItemDto],
   })
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateOrderItemDto)
   items: CreateOrderItemDto[];
@@ -245,8 +240,11 @@ export class OrderResponseDto {
   @ApiPropertyOptional()
   stripePaymentIntentId?: string;
 
-  @ApiProperty()
-  stripeCustomerId: string;
+  @ApiPropertyOptional()
+  stripeCustomerId?: string;
+
+  @ApiPropertyOptional()
+  stripeSessionId?: string;
 
   @ApiPropertyOptional()
   stripeClientSecret?: string;
@@ -313,4 +311,36 @@ export class CheckoutCalculationDto {
   @ValidateNested({ each: true })
   @Type(() => AddonDto)
   addons?: AddonDto[];
+}
+
+
+
+export interface CreateSubscriptionItemDto {
+  mailboxId: string;
+  itemType: ProductType;
+  itemId: string;
+  priceId?: string;
+  billingCycle?: BillingCycle;
+  quantity?: number;
+  unitPrice: number;
+  currency?: string;
+  startDate: Date;
+  endDate?: Date;
+}
+
+export interface UpdateSubscriptionItemDto {
+  quantity?: number;
+  unitPrice?: number;
+  endDate?: Date;
+  status?: SubscriptionItemStatus;
+  isActive?: boolean;
+}
+
+export interface SubscriptionItemQueryDto {
+  mailboxId?: string;
+  itemType?: ProductType;
+  status?: SubscriptionItemStatus;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
 }

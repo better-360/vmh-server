@@ -7,12 +7,15 @@ import { AdminMainController } from './admin.controller';
 import { SupportService } from '../support/support.service';
 import { StripeService } from '../stripe/stripe.service';
 import { MailService } from '../mail/mail.service';
-import { MarketService } from '../catalog/market.service';
 import { PlansService } from '../catalog/plans.service';
 import { FeaturesService } from '../catalog/features.service';
 import { AdminLocationController } from './location.controller';
 import { AdminPlansController } from './plans.controller';
 import { AdminFeaturesController } from './features.controller';
+import { PlanAddonsService } from '../entitlements/plan_addons.service';
+import { PlanAddonsController } from './plan_addons.controller';
+import { PlanFeaturesController } from './plan_features.controller';
+import { PlanFeaturesService } from '../entitlements/plan_features.service';
 
 
 @Module({
@@ -25,10 +28,10 @@ import { AdminFeaturesController } from './features.controller';
     SupportService,
     StripeService,
     MailService,
-    MarketService,
     PlansService,
     FeaturesService,
-    MarketService,
+    PlanAddonsService,
+    PlanFeaturesService,
   ],
 
   exports: [AdminService],
@@ -36,8 +39,10 @@ import { AdminFeaturesController } from './features.controller';
     AdminMainController,
     AdminSupportController,
     AdminLocationController,
-    AdminPlansController,
     AdminFeaturesController,
+    AdminPlansController,
+    PlanAddonsController,
+    PlanFeaturesController,
   ],
 })
 export class AdminModule {}

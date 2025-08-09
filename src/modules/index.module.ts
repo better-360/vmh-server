@@ -22,6 +22,7 @@ import { EasyPostModule } from './easypost/easypost.module';
 import { MailboxModule } from './mailbox/mailbox.module';
 import { ProductModule } from './product/product.module';
 import { HandlerModule } from './handler/handler.module';
+import { EntitlementsModule } from './entitlements/entitlements.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { HandlerModule } from './handler/handler.module';
     MailboxModule,
     ProductModule,
     HandlerModule,
+    EntitlementsModule
   ],
   exports: [
     AuthModule,
@@ -69,6 +71,7 @@ import { HandlerModule } from './handler/handler.module';
     MailboxModule,
     ProductModule,
     HandlerModule,
+    EntitlementsModule
   ],
 })
 export class MainModule {}
