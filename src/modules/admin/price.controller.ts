@@ -9,7 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { PriceService } from './price.service';
+import { PriceService } from '../product/price.service';
 import { 
   CreatePriceDto, 
   PriceResponseDto,
@@ -18,9 +18,9 @@ import {
 import { Public } from 'src/common/decorators/public.decorator';
 
 @Public()
-@ApiTags('Price Management')
-@Controller('prices')
-export class PriceController {
+@ApiTags('Admin Price Management')
+@Controller('admin/prices')
+export class AdminPriceController {
   constructor(private readonly priceService: PriceService) {}
 
   @Post(':productId')

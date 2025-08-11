@@ -13,14 +13,12 @@ import { Public } from 'src/common/decorators/public.decorator';
 
 import { AdminService } from './admin.service';
 import { Roles } from 'src/common/decorators/roles.decorator';
+import { CreateInitialSubscriptionOrderDto } from 'src/dtos/checkout.dto';
 @ApiBearerAuth()
 @ApiTags('Admin Panel')
 @Controller('admin')
 export class AdminMainController {
-  constructor(
-    private readonly adminService: AdminService,
-  ) {}
-
+  constructor(private readonly adminService: AdminService) {}
 
   @Roles('ADMIN')
   @Get('stats')
@@ -29,4 +27,9 @@ export class AdminMainController {
     return this.adminService.getSystemStats();
   }
 
+  @Public()
+  @Post('create-workspace-and-mailbox')
+  createWorkspaceAndMailbox(@Body() data: CreateInitialSubscriptionOrderDto) {
+    return this.adminService.createWorkspaceAndMailbox(data);
+  }
 }

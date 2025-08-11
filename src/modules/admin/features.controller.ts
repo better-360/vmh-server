@@ -39,26 +39,6 @@ export class AdminFeaturesController {
     private readonly featuresService: FeaturesService,
   ) {}
   
-  // =====================
-  // PLAN FEATURES ENDPOINTS
-  // =====================
-
-  @Get('plan-features/:id')
-  @ApiOperation({ 
-    summary: 'Get plan feature by ID',
-    description: 'Retrieve detailed information about a specific plan-feature relationship'
-  })
-  @ApiParam({ name: 'id', description: 'Plan Feature ID', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Plan feature retrieved successfully' })
-  @ApiNotFoundResponse({ description: 'Plan feature not found' })
-  async getPlanFeatureById(@Param('id') id: string) {
-    return this.featuresService.getFeatureById(id);
-  }
-
-  // =====================
-  // FEATURES ENDPOINTS
-  // =====================
-
   @Get('all')
   @ApiOperation({ 
     summary: 'Get all features',
@@ -144,30 +124,4 @@ export class AdminFeaturesController {
     return this.featuresService.deleteFeature(id);
   }
 
-  @Get(':id/usage-in-plans')
-  @ApiOperation({ 
-    summary: 'Get feature usage in plans',
-    description: 'Retrieve all plans that use a specific feature'
-  })
-  @ApiParam({ name: 'id', description: 'Feature ID', type: 'string' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Feature usage in plans retrieved successfully',
-    schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'string' },
-          planId: { type: 'string' },
-          featureId: { type: 'string' },
-          plan: { type: 'object' }
-        }
-      }
-    }
-  })
-  @ApiNotFoundResponse({ description: 'Feature not found' })
-  async getFeatureUsageInPlans(@Param('id') featureId: string) {
-    return this.featuresService.getFeatureUsageStats(featureId);
-  }
 }

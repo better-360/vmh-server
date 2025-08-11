@@ -210,49 +210,4 @@ export class FeaturesService {
     }
   }
 
-
-  // =====================
-  // HELPER METHODS
-  // =====================
-
-  async getFeatureUsageStats(featureId: string) {
-    try {
-      const feature = await this.getFeatureById(featureId);
-
-      const [totalUsage, activeUsage, recentUsage] = await Promise.all([
-        this.prisma.featureUsage.aggregate({
-          where: { featureId },
-          _sum: { usedCount: true },
-          _count: true,
-        }),
-        this.prisma.featureUsage.count({
-          where: {
-            featureId,
-            periodEnd: {
-              gte: new Date(),
-            },
-          },
-        }),
-        this.prisma.featureUsage.count({
-          where: {
-            featureId,
-            createdAt: {
-              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
-            },
-          },
-        }),
-      ]);
-
-      return {
-        feature,
-        totalUsageCount: totalUsage._sum.usedCount || 0,
-        totalUsageRecords: totalUsage._count,
-        activeUsageRecords: activeUsage,
-        recentUsageRecords: recentUsage,
-      };
-    } catch (error) {
-      this.logger.error(`Failed to get feature usage stats: ${error.message}`);
-      throw new BadRequestException('Failed to get feature usage stats');
-    }
-  }
 }

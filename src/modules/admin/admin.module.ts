@@ -16,6 +16,10 @@ import { PlanAddonsService } from '../entitlements/plan_addons.service';
 import { PlanAddonsController } from './plan_addons.controller';
 import { PlanFeaturesController } from './plan_features.controller';
 import { PlanFeaturesService } from '../entitlements/plan_features.service';
+import { AdminProductController } from './product.controller';
+import { AdminPriceController } from './price.controller';
+import { ProductService } from '../product/product.service';
+import { PriceService } from '../product/price.service';
 
 
 @Module({
@@ -32,6 +36,8 @@ import { PlanFeaturesService } from '../entitlements/plan_features.service';
     FeaturesService,
     PlanAddonsService,
     PlanFeaturesService,
+    ProductService,
+    PriceService
   ],
 
   exports: [AdminService],
@@ -39,10 +45,12 @@ import { PlanFeaturesService } from '../entitlements/plan_features.service';
     AdminMainController,
     AdminSupportController,
     AdminLocationController,
-    AdminFeaturesController,
     AdminPlansController,
     PlanAddonsController,
+    AdminFeaturesController,
     PlanFeaturesController,
+    AdminProductController,
+    AdminPriceController
   ],
 })
 export class AdminModule {}

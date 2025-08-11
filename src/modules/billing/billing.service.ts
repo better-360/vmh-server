@@ -5,122 +5,150 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma.service';
 import Stripe from 'stripe';
+import { PrismaService } from 'src/prisma.service';
 import { StripeService } from '../stripe/stripe.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SubscriptionService } from '../subscription/subscription.service';
-import { CreateInitialSubscriptionOrderDto, CreateOrderDto, CreateOrderItemDto, OrderItemType, OrderResponseDto, OrderStatus } from 'src/dtos/checkout.dto';
 import { LocationService } from '../catalog/location.service';
-import { BillingCycle, OrderType } from '@prisma/client';
 import { UserService } from '../user/user.service';
 import { PlansService } from '../catalog/plans.service';
 import { WorkspaceService } from '../workspace/workspace.service';
 
+// DTO & enums (inputlar TS; diğerleri sade)
+import {
+  CreateInitialSubscriptionOrderDto,
+  CreateOrderDto,
+  CreateOrderItemDto,
+  OrderResponseDto,
+  OrderStatus,
+  OrderItemType,
+} from 'src/dtos/checkout.dto';
+
+import { BillingCycle, OrderType } from '@prisma/client';
+
 @Injectable()
 export class BillingService {
   constructor(
-    private readonly prismaService: PrismaService,
+    private readonly prisma: PrismaService,
     private readonly stripeService: StripeService,
     private readonly eventEmitter: EventEmitter2,
     private readonly subscriptionService: SubscriptionService,
     private readonly locationService: LocationService,
     private readonly userService: UserService,
     private readonly planService: PlansService,
-    private readonly workspaceService: WorkspaceService
+    private readonly workspaceService: WorkspaceService,
   ) {}
 
-  async createInitialSubscriptionOrder(createOrderDto: CreateInitialSubscriptionOrderDto): Promise<OrderResponseDto> {
+  /**
+   * INITIAL SUBSCRIPTION (guest checkout)
+   * - one required plan (planPriceId)
+   * - optional addons: string[] (priceId list)
+   */
+  async createInitialSubscriptionOrder(
+    dto: CreateInitialSubscriptionOrderDto,
+  ): Promise<OrderResponseDto> {
     try {
-      let totalAmount = 0;
-      const orderItems = [];
-      //Check one plan in the order and validate it
-      const planpriceId=createOrderDto.items.find(item=>item.itemType==='PLAN').itemId;
-      const planprice=await this.prismaService.planPrice.findUnique({
-        where:{id:planpriceId},
-        include:{plan:true}
-      })
+      // 0) Office location validation
+      await this.locationService.getLocationById(dto.officeLocationId);
 
-      if(!planprice){
-        throw new NotFoundException('Plan not found');
-      }
-      // Calculate each item and prepare order items
-      for (const item of createOrderDto.items) {
-        const itemData = await this.calculateOrderItem(item);
-        totalAmount += itemData.totalPrice;
-        orderItems.push(itemData);
+      // 1) Plan lookup (required)
+      const planPrice = await this.prisma.planPrice.findUnique({
+        where: { id: dto.planPriceId },
+        include: { plan: true },
+      });
+      if (!planPrice) throw new NotFoundException('Plan price not found');
+
+      // 2) Addons lookup (optional)
+      const { addonItems, addonsTotal } = await this.buildAddonItems(dto.addons || []);
+
+      // 3) Plan item map
+      const planItem = this.mapPlanToOrderItem(planPrice);
+
+      // 4) Sum totals
+      const totalAmount = planItem.totalPrice + addonsTotal;
+      if (totalAmount <= 0) {
+        throw new BadRequestException('Order total must be greater than zero');
       }
 
-      // Validate office location
-      await this.locationService.getLocationById(createOrderDto.officeLocationId);
-      const userFullName = `${createOrderDto.firstName} ${createOrderDto.lastName || ''}`.trim();
-      const customerId = await this.stripeService.findOrCreateStripeCustomer(createOrderDto.email, userFullName);
-      const paymentIntent = await this.stripeService.createPaymentIntentForOrder({
-        amount: totalAmount,
-        currency: 'USD',
+      // 5) Stripe customer
+      const fullName = `${dto.firstName} ${dto.lastName || ''}`.trim();
+      const customerId = await this.stripeService.findOrCreateStripeCustomer(dto.email, fullName);
+
+      // 6) Stripe PaymentIntent
+      const intentData={
+        amount: totalAmount, // cents
+        currency: planPrice.currency || 'USD',
         customer: customerId,
         metadata: {
-          customerName: createOrderDto.firstName + ' ' + createOrderDto.lastName,
           orderType: 'initialSubscription',
-          planPriceId: planpriceId,
-          customerEmail: createOrderDto.email,
-          officeLocationId: createOrderDto.officeLocationId,
-          itemCount: createOrderDto.items.length.toString(),
-          cart: JSON.stringify(createOrderDto.items),
-        }
-      });
-      // Create Order in database
-      const order = await this.prismaService.order.create({
+          customerName: fullName,
+          customerEmail: dto.email,
+          officeLocationId: dto.officeLocationId,
+          planPriceId: dto.planPriceId,
+          planId: planPrice.plan.id,
+          billingCycle: planPrice.billingCycle,
+          addonIds: JSON.stringify(dto.addons || []),
+          itemCount: (1 + (dto.addons?.length || 0)).toString(),
+        },
+      }
+      const paymentIntent = await this.stripeService.createPaymentIntentForOrder(intentData);
+
+      // 7) Persist Order + Items
+      const order = await this.prisma.order.create({
         data: {
-          email: createOrderDto.email,
+          email: dto.email,
           totalAmount,
-          currency: 'USD',
+          currency: planPrice.currency || 'USD',
           stripePaymentIntentId: paymentIntent.id,
           stripeClientSecret: paymentIntent.client_secret,
           stripeCustomerId: customerId,
           type: OrderType.INITIAL_SUBSCRIPTION,
           metadata: {
-            firstName: createOrderDto.firstName,
-            lastName: createOrderDto.lastName,
-            officeLocationId: createOrderDto.officeLocationId,
-            planPriceId: planpriceId,
-            planId: planprice.plan.id,
-            billingCycle: planprice.billingCycle,
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            officeLocationId: dto.officeLocationId,
+            planPriceId: dto.planPriceId,
+            planId: planPrice.plan.id,
+            billingCycle: planPrice.billingCycle,
+            addonIds: dto.addons || [],
           },
           items: {
-            create: orderItems,
+            create: [planItem, ...addonItems],
           },
         },
-        include: {
-          items: true,
-
-        },
+        include: { items: true },
       });
-      const mappedOrder=this.mapOrderToResponseDto(order);
-      console.log('mappedOrder',mappedOrder);
-      return mappedOrder;
-    } catch (error) {
+
+      return this.mapOrderToResponseDto(order);
+    } catch (err: any) {
       throw new HttpException(
-        error.message || 'Failed to create order',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        err.message || 'Failed to create order',
+        err.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  async updateOrderStatus(orderId: string, status: OrderStatus, completedAt?: Date): Promise<OrderResponseDto> {
-    const order = await this.prismaService.order.update({
+  /**
+   * UPDATE ORDER STATUS (webhook flow)
+   */
+  async updateOrderStatus(
+    orderId: string,
+    status: OrderStatus,
+    completedAt?: Date,
+  ): Promise<OrderResponseDto> {
+    const order = await this.prisma.order.update({
       where: { id: orderId },
       data: {
         status,
-        completedAt: status === OrderStatus.PAYMENT_SUCCEEDED ? (completedAt || new Date()) : undefined,
+        completedAt:
+          status === OrderStatus.PAYMENT_SUCCEEDED
+            ? completedAt || new Date()
+            : undefined,
       },
-      include: {
-        items: true,
-
-      },
+      include: { items: true },
     });
 
-    // Emit event for order status change
     this.eventEmitter.emit('order.status.updated', {
       orderId: order.id,
       status,
@@ -132,35 +160,33 @@ export class BillingService {
   }
 
   async getOrderByPaymentIntentId(paymentIntentId: string): Promise<OrderResponseDto | null> {
-    const order = await this.prismaService.order.findUnique({
+    const order = await this.prisma.order.findUnique({
       where: { stripePaymentIntentId: paymentIntentId },
-      include: {
-        items: true,
-
-      },
+      include: { items: true },
     });
     return order ? this.mapOrderToResponseDto(order) : null;
   }
 
-  // =====================
-  // STRIPE WEBHOOK HANDLERS
-  // =====================
-
+  /**
+   * STRIPE WEBHOOK HANDLERS
+   */
   async handleStripePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
     try {
       const order = await this.getOrderByPaymentIntentId(paymentIntent.id);
-      if (order) {
-        await this.updateOrderStatus(order.id, OrderStatus.PAYMENT_SUCCEEDED);
-        switch (order.type) {
-          case OrderType.INITIAL_SUBSCRIPTION:
-            await this.handleInitialSubscriptionOrder(order);
-            break;
-          default:
-            console.log(`Unhandled order type: ${order.type}`);
-        }
+      if (!order) return;
+
+      await this.updateOrderStatus(order.id, OrderStatus.PAYMENT_SUCCEEDED);
+
+      switch (order.type) {
+        case OrderType.INITIAL_SUBSCRIPTION:
+          await this.handleInitialSubscriptionOrder(order);
+          break;
+        default:
+          // extend for other order types if needed
+          break;
       }
-    } catch (error) {
-      console.error('Error handling payment intent succeeded:', error);
+    } catch (e) {
+      console.error('Error handling payment intent succeeded:', e);
     }
   }
 
@@ -169,105 +195,92 @@ export class BillingService {
       const order = await this.getOrderByPaymentIntentId(paymentIntent.id);
       if (order) {
         await this.updateOrderStatus(order.id, OrderStatus.PAYMENT_FAILED);
+        this.eventEmitter.emit('order.payment.failed', {
+          orderId: order.id,
+          email: order.email,
+          totalAmount: order.totalAmount,
+        });
       }
-      this.eventEmitter.emit('order.payment.failed', {
-        orderId: order.id,
-        email: order.email,
-        totalAmount: order.totalAmount,
-      });
-    } catch (error) {
-      console.error('Error handling payment intent failed:', error);
+    } catch (e) {
+      console.error('Error handling payment intent failed:', e);
     }
   }
 
+  /**
+   * INITIAL SUBSCRIPTION FULFILLMENT (after payment success)
+   * - Creates user
+   * - (Mailbox creation to be integrated)
+   * - Prepares subscription items from order items if needed
+   */
   async handleInitialSubscriptionOrder(order: OrderResponseDto) {
     try {
-      const metadata = order.metadata as any;
-      const firstName = metadata?.firstName;
-      const lastName = metadata?.lastName;
-      const officeLocationId = metadata?.officeLocationId;
+      const md = (order.metadata || {}) as any;
+      const firstName = md.firstName;
+      const lastName = md.lastName;
+      const officeLocationId = md.officeLocationId;
+      const planPriceId = md.planPriceId;
 
-      if (!firstName || !officeLocationId) {
+      if (!firstName || !officeLocationId || !planPriceId) {
         throw new BadRequestException('Missing required metadata for initial subscription');
       }
 
-      // 1. Create user
-      const newUser = await this.userService.createUser(order.email, firstName, lastName, order.stripeCustomerId);
+      // 1) Create user (or get existing by email if you prefer)
+      const newUser = await this.userService.createUser(
+        order.email,
+        firstName,
+        lastName,
+        order.stripeCustomerId,
+      );
       const workspace = newUser.workspaces[0];
 
-      // 2. Workspace address creation disabled - needs mailbox implementation
+      // 2) TODO: Create mailbox for the workspace (depends on your domain flow)
 
-      // 3. Separate plan item from other items
-      const planItem = order.items.find(item => item.itemType === 'PLAN');
-      const otherItems = order.items.filter(item => item.itemType !== 'PLAN');
+      // 3) Identify plan & addons in items
+      const planItem = order.items.find((i) => i.itemType === 'PLAN');
+      const addons = order.items.filter((i) => i.itemType === 'ADDON');
 
-      if (!planItem) {
-        throw new BadRequestException('No plan found in order items');
-      }
+      if (!planItem) throw new BadRequestException('No plan item found in order');
 
-      // 4. Prepare additional subscription items (addons/products)
-      const subscriptionItems = await this.mapOrderItemsToSubscriptionItems(otherItems, officeLocationId);
-
-      // 5. Create subscription items using SubscriptionService
-      // Note: This needs to be adapted based on actual mailbox creation
-      // For now, we'll create a placeholder or skip this step
-      console.log('Subscription creation temporarily disabled - needs mailbox integration');
-            console.log(`Successfully created initial order for user ${newUser.email}:`, {
-        workspaceId: workspace.workspaceId,
+      // 4) Map to subscription items (domain-specific; mailbox integration later)
+      // For now, just log
+      console.log('Subscription creation pending mailbox integration', {
+        workspaceId: workspace?.workspaceId,
         planItemId: planItem.itemId,
-        additionalItemCount: subscriptionItems.length
+        addonCount: addons.length,
+        officeLocationId,
       });
 
-      return { message: 'Initial order processed successfully', workspaceId: workspace.workspaceId };
-    } catch (error) {
-      console.error('Error handling initial subscription order:', error);
-      throw new HttpException(error.message || 'Failed to create initial subscription', HttpStatus.INTERNAL_SERVER_ERROR);
+      return {
+        message: 'Initial order processed successfully',
+        workspaceId: workspace?.workspaceId,
+      };
+    } catch (err: any) {
+      console.error('Error handling initial subscription order:', err);
+      throw new HttpException(
+        err.message || 'Failed to process initial subscription',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
-  async handleSubscriptionOrder(order: OrderResponseDto) {
-    try {
-      // For existing subscriptions - user should be logged in
-      if (!order.userId) {
-        throw new BadRequestException('User ID required for subscription orders');
-      }
-      const metadata = order.metadata as any;
-      const workspaceId = metadata?.workspaceId;
-      const officeLocationId = metadata?.officeLocationId;
-
-      if (!workspaceId || !officeLocationId) {
-        throw new BadRequestException('Missing workspace or office location metadata');
-      }
-
-      // Get existing subscription
-      // Subscription item addition temporarily disabled - needs mailbox integration
-      console.log('Subscription item addition temporarily disabled - needs mailbox integration');
-      console.log(`Order ${order.id} processed with ${order.items.length} items`);
-
-    } catch (error) {
-      console.error('Error handling subscription order:', error);
-      throw error;
-    }
-  }
-  // =====================
-  // CREATE ORDER FOR EXISTING SUBSCRIPTION (ADD ITEM TO SUBSCRIPTION) REVIEW LATER FOR SUBSCRIPTION METHOD ON STRIPE
-  // =====================
+  /**
+   * (Optional) Existing subscription order (add items)
+   * Kept as-is but you’ll likely shift to priceId arrays similar to initial flow.
+   */
   async createOrder(dto: CreateOrderDto, userId: string, workspaceId: string): Promise<OrderResponseDto> {
     try {
       let totalAmount = 0;
       const orderItems = [];
       for (const item of dto.items) {
-        const itemData = await this.calculateOrderItem(item);
+        const itemData = await this.calculateLegacyOrderItem(item);
         totalAmount += itemData.totalPrice;
         orderItems.push(itemData);
       }
-      
-      // Get user info for Stripe customer
-      const user = await this.userService.findUserById(userId);
-      const userFullName = `${user.firstName} ${user.lastName || ''}`.trim();
-      const customerId = await this.stripeService.findOrCreateStripeCustomer(user.email, userFullName);
 
-      // Create Stripe Payment Intent
+      const user = await this.userService.findUserById(userId);
+      const fullName = `${user.firstName} ${user.lastName || ''}`.trim();
+      const customerId = await this.stripeService.findOrCreateStripeCustomer(user.email, fullName);
+
       const paymentIntent = await this.stripeService.createPaymentIntentForOrder({
         amount: totalAmount,
         currency: 'USD',
@@ -278,11 +291,10 @@ export class BillingService {
           workspaceId,
           itemCount: dto.items.length.toString(),
           cart: JSON.stringify(dto.items),
-        }
+        },
       });
-      
-      // Create Order in database
-      const order = await this.prismaService.order.create({
+
+      const order = await this.prisma.order.create({
         data: {
           email: user.email,
           totalAmount,
@@ -295,154 +307,80 @@ export class BillingService {
             workspaceId,
             subscriptionId: dto.subscriptionId,
           },
-          items: {
-            create: orderItems,
-          },
+          items: { create: orderItems },
         },
-        include: {
-          items: true,
-
-        },
+        include: { items: true },
       });
-      
+
       return this.mapOrderToResponseDto(order);
-    } catch (error) {
+    } catch (err: any) {
       throw new HttpException(
-        error.message || 'Failed to create order',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        err.message || 'Failed to create order',
+        err.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  // =====================
-  // HELPER METHODS
-  // =====================
+  // ===== Helpers (new model) =====
 
-  private async mapOrderItemsToSubscriptionItems(orderItems: any[], officeLocationId: string) {
-    const subscriptionItems = [];
-
-    for (const orderItem of orderItems) {
-      const subscriptionItem = await this.mapOrderItemToSubscriptionItem(orderItem, officeLocationId);
-      subscriptionItems.push(subscriptionItem);
-    }
-
-    return subscriptionItems;
+  private mapPlanToOrderItem(planPrice: any) {
+    return {
+      itemType: 'PLAN' as const,
+      itemId: planPrice.id, // planPriceId
+      quantity: 1,
+      unitPrice: planPrice.amount,
+      totalPrice: planPrice.amount,
+      currency: planPrice.currency,
+      itemName: planPrice.plan?.name,
+      itemDescription: planPrice.description || planPrice.plan?.description,
+    };
   }
 
-  private async mapOrderItemToSubscriptionItem(orderItem: any, officeLocationId: string) {
-    const startDate = new Date();
-    let endDate: Date | undefined;
-    let billingCycle: BillingCycle;
-
-    switch (orderItem.itemType) {
-      case OrderItemType.ADDON:
-         const addonVariant = await this.prismaService.price.findUnique({
-          where: { id: orderItem.itemId },
-          include: { product: true,recurring:true }
-        });
-        
-        if (!addonVariant) {
-          throw new NotFoundException(`Addon variant not found: ${orderItem.itemId}`);
-        }
-
-        billingCycle = addonVariant.recurring.interval as BillingCycle;
-        endDate = this.calculateEndDate(startDate, billingCycle);
-
-        return {
-          itemType: 'ADDON' as const,
-          itemId: addonVariant.productId,
-          variantId: orderItem.itemId,
-          billingCycle,
-          quantity: orderItem.quantity,
-          unitPrice: orderItem.unitPrice,
-          totalPrice: orderItem.totalPrice,
-          currency: orderItem.currency,
-          startDate,
-          endDate,
-          itemName: orderItem.itemName,
-          itemDescription: orderItem.itemDescription,
-        };
-
-      case OrderItemType.PRODUCT:
-         const productVariant = await this.prismaService.price.findUnique({
-          where: { id: orderItem.itemId },
-          include: { product: true,recurring:true }
-        });
-        if (!productVariant) {
-          throw new NotFoundException(`Product variant not found: ${orderItem.itemId}`);
-        }
-
-        billingCycle = productVariant.recurring.interval as BillingCycle;
-        endDate = billingCycle === BillingCycle.ONE_TIME ? undefined : this.calculateEndDate(startDate, billingCycle);
-
-        return {
-          itemType: 'PRODUCT' as const,
-          itemId: productVariant.productId,
-          variantId: orderItem.itemId,
-          billingCycle,
-          quantity: orderItem.quantity,
-          unitPrice: orderItem.unitPrice,
-          totalPrice: orderItem.totalPrice,
-          currency: orderItem.currency,
-          startDate,
-          endDate,
-          itemName: orderItem.itemName,
-          itemDescription: orderItem.itemDescription,
-        };
-
-      default:
-        throw new BadRequestException(`Unsupported item type: ${orderItem.itemType}`);
+  private async buildAddonItems(addonPriceIds: string[]) {
+    if (!addonPriceIds.length) {
+      return { addonItems: [], addonsTotal: 0 };
     }
+
+    const prices = await this.prisma.price.findMany({
+      where: { id: { in: addonPriceIds } },
+      include: { product: true, recurring: true },
+    });
+
+    if (prices.length !== addonPriceIds.length) {
+      const found = new Set(prices.map((p) => p.id));
+      const missing = addonPriceIds.filter((id) => !found.has(id));
+      throw new NotFoundException(`Missing addon prices: ${missing.join(', ')}`);
+    }
+
+    const addonItems = prices.map((p) => ({
+      itemType: 'ADDON' as const,
+      itemId: p.id,
+      quantity: 1,
+      unitPrice: p.unit_amount,
+      totalPrice: p.unit_amount,
+      currency: p.currency,
+      itemName: `${p.product?.name ?? 'Addon'}${p.name ? ' - ' + p.name : ''}`,
+      itemDescription: p.description,
+    }));
+
+    const addonsTotal = addonItems.reduce((sum, i) => sum + i.totalPrice, 0);
+
+    return { addonItems, addonsTotal };
   }
 
-  private calculateEndDate(startDate: Date, billingCycle: BillingCycle): Date {
-    const endDate = new Date(startDate);
-    
-    switch (billingCycle) {
-      case BillingCycle.MONTHLY:
-        endDate.setMonth(endDate.getMonth() + 1);
-        break;
-      case BillingCycle.YEARLY:
-        endDate.setFullYear(endDate.getFullYear() + 1);
-        break;
-      case BillingCycle.QUARTERLY:
-        endDate.setMonth(endDate.getMonth() + 3);
-        break;
-      case BillingCycle.WEEKLY:
-        endDate.setDate(endDate.getDate() + 7);
-        break;
-      default:
-        // For ONE_TIME, return one year from now as fallback
-        endDate.setFullYear(endDate.getFullYear() + 1);
-    }
-    
-    return endDate;
-  }
+  // ===== Helpers (legacy path retained for createOrder) =====
 
-     private calculateSubscriptionEndDate(subscriptionItems: any[]): Date | undefined {
-     // Find the latest end date among all items
-     let latestEndDate: Date | undefined;
-
-     for (const item of subscriptionItems) {
-       if (item.endDate && (!latestEndDate || item.endDate > latestEndDate)) {
-         latestEndDate = item.endDate;
-       }
-     }
-
-     return latestEndDate;
-   }
-
-  private async calculateOrderItem(item: CreateOrderItemDto) {
+  private async calculateLegacyOrderItem(item: CreateOrderItemDto) {
     const quantity = item.quantity || 1;
+
     switch (item.itemType) {
-      case OrderItemType.PLAN:
-        const planPrice = await this.prismaService.planPrice.findUnique({
+      case OrderItemType.PLAN: {
+        const planPrice = await this.prisma.planPrice.findUnique({
           where: { id: item.itemId },
           include: { plan: true },
         });
-        if (!planPrice) {
-          throw new NotFoundException(`Plan price with id ${item.itemId} not found`);
-        }
+        if (!planPrice) throw new NotFoundException(`Plan price ${item.itemId} not found`);
+
         return {
           itemType: item.itemType,
           itemId: item.itemId,
@@ -453,49 +391,34 @@ export class BillingService {
           itemName: planPrice.plan.name,
           itemDescription: planPrice.description || planPrice.plan.description,
         };
+      }
 
       case OrderItemType.ADDON:
-        const addonVariant = await this.prismaService.price.findUnique({
+      case OrderItemType.PRODUCT: {
+        const variant = await this.prisma.price.findUnique({
           where: { id: item.itemId },
-          include: { product: true,recurring:true },
+          include: { product: true, recurring: true },
         });
-        if (!addonVariant) {
-          throw new NotFoundException(`Addon variant with id ${item.itemId} not found`);
-        }
-        return {
-          itemType: item.itemType,
-          itemId: item.itemId,
-          quantity,
-          unitPrice: addonVariant.unit_amount,
-          totalPrice: addonVariant.unit_amount * quantity,
-          currency: addonVariant.currency,
-          itemName: `${addonVariant.product.name} - ${addonVariant.name}`,
-          itemDescription: addonVariant.description,
-        };
+        if (!variant) throw new NotFoundException(`Price ${item.itemId} not found`);
 
-      case OrderItemType.PRODUCT:
-        const productVariant = await this.prismaService.price.findUnique({
-          where: { id: item.itemId },
-          include: { product: true,recurring:true },
-        });
-        if (!productVariant) {
-          throw new NotFoundException(`Product variant with id ${item.itemId} not found`);
-        }
         return {
           itemType: item.itemType,
           itemId: item.itemId,
           quantity,
-          unitPrice: productVariant.unit_amount,
-          totalPrice: productVariant.unit_amount * quantity,
-          currency: productVariant.currency,
-          itemName: `${productVariant.product.name} - ${productVariant.name}`,
-          itemDescription: productVariant.description,
+          unitPrice: variant.unit_amount,
+          totalPrice: variant.unit_amount * quantity,
+          currency: variant.currency,
+          itemName: `${variant.product?.name ?? 'Item'}${variant.name ? ' - ' + variant.name : ''}`,
+          itemDescription: variant.description,
         };
+      }
 
       default:
-        throw new HttpException('Invalid item type', HttpStatus.BAD_REQUEST);
+        throw new BadRequestException(`Unsupported item type: ${item.itemType}`);
     }
   }
+
+  // ===== Common mapper =====
 
   private mapOrderToResponseDto(order: any): OrderResponseDto {
     return {
@@ -513,18 +436,18 @@ export class BillingService {
       updatedAt: order.updatedAt,
       completedAt: order.completedAt,
       type: order.type,
-      items: order.items.map(item => ({
-        id: item.id,
-        itemType: item.itemType,
-        itemId: item.itemId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        totalPrice: item.totalPrice,
-        currency: item.currency,
-        itemName: item.itemName,
-        itemDescription: item.itemDescription,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
+      items: order.items.map((it: any) => ({
+        id: it.id,
+        itemType: it.itemType,
+        itemId: it.itemId,
+        quantity: it.quantity,
+        unitPrice: it.unitPrice,
+        totalPrice: it.totalPrice,
+        currency: it.currency,
+        itemName: it.itemName,
+        itemDescription: it.itemDescription,
+        createdAt: it.createdAt,
+        updatedAt: it.updatedAt,
       })),
     };
   }

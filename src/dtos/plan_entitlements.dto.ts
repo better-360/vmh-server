@@ -9,6 +9,7 @@ import {
   IsInt,
   Min,
   IsEnum,
+  IsArray,
 } from 'class-validator';
 import { ResetCycle } from '@prisma/client';
 import { PriceResponseDto } from './items.dto';
@@ -34,13 +35,11 @@ export class CreatePlanAddonDto {
     @IsNotEmpty()
     productId: string;
   
-    @ApiProperty({
-      description: 'Product Price ID',
-      example: '123e4567-e89b-12d3-a456-426614174000',
-    })
-    @IsUUID()
-    @IsNotEmpty()
-    productPriceId: string;
+    @ApiPropertyOptional({ example:"['123e4567-e89b-12d3-a456-426614174000','123e4567-e89b-12d3-a456-426614174000']" , description: 'Products prices id list' })  
+    @IsOptional()
+    @IsArray()
+    @IsUUID(undefined, { each: true })
+    priceIds?: string[]; 
   
     @ApiProperty({
       description: 'Display order in plan addons list',
@@ -58,6 +57,7 @@ export class CreatePlanAddonDto {
     @IsOptional()
     isActive?: boolean;
   }
+  
   
   export class UpdatePlanAddonDto extends PartialType(CreatePlanAddonDto) {
     @ApiPropertyOptional({

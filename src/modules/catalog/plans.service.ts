@@ -6,9 +6,11 @@ import {
   CreatePlanPriceDto,
   UpdatePlanPriceDto,
   PlanResponseDto,
+  GetPlansQueryDto,
 } from 'src/dtos/plan.dto';
 import { Prisma } from '@prisma/client';
 import { StripeService } from '../stripe/stripe.service';
+import { isValidUUID } from 'src/utils/validate';
 
 @Injectable()
 export class PlansService {
@@ -18,7 +20,7 @@ export class PlansService {
     private readonly stripeService: StripeService,
   ) {}
 
-  async getPlans(query?: any) {
+  async getPlans(query?: GetPlansQueryDto) {
     const {
       isActive,
       officeLocationId,
@@ -28,6 +30,10 @@ export class PlansService {
       limit = 10,
     } = query || {};
 
+   const isValid= isValidUUID(officeLocationId);
+    if (officeLocationId && !isValid) {
+      throw new BadRequestException('Invalid office location ID');
+    }
     const skip = (page - 1) * limit;
     const where: Prisma.PlanWhereInput = {
       isDeleted,

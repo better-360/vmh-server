@@ -23,6 +23,7 @@ import { MailboxModule } from './mailbox/mailbox.module';
 import { ProductModule } from './product/product.module';
 import { HandlerModule } from './handler/handler.module';
 import { EntitlementsModule } from './entitlements/entitlements.module';
+import { MailActionsModule } from './actions/actions.module';
 
 @Module({
   imports: [
@@ -49,7 +50,8 @@ import { EntitlementsModule } from './entitlements/entitlements.module';
     MailboxModule,
     ProductModule,
     HandlerModule,
-    EntitlementsModule
+    EntitlementsModule,
+    MailActionsModule,
   ],
   exports: [
     AuthModule,
@@ -71,7 +73,8 @@ import { EntitlementsModule } from './entitlements/entitlements.module';
     MailboxModule,
     ProductModule,
     HandlerModule,
-    EntitlementsModule
+    EntitlementsModule,
+    MailActionsModule,
   ],
 })
 export class MainModule {}

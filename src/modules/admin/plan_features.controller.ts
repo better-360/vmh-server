@@ -10,7 +10,7 @@ import { ApiBearerAuth } from "@nestjs/swagger";
 export class PlanFeaturesController {
   constructor(private readonly planFeaturesService: PlanFeaturesService) {}
 
-  @Get('plan-features')
+  @Get()
   @ApiOperation({ 
     summary: 'Get plan features',
     description: 'Retrieve plan-feature relationships with optional filtering by plan or feature'
@@ -41,8 +41,7 @@ export class PlanFeaturesController {
   }
 
 
-
-  @Post('plan-features')
+  @Post('')
   @ApiOperation({ 
     summary: 'Add feature to plan',
     description: 'Create a new plan-feature relationship with limits and pricing'
@@ -56,7 +55,7 @@ export class PlanFeaturesController {
     return this.planFeaturesService.createPlanFeature(data);
   }
 
-  @Put('plan-features/:id')
+  @Put('/:id')
   @ApiOperation({ 
     summary: 'Update plan feature',
     description: 'Update plan-feature relationship properties like limits and pricing'
@@ -70,7 +69,7 @@ export class PlanFeaturesController {
     return this.planFeaturesService.updatePlanFeature(id, data);
   }
 
-  @Delete('plan-features/:id')
+  @Delete('/:id')
   @ApiOperation({ 
     summary: 'Remove feature from plan',
     description: 'Soft delete a plan-feature relationship'
@@ -83,7 +82,7 @@ export class PlanFeaturesController {
     return this.planFeaturesService.deletePlanFeature(id);
   }
 
-  @Post('plan-features/bulk-create')
+  @Post('bulk-create')
   @ApiOperation({ 
     summary: 'Bulk add features to plan',
     description: 'Add multiple features to a plan in a single transaction'
@@ -104,7 +103,7 @@ export class PlanFeaturesController {
     return this.planFeaturesService.bulkCreatePlanFeatures(data.planId, data.features);
   }
 
-  @Put('plan-features/bulk-update')
+  @Put('bulk-update')
   @ApiOperation({ 
     summary: 'Bulk update plan features',
     description: 'Update multiple plan-feature relationships in a single transaction'

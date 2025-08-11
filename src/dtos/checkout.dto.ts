@@ -41,62 +41,6 @@ export class AddonDto {
   selectedPriceId?: string;
 }
 
-export interface CheckoutAddon{
-    productId: string;
-    selectedPriceId: string | null;
-    productName: string|null;
-    productTier: string|null;
-    price: number;
-  }
-
-  export interface CompanyInfo{
-    name: string;
-    designator: string;
-  }
-
-  export interface CompanyType {
-    id: string;
-    name: string;
-  }
-
-  export interface State {
-    id: string;
-    name: string;
-  }
-
-  export interface PricingPlan{
-    id: string;
-    name: string;
-    price: number;
-  }
-
-export interface StateFee{
-  id: string;
-  amount: number;
-}
-
-export interface FillingOption{
-  id: string;
-  name: string;
-  price: number;
-}
-
-  export interface CheckoutData{  
-    companyInfo: CompanyInfo;
-    state: State;
-    companyType: CompanyType;
-    pricingPlan: PricingPlan;
-    stateFee: StateFee;
-    expeditedFee: FillingOption;
-    addons: CheckoutAddon[];
-  }
-
-// =====================
-// ORDER DTOs
-// =====================
-
-// Use Prisma enums for full schema alignment
-
 export class CreateOrderItemDto {
   @ApiProperty({
     description: 'Item type',
@@ -123,15 +67,16 @@ export class CreateOrderItemDto {
   @Min(1)
   quantity?: number;
 }
+
 export class CreateInitialSubscriptionOrderDto {
   @ApiProperty({
-    description: 'Customer name',
+    description: 'Customer first name',
     example: 'John',
   })
   @IsString()
   firstName: string;
 
-    @ApiProperty({
+  @ApiProperty({
     description: 'Customer last name',
     example: 'Doe',
   })
@@ -139,7 +84,7 @@ export class CreateInitialSubscriptionOrderDto {
   lastName: string;
 
   @ApiProperty({
-    description: 'Customer email',
+    description: 'Customer email address',
     example: 'atakan@thedice.ai',
   })
   @IsEmail()
@@ -149,17 +94,27 @@ export class CreateInitialSubscriptionOrderDto {
     description: 'Office location ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
-  @IsString()
+  @IsUUID()
   officeLocationId: string;
 
   @ApiProperty({
-    description: 'Order items',
-    type: [CreateOrderItemDto],
+    description: 'Plan Price ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  planPriceId: string;
+
+  @ApiProperty({
+    description: 'List of Add-on Price IDs',
+    example: [
+      '111e4567-e89b-12d3-a456-426614174000',
+      '222e4567-e89b-12d3-a456-426614174000',
+    ],
+    type: [String],
   })
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateOrderItemDto)
-  items: CreateOrderItemDto[];
+  @IsUUID('4', { each: true })
+  addons: string[];
 }
 
 

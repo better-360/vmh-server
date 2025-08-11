@@ -30,6 +30,7 @@ import {
   CreatePlanPriceDto,
   UpdatePlanPriceDto,
   CreatePlanWithFeaturesDto,
+  GetPlansQueryDto,
 } from 'src/dtos/plan.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { PlansService } from '../catalog/plans.service';
@@ -59,6 +60,7 @@ export class AdminPlansController {
   @ApiQuery({ name: 'search', required: false, type: String, description: 'Search in plan name and description' })
   @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number for pagination (default: 1)' })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 10)' })
+  @ApiQuery({ name: 'officeLocationId', required: false, type: String, description: 'Filter by office location ID' })
   @ApiResponse({ 
     status: 200, 
     description: 'Plans retrieved successfully',
@@ -78,7 +80,7 @@ export class AdminPlansController {
       }
     }
   })
-  async getPlans(@Query() query: any) {
+  async getPlans(@Query() query: GetPlansQueryDto) {
     return this.plansService.getPlans(query);
   }
 

@@ -14,16 +14,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Public } from 'src/common/decorators/public.decorator';
-// import { BillingService } from './billing.service'; // Disabled
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateInitialSubscriptionOrderDto, CreateOrderDto } from 'src/dtos/checkout.dto';
 import { StripeService } from '../stripe/stripe.service';
+import { BillingService } from './billing.service';
 
 @ApiTags('Billing')
 @Controller('billing')
 export class BillingController {
   constructor(
-    // private readonly billingService: BillingService, // Disabled
+    private readonly billingService: BillingService,
     private readonly stripeService: StripeService,
   ) {}
 
@@ -32,7 +32,7 @@ export class BillingController {
   @Public()
   @Post('create-initial-subscription-order')
   async createInitialSubscriptionOrder(@Body() createOrderDto: CreateInitialSubscriptionOrderDto) {
-    throw new BadRequestException('Billing service temporarily disabled during schema migration');
+    return this.billingService.createInitialSubscriptionOrder(createOrderDto);
   }
 
   @ApiOperation({ summary: 'Create initial subscription order' })

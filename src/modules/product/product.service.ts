@@ -21,101 +21,138 @@ export class ProductService {
   ) { }
 
   async createProduct(data: CreateProductDto): Promise<ProductResponseDto> {
-    return await this.prisma.$transaction(async (tx) => {
-      // 1. Stripe üzerinde ürün oluştur.
-      const stripeProduct = await this.stripeService.createProduct({
-        name: data.name,
-        description: data.description,
-      });
+    const pricesInput = data.prices ?? [];
+    const featuresInput = data.features ?? [];
 
-      // 2. Ürün oluşturulurken "prices" alanını veriden çıkartıyoruz.
-      const { prices, features, ...productData } = data;
+    const defaultCount = pricesInput.filter(p => p.isDefault === true).length;
+    if (defaultCount > 1) {
+      throw new BadRequestException('Only one default price is allowed per product.');
+    }
+
+    const sanitizedFeatures = featuresInput.map(f => ({
+      featureId: f.featureId,
+      includedLimit: f.includedLimit,
+      resetCycle: f.resetCycle,
+    }));
+
+    // --- Transaction start
+    const created = await this.prisma.$transaction(async (tx) => {
+      // 1) Set Stripe product ID (use if submitted; otherwise, create one in Stripe)
+      const stripeProductId =
+        data.stripeProductId ??
+        (await this.stripeService.createProduct({
+          name: data.name,
+          description: data.description,
+        })).id;
+
+      // 2) Create Local product
+      const { prices, features, stripeProductId: _ignore, ...productData } = data as any;
       const localProduct = await tx.product.create({
-        data: { ...productData, stripeProductId: stripeProduct.id },
+        data: {
+          ...productData,
+          isActive: data.isActive ?? true,
+          stripeProductId,
+        },
       });
 
-      // 3. Her fiyat için asenkron işlemleri await eden bir döngü kullanıyoruz.
-      if (prices && prices.length > 0) {
-        for (const price of prices) {
-          // Recurring kontrolü: Eğer fiyat tipi recurring ise recurring bilgisi olmalı.
-          if (price.priceType === PriceType.recurring && !price.recurring) {
-            throw new Error(
-              'Recurring fiyatlar için recurring bilgisi gereklidir',
-            );
-          }
+      for (const price of pricesInput) {
+        const priceType = price.priceType ?? PriceType.one_time;
 
-          // 4. Stripe üzerinde fiyat oluştur.
-          const stripePrice = await this.stripeService.createPrice({
+       // If stripePriceId is given, dont create it in Stripe
+        const stripePriceId = price.stripePriceId
+          ? price.stripePriceId
+          : (
+              await this.stripeService.createPrice({
+                unit_amount: price.unit_amount,
+                currency: price.currency,
+                product: stripeProductId,
+                recurring:
+                  priceType === PriceType.recurring && price.recurring
+                    ? {
+                        interval: price.recurring.interval,
+                        interval_count: price.recurring.interval_count,
+                      }
+                    : undefined,
+              })
+            ).id;
+
+        const createdPrice = await tx.price.create({
+          data: {
+            product: { connect: { id: localProduct.id } },
+            isDefault: price.isDefault ?? false,
+            stripePriceId,
+            name: price.name,
+            description: price.description,
             unit_amount: price.unit_amount,
             currency: price.currency,
-            product: localProduct.stripeProductId,
+            priceType,
+            additionalFees: price.additionalFees ?? 0,
             recurring:
-              price.priceType === PriceType.recurring && price.recurring
+              priceType === PriceType.recurring && price.recurring
                 ? {
-                  interval: price.recurring.interval as RecurringInterval,
-                  interval_count: price.recurring.interval_count,
-                }
+                    create: {
+                      interval: price.recurring.interval,
+                      interval_count: price.recurring.interval_count,
+                    },
+                  }
                 : undefined,
+          },
+        });
+
+        if (price.isDefault === true) {
+          // update Stripe product default_price 
+          await this.stripeService.updateProduct(stripeProductId, {
+            default_price: stripePriceId,
           });
 
-          // 5. Veritabanına ürün fiyatı kaydını oluştur.
-          const createdPrice = await tx.price.create({
-            data: {
-              product: { connect: { id: localProduct.id } },
-              isDefault: price.isDefault ?? false,
-              stripePriceId: stripePrice.id,
-              name: price.name,
-              description: price.description,
-              unit_amount: price.unit_amount,
-              currency: price.currency,
-              priceType: price.priceType,
-              recurring: price.recurring
-                ? {
-                  create: {
-                    interval: price.recurring.interval as RecurringInterval,
-                    interval_count: price.recurring.interval_count,
-                  },
-                }
-                : undefined,
-            },
-          });
-
-          // 6. Eğer fiyat default ise, Stripe ürününü ve veritabanındaki defaultPrice'ı güncelle.
-          if (price.isDefault) {
-            await this.stripeService.updateProduct(
-              localProduct.stripeProductId,
-              {
-                default_price: stripePrice.id,
-              },
-            );
-            await tx.product.update({
-              where: { id: localProduct.id },
-              data: { defaultPriceId: createdPrice.id },
-            });
-          }
-        }
-      }
-
-      if (features && features.length > 0) {
-        for (const feature of features) {
-          await tx.productFeature.create({
-            data: { 
-              product: { connect: { id: localProduct.id } },
-              feature: { connect: { id: feature.featureId } },
-              includedLimit: feature.includedLimit,
-              resetCycle: feature.resetCycle as BillingCycle,
-            },
+          // update local defaultPriceId 
+          await tx.product.update({
+            where: { id: localProduct.id },
+            data: { defaultPriceId: createdPrice.id },
           });
         }
       }
 
-      // 7. Oluşturulan ürünü, fiyat bilgileriyle birlikte getir.
-      const pricedProduct = await this.prisma.product.findUnique({
+      if (sanitizedFeatures.length > 0) {
+        const validFeatureIds = new Set(
+          (
+            await tx.feature.findMany({
+              where: { id: { in: sanitizedFeatures.map(f => f.featureId) } },
+              select: { id: true },
+            })
+          ).map(f => f.id),
+        );
+
+        if (validFeatureIds.size !== sanitizedFeatures.length) {
+          throw new BadRequestException('Some features are invalid or not found.');
+        }
+        await tx.productFeature.createMany({
+          data: sanitizedFeatures.map((f) => ({
+            productId: localProduct.id,
+            featureId: f.featureId,
+            includedLimit: f.includedLimit,
+            resetCycle: f.resetCycle as unknown as BillingCycle,
+            isActive: true,
+            isDeleted: false,
+          })),
+        });
+      }
+      const enriched = await tx.product.findUnique({
         where: { id: localProduct.id },
-        include: { prices: { include: { recurring: true } } },
+        include: {
+          prices: { include: { recurring: true } },
+          productFeature: {
+            include: { feature: true }
+          },
+        },
       });
-      return pricedProduct;
+
+      return enriched!;
     });
+    // --- Transaction end
+
+    this.logger.log(`Product created successfully: ${created.id}`);
+    return created;
   }
 
   async updateProduct(productId: string, data: UpdateProductDto) {
@@ -284,17 +321,7 @@ export class ProductService {
           orderBy: {
             unit_amount: 'asc',
           },
-        },
-        productFeature: {
-          include: {
-            feature: true,
-          },
-        },
-        planAddon: {
-          include: {
-            plan: true,
-          },
-        },
+        }
       },
       orderBy: {
         createdAt: 'desc',

@@ -9,7 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { ProductService } from './product.service';
+import { ProductService } from '../product/product.service';
 import { 
   CreateProductDto, 
   UpdateProductDto, 
@@ -17,10 +17,10 @@ import {
 } from 'src/dtos/items.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 
-@ApiTags('Product Management')
+@ApiTags('Admin Product Management')
 @Public()
-@Controller('products')
-export class ProductController {
+@Controller('admin/products')
+export class AdminProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Post()

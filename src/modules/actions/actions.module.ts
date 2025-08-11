@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
+import { MailActionsService } from './actions.service';
+import { MailActionsController } from './actions.controller';
 
 @Module({
-  imports: [],
-  providers: [],
-
-  exports: [],
-  controllers: [],
+  providers: [MailActionsService],
+  exports: [MailActionsService],
+  controllers: [MailActionsController],
 })
-export class PackageActionsModule {}
+export class MailActionsModule {}

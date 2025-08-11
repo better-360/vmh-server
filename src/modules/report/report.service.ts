@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
 
@@ -262,6 +262,62 @@ export class ReportService {
     } catch (error) {
       this.logger.error(`Failed to increment feature usage for mailbox ${mailBoxId}, feature ${featureId}: ${error.message}`);
       throw error;
+    }
+  }
+
+
+  async getFeatureUsageStats(featureId: string) {
+    try {
+      const feature = await this.prisma.feature.findUnique({
+        where: { id: featureId },
+        include: {
+          planFeatures: {
+            where: {
+              isActive: true,
+              isDeleted: false,
+            },
+            include: {
+              plan: {
+                select: { id: true, name: true, description: true },
+              },
+            },
+          },
+        },
+      });
+      const [totalUsage, activeUsage, recentUsage] = await Promise.all([
+        this.prisma.featureUsage.aggregate({
+          where: { featureId },
+          _sum: { usedCount: true },
+          _count: true,
+        }),
+        this.prisma.featureUsage.count({
+          where: {
+            featureId,
+            periodEnd: {
+              gte: new Date(),
+            },
+          },
+        }),
+        this.prisma.featureUsage.count({
+          where: {
+            featureId,
+            createdAt: {
+              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+            },
+          },
+        }),
+      ]);
+
+      return {
+        feature,
+        totalUsageCount: totalUsage._sum.usedCount || 0,
+        totalUsageRecords: totalUsage._count,
+        activeUsageRecords: activeUsage,
+        recentUsageRecords: recentUsage,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to get feature usage stats: ${error.message}`);
+      throw new BadRequestException('Failed to get feature usage stats');
     }
   }
 }

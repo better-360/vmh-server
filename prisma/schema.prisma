@@ -71,7 +71,7 @@
     forwardingAddressLimit Int @default(1)
     recipientLimit         Int @default(1)
 
-    workspace         Workspace           @relation(fields: [workspaceId], references: [id])
+    workspace         Workspace           @relation(fields: [workspaceId], references: [id],onDelete: Cascade)
     officeLocation    OfficeLocation      @relation(fields: [officeLocationId], references: [id], onDelete: Cascade)
     plan              Plan                @relation(fields: [planId], references: [id])
     planPrice         PlanPrice           @relation(fields: [planPriceId], references: [id])
@@ -353,8 +353,8 @@
     isDefault   Boolean   @default(false) //Kullanıcının varsayılan Workspace'i mi?
 
     role      WorkspaceRole
-    user      User          @relation(fields: [userId], references: [id])
-    workspace Workspace     @relation(fields: [workspaceId], references: [id])
+    user      User          @relation(fields: [userId], references: [id],onDelete: Cascade)
+    workspace Workspace     @relation(fields: [workspaceId], references: [id],onDelete: Cascade)
 
     @@unique([userId, isDefault], name: "OnlyOneDefaultWorkspacePerUser")
   }
@@ -502,7 +502,7 @@
     updatedAt DateTime @updatedAt
 
     status          PackageStatus       @default(PENDING)
-    actions         PackageAction[] // Paketle ilgili aksiyonlar (forward, shred, vs.)
+    actions         PackageAction[] 
     mailbox         Mailbox             @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
     forwardRequests ForwardingRequest[]
     recipient      Recipient? @relation(fields: [recipientId], references: [id], onDelete: Cascade)

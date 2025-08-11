@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsString,
   IsOptional,
@@ -13,6 +13,7 @@ import {
   IsEnum,
   IsInt,
   IsJSON,
+  Max,
 } from 'class-validator';
 import { BillingCycle } from '@prisma/client';
 import { CreatePlanAddonDto, PlanAddonResponseDto, PlanFeatureResponseDto, CreatePlanFeatureDto } from './plan_entitlements.dto';
@@ -449,4 +450,37 @@ export class CreatePlanWithFeaturesDto {
   @Type(() => CreatePlanPriceDto)
   @IsOptional()
   prices?: CreatePlanPriceDto[];
+}
+
+export class GetPlansQueryDto {
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === true || value === 'true')
+  isActive?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === true || value === 'true')
+  isDeleted: boolean = false;
+
+  @IsOptional()
+  @IsUUID()
+  officeLocationId?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  limit: number = 10;
 }

@@ -10,73 +10,35 @@ export class PlanAddonsService {
 
 
   async assignProductToPlanAddon(data: CreatePlanAddonDto) {
-    try {
-      return await this.prisma.$transaction(async (tx) => {
-        // Verify plan and product exist
-        const [plan, product, price] = await Promise.all([
-          tx.plan.findUnique({ where: { id: data.planId } }),
-          tx.product.findUnique({ where: { id: data.productId } }),
-          tx.price.findUnique({ where: { id: data.productPriceId } }),
-        ]);
-
-        if (!plan || plan.isDeleted) {
-          throw new NotFoundException('Plan not found');
-        }
-
-        if (!product || product.isDeleted) {
-          throw new NotFoundException('Product not found');
-        }
-
-        if (!price || price.isDeleted) {
-          throw new NotFoundException('Price not found');
-        }
-
-        // Check if addon already exists for this plan
-        const existingAddon = await tx.planAddon.findFirst({
-          where: {
-            planId: data.planId,
-            productId: data.productId,
-            isDeleted: false,
-          },
-        });
-
-        if (existingAddon) {
-          throw new BadRequestException('Product is already added to this plan');
-        }
-
-        // Create the plan addon
-        const createdAddon = await tx.planAddon.create({
+  return await this.prisma.$transaction(async (tx) => {
+    let productPrices = [];
+    if (data.priceIds && data.priceIds.length > 0) {
+      productPrices = await tx.price.findMany({
+        where: { id: { in: data.priceIds } },
+      });
+    } else {
+      productPrices = await tx.price.findMany({
+        where: { productId: data.productId },
+      });
+      if (productPrices.length === 0) {
+      throw new NotFoundException('No prices found for the specified product');
+      }
+    }
+    const createdAddons = await Promise.all(
+      productPrices.map((price) =>
+        tx.planAddon.create({
           data: {
             planId: data.planId,
             productId: data.productId,
-            productPriceId: data.productPriceId,
+            productPriceId: price.id,
             displayOrder: data.displayOrder ?? 1,
           },
-          include: {
-            plan: true,
-            product: {
-              include: {
-                prices: true,
-              },
-            },
-            prices: {
-              include: {
-                recurring: true,
-              },
-            },
-          },
-        });
-
-        return createdAddon;
-      });
-    } catch (error) {
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
-        throw error;
-      }
-      this.logger.error(`Failed to assign product to plan addon: ${error.message}`);
-      throw new BadRequestException('Failed to assign product to plan addon');
-    }
-  }
+        })
+      )
+    );
+    return createdAddons;
+  });
+}
 
   async getPlanAddons(planId: string) {
     try {
@@ -89,6 +51,11 @@ export class PlanAddonsService {
         include: {
           product: {
             include: {
+              productFeature: {
+                include: {
+                  feature:true
+                },
+              },
               prices: {
                 where: {
                   isDeleted: false,
