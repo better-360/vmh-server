@@ -1,4 +1,3 @@
-
 import { ActionStatus, PackageActionType } from '@prisma/client';
 import {
   IsUUID,
@@ -52,7 +51,8 @@ export class CreateForwardRequestInput {
   officeLocationId!: string;
 
   @ApiProperty({
-    description: 'The delivery address where the user wants the package to be sent',
+    description:
+      'The delivery address where the user wants the package to be sent',
     example: 'a1b2c3d4-1111-2222-3333-444455556666',
   })
   @IsUUID()
@@ -131,7 +131,8 @@ export class CreateMailActionDto {
   meta?: Record<string, any>;
 
   @ApiPropertyOptional({
-    description: 'Quickly mark the mail as shredded when SHRED action is completed',
+    description:
+      'Quickly mark the mail as shredded when SHRED action is completed',
     example: true,
   })
   @IsOptional()
@@ -286,8 +287,7 @@ export class QueryMailActionsDto {
   officeLocationId?: string;
 
   @ApiPropertyOptional({
-    description:
-      'Search text (STE number, tracking code, sender name, etc.)',
+    description: 'Search text (STE number, tracking code, sender name, etc.)',
     example: 'STE-102938 / UPS / Acme Corp',
   })
   @IsOptional()
@@ -327,24 +327,20 @@ export class QueryMailActionsDto {
   @IsOptional()
   @IsEnum(SortOrder)
   order?: SortOrder;
+}
 
-  @ApiPropertyOptional({
-    description: 'Page number (1..n)',
-    example: 1,
-    minimum: 1,
-  })
+export class ForwarMeta {
+  @IsString()
+  mailboxId: string;
+  @IsString()
+  officeLocationId: string;
+  @IsString()
+  deliveryAddressId: string;
+  @IsString()
+  deliverySpeedOptionId: string;
+  @IsString()
+  packagingTypeOptionId: string;
+  @IsString()
   @IsOptional()
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({
-    description: 'Number of items per page',
-    example: 10,
-    minimum: 1,
-  })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  limit?: number = 10;
+  carrierId: string;
 }

@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ActionStatus, PackageActionType, Prisma } from '@prisma/client';
-import { UpdateActionStatusDto,CreateMailActionDto,CompleteForwardDto, CancelForwardDto,QueryMailActionsDto } from 'src/dtos/mail-actions.dto';
+import { UpdateActionStatusDto,CreateMailActionDto,CompleteForwardDto, CancelForwardDto,QueryMailActionsDto, ForwarMeta } from 'src/dtos/mail-actions.dto';
 import { PrismaService } from 'src/prisma.service';
 
 @Injectable()
@@ -11,7 +11,6 @@ export class MailActionsService {
     const {
       type, status, mailboxId, officeLocationId, search,
       from, to, sort = 'requestedAt', order = 'desc',
-      page = 1, limit = 10,
     } = q;
 
     const where: Prisma.PackageActionWhereInput = {
@@ -34,7 +33,7 @@ export class MailActionsService {
       ...(officeLocationId && { mail: { mailbox: { officeLocationId } } }),
     };
 
-    const [items, total] = await this.prisma.$transaction([
+    const [items] = await this.prisma.$transaction([
       this.prisma.packageAction.findMany({
         where,
         include: {
@@ -52,16 +51,10 @@ export class MailActionsService {
           },
         },
         orderBy: { [sort]: order },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      this.prisma.packageAction.count({ where }),
+      })
     ]);
 
-    return {
-      items,
-      meta: { page, limit, total, pages: Math.ceil(total / limit) },
-    };
+    return items
   }
 
   async getActionById(id: string) {
@@ -85,10 +78,17 @@ export class MailActionsService {
 
     if (isForward) {
       if (!dto.meta?.forward) {
+
+        
         throw new BadRequestException('FORWARD requires meta.forward payload');
       }
 
-      const fwd = dto.meta.forward as any;
+
+      const fwd = dto.meta.forward as ForwarMeta;
+
+      if(!fwd.mailboxId || !fwd.officeLocationId || !fwd.deliveryAddressId || !fwd.deliverySpeedOptionId || !fwd.packagingTypeOptionId) {
+        throw new BadRequestException('FORWARD meta requires mailboxId, officeLocationId, deliveryAddressId, deliverySpeedOptionId, and packagingTypeOptionId');
+      }
 
       return await this.prisma.$transaction(async (tx) => {
         // 1) ForwardingRequest oluştur

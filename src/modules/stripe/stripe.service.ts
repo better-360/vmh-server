@@ -9,13 +9,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-
 interface SubscriptionItemDto {
   productId: string;
   stripePriceId: string;
   // Recurring bilgisi: eğer ürün abonelik ise bu alan dolu olacaktır.
   recurring: {
-    interval: string;       // Örneğin, "month" veya "year"
+    interval: string; // Örneğin, "month" veya "year"
     interval_count: number; // Örneğin, 1
   } | null;
 }
@@ -115,22 +114,25 @@ export class StripeService {
       try {
         await this.stripe.products.del(productId);
         this.logger.log('Product deleted successfully from Stripe');
-        
+
         // Ürün silindiyse, boş bir product objesi döner (Stripe API behavior)
         return { id: productId, deleted: true } as any;
       } catch (deleteError) {
-        this.logger.warn('Could not delete product, attempting to delete prices individually:', deleteError.message);
-        
+        this.logger.warn(
+          'Could not delete product, attempting to delete prices individually:',
+          deleteError.message,
+        );
+
         // Ürün silinemezse, fiyatları tek tek işle
-        const prices = await this.stripe.prices.list({ 
+        const prices = await this.stripe.prices.list({
           product: productId,
-          limit: 100 // Tüm fiyatları al
+          limit: 100, // Tüm fiyatları al
         });
 
         const deletionResults = {
           deletedPrices: [],
           deactivatedPrices: [],
-          errors: []
+          errors: [],
         };
 
         // Önce non-default fiyatları sil/deaktive et
@@ -141,10 +143,13 @@ export class StripeService {
             deletionResults.deactivatedPrices.push(price.id);
             this.logger.log(`Price ${price.id} deactivated successfully`);
           } catch (priceError) {
-            this.logger.warn(`Could not process price ${price.id}:`, priceError.message);
+            this.logger.warn(
+              `Could not process price ${price.id}:`,
+              priceError.message,
+            );
             deletionResults.errors.push({
               priceId: price.id,
-              error: priceError.message
+              error: priceError.message,
             });
           }
         }
@@ -152,21 +157,26 @@ export class StripeService {
         // Şimdi ürünü silmeyi tekrar dene
         try {
           await this.stripe.products.del(productId);
-          this.logger.log('Product deleted successfully after processing prices');
+          this.logger.log(
+            'Product deleted successfully after processing prices',
+          );
           return { id: productId, deleted: true } as any;
         } catch (secondDeleteError) {
-          this.logger.warn('Product still cannot be deleted, deactivating instead:', secondDeleteError.message);
-          
+          this.logger.warn(
+            'Product still cannot be deleted, deactivating instead:',
+            secondDeleteError.message,
+          );
+
           // Son çare: ürünü deaktive et
           const product = await this.stripe.products.update(productId, {
             active: false,
           });
-          
+
           this.logger.log('Product deactivated successfully', {
             productId,
-            deletionResults
+            deletionResults,
           });
-          
+
           return product;
         }
       }
@@ -174,9 +184,9 @@ export class StripeService {
       this.logger.error('Failed to process product removal on Stripe', {
         productId,
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
-      
+
       throw new HttpException(
         `Unable to remove product from Stripe: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -288,67 +298,78 @@ export class StripeService {
       }
 
       const productId = price.product as string;
-      
+
       // Product bilgisini al
       const product = await this.stripe.products.retrieve(productId);
-      
+
       // Eğer bu price default price ise özel işlem gerekiyor
       if (product.default_price === priceId) {
-        this.logger.warn(`Attempting to delete default price ${priceId} for product ${productId}`);
-        
+        this.logger.warn(
+          `Attempting to delete default price ${priceId} for product ${productId}`,
+        );
+
         // Ürünün diğer aktif price'larını kontrol et
-        const allPrices = await this.stripe.prices.list({ 
+        const allPrices = await this.stripe.prices.list({
           product: productId,
-          active: true
+          active: true,
         });
-        
+
         // Bu price dışındaki aktif price'ları bul
-        const otherActivePrices = allPrices.data.filter(p => p.id !== priceId);
-        
+        const otherActivePrices = allPrices.data.filter(
+          (p) => p.id !== priceId,
+        );
+
         if (otherActivePrices.length > 0) {
           // Başka aktif price varsa, ilkini default yap
           const newDefaultPrice = otherActivePrices[0];
-          
-          this.logger.log(`Setting new default price ${newDefaultPrice.id} for product ${productId}`);
+
+          this.logger.log(
+            `Setting new default price ${newDefaultPrice.id} for product ${productId}`,
+          );
           await this.stripe.products.update(productId, {
             default_price: newDefaultPrice.id,
           });
-          
+
           // Şimdi eski default price'ı güvenle deaktive edebiliriz
           await this.stripe.prices.update(priceId, {
             active: false,
           });
-          
-          this.logger.log(`Successfully deactivated former default price ${priceId}`);
+
+          this.logger.log(
+            `Successfully deactivated former default price ${priceId}`,
+          );
           return HttpStatus.OK;
-          
         } else {
           // Başka aktif price yok, minimal bir dummy price oluştur
-          this.logger.log(`Creating dummy price for product ${productId} before deleting default price`);
-          
+          this.logger.log(
+            `Creating dummy price for product ${productId} before deleting default price`,
+          );
+
           // Minimal dummy price oluştur (aynı currency ile)
           const dummyPrice = await this.stripe.prices.create({
             unit_amount: 100, // $1.00 minimum
             currency: price.currency,
             product: productId,
           });
-          
+
           // Dummy price'ı default yap
           await this.stripe.products.update(productId, {
             default_price: dummyPrice.id,
           });
-          
+
           // Şimdi orijinal price'ı deaktive et
           await this.stripe.prices.update(priceId, {
             active: false,
           });
-          
+
           // Dummy price'ı da hemen deaktive et (sadece default olmak için oluşturuldu)
           await this.stripe.prices.update(dummyPrice.id, {
             active: false,
           });
-          
-          this.logger.log(`Successfully created dummy price and deactivated default price ${priceId}`);
+
+          this.logger.log(
+            `Successfully created dummy price and deactivated default price ${priceId}`,
+          );
           return HttpStatus.OK;
         }
       } else {
@@ -356,14 +377,15 @@ export class StripeService {
         await this.stripe.prices.update(priceId, {
           active: false,
         });
-        
-        this.logger.log(`Successfully deactivated non-default price ${priceId}`);
+
+        this.logger.log(
+          `Successfully deactivated non-default price ${priceId}`,
+        );
         return HttpStatus.OK;
       }
-      
     } catch (error) {
       this.logger.error('Failed to delete price on Stripe', error.stack);
-      
+
       // Eğer hata mesajı default price ile ilgiliyse daha açıklayıcı hata ver
       if (error.message && error.message.includes('default price')) {
         throw new HttpException(
@@ -371,7 +393,7 @@ export class StripeService {
           400,
         );
       }
-      
+
       throw new HttpException(
         `Unable to delete price on Stripe ${error.message}`,
         500,
@@ -513,7 +535,7 @@ export class StripeService {
     try {
       const invoice = await this.stripe.invoices.retrieve(invoiceId);
       this.logger.log('Invoice fetched successfully');
-      return invoice
+      return invoice;
     } catch (error) {
       this.logger.error('Failed to fetch invoice from Stripe', error.stack);
       throw new HttpException(
@@ -523,20 +545,25 @@ export class StripeService {
     }
   }
 
-  async getPaymentIntent(payment_intent:string):Promise<Stripe.PaymentIntent>{
+  async getPaymentIntent(
+    payment_intent: string,
+  ): Promise<Stripe.PaymentIntent> {
     try {
-      const paymentIntent = await this.stripe.paymentIntents.retrieve(payment_intent);
+      const paymentIntent =
+        await this.stripe.paymentIntents.retrieve(payment_intent);
       this.logger.log('PaymentIntent fetched successfully');
       return paymentIntent;
     } catch (error) {
-      this.logger.error('Failed to fetch paymentIntent from Stripe', error.stack);
+      this.logger.error(
+        'Failed to fetch paymentIntent from Stripe',
+        error.stack,
+      );
       throw new HttpException(
         `Unable to fetch paymentIntent from Stripe ${error.message}`,
         500,
       );
     }
   }
-
 
   async getInvoicesByCustomer(
     customerId: string,
@@ -570,7 +597,6 @@ export class StripeService {
     }
   }
 
-
   async createGroupedSubscriptions(
     customerId: string,
     subscriptionItems: SubscriptionItemDto[],
@@ -578,7 +604,13 @@ export class StripeService {
   ): Promise<Stripe.Subscription[]> {
     // Aynı recurring değerlerine sahip ürünleri gruplayacağız.
     // Gruplama anahtarı: "interval-interval_count"
-    const groups = new Map<string, { recurring: { interval: string; interval_count: number }; items: { stripePriceId: string; quantity: number }[] }>();
+    const groups = new Map<
+      string,
+      {
+        recurring: { interval: string; interval_count: number };
+        items: { stripePriceId: string; quantity: number }[];
+      }
+    >();
 
     for (const item of subscriptionItems) {
       // Sadece abonelik ürünleri için işlem yapıyoruz.
@@ -588,9 +620,10 @@ export class StripeService {
       if (!groups.has(groupKey)) {
         groups.set(groupKey, { recurring: item.recurring, items: [] });
       }
-      groups.get(groupKey)?.items.push({ stripePriceId: item.stripePriceId, quantity: 1 });
+      groups
+        .get(groupKey)
+        ?.items.push({ stripePriceId: item.stripePriceId, quantity: 1 });
     }
-
 
     const subscriptions: Stripe.Subscription[] = [];
     // Her grup için ayrı bir abonelik oluşturuyoruz.
@@ -598,7 +631,7 @@ export class StripeService {
       try {
         const subscription = await this.stripe.subscriptions.create({
           customer: customerId,
-          items: groupData.items.map(item => ({
+          items: groupData.items.map((item) => ({
             price: item.stripePriceId,
             quantity: item.quantity,
           })),
@@ -607,28 +640,32 @@ export class StripeService {
         });
         subscriptions.push(subscription);
       } catch (error) {
-        throw new InternalServerErrorException(`Error creating subscription for group ${groupKey}: ${error.message}`);
+        throw new InternalServerErrorException(
+          `Error creating subscription for group ${groupKey}: ${error.message}`,
+        );
       }
     }
 
     return subscriptions;
   }
 
-
   async getSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
     try {
-      const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+      const subscription =
+        await this.stripe.subscriptions.retrieve(subscriptionId);
       this.logger.log('Subscription fetched successfully');
       return subscription;
     } catch (error) {
-      this.logger.error('Failed to fetch subscription from Stripe', error.stack);
+      this.logger.error(
+        'Failed to fetch subscription from Stripe',
+        error.stack,
+      );
       throw new HttpException(
         `Unable to fetch subscription from Stripe ${error.message}`,
         500,
       );
     }
   }
-  
 
   async createPaymentIntent(
     data: Stripe.PaymentIntentCreateParams,
@@ -638,7 +675,10 @@ export class StripeService {
       this.logger.log('Payment intent created successfully');
       return paymentIntent;
     } catch (error) {
-      this.logger.error('Failed to create payment intent on Stripe', error.stack);
+      this.logger.error(
+        'Failed to create payment intent on Stripe',
+        error.stack,
+      );
       throw new HttpException(
         `Unable to create payment intent on Stripe ${error.message}`,
         500,
@@ -654,7 +694,10 @@ export class StripeService {
       this.logger.log('Checkout session retrieved successfully');
       return session;
     } catch (error) {
-      this.logger.error('Failed to retrieve checkout session from Stripe', error.stack);
+      this.logger.error(
+        'Failed to retrieve checkout session from Stripe',
+        error.stack,
+      );
       throw new HttpException(
         `Unable to retrieve checkout session from Stripe ${error.message}`,
         500,
@@ -662,93 +705,107 @@ export class StripeService {
     }
   }
 
-  async createPaymentIntentForOrder(params: Stripe.PaymentIntentCreateParams, options?: Stripe.RequestOptions): Promise<Stripe.PaymentIntent> {
+  async createPaymentIntentForOrder(
+    params: Stripe.PaymentIntentCreateParams,
+    options?: Stripe.RequestOptions,
+  ): Promise<Stripe.PaymentIntent> {
     const { amount, currency, customer, metadata } = params;
-  try {
-  const paymentIntent = await this.stripe.paymentIntents.create({
-    amount,    
-    currency,       
-    customer,
-    metadata, 
-    automatic_payment_methods: { enabled: true },
-    setup_future_usage: 'off_session',
-  });
-  this.logger.log('Payment intent created successfully for order');
-  return paymentIntent;
-} catch (error) {
-  this.logger.error('Failed to create payment intent on Stripe', error.stack);
-  throw new HttpException(
-    `Unable to create payment intent on Stripe ${error.message}`,
-    500,
-  );
+    try {
+      const paymentIntent = await this.stripe.paymentIntents.create({
+        amount,
+        currency,
+        customer,
+        metadata,
+        automatic_payment_methods: { enabled: true },
+        setup_future_usage: 'off_session',
+      });
+      this.logger.log('Payment intent created successfully for order');
+      return paymentIntent;
+    } catch (error) {
+      this.logger.error(
+        'Failed to create payment intent on Stripe',
+        error.stack,
+      );
+      throw new HttpException(
+        `Unable to create payment intent on Stripe ${error.message}`,
+        500,
+      );
+    }
   }
-}
 
-
-async retrievePaymentIntent(paymentIntentId: string): Promise<Stripe.PaymentIntent> {
-  try {
-    const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
-    this.logger.log('Payment intent retrieved successfully');
-    return paymentIntent;
-  } catch (error) {
-    this.logger.error('Failed to retrieve payment intent from Stripe', error.stack);
-    throw new HttpException(
-      `Unable to retrieve payment intent from Stripe ${error.message}`,
-      500,
-    );
+  async retrievePaymentIntent(
+    paymentIntentId: string,
+  ): Promise<Stripe.PaymentIntent> {
+    try {
+      const paymentIntent =
+        await this.stripe.paymentIntents.retrieve(paymentIntentId);
+      this.logger.log('Payment intent retrieved successfully');
+      return paymentIntent;
+    } catch (error) {
+      this.logger.error(
+        'Failed to retrieve payment intent from Stripe',
+        error.stack,
+      );
+      throw new HttpException(
+        `Unable to retrieve payment intent from Stripe ${error.message}`,
+        500,
+      );
+    }
   }
-}
-  async findOrCreateStripeCustomer(email: string,name:string): Promise<string> {
+  async findOrCreateStripeCustomer(
+    email: string,
+    name: string,
+  ): Promise<string> {
     let customerId: string;
-    let customer = await this.stripe.customers.search({ query: `email:'${email}'` });
+    let customer = await this.stripe.customers.search({
+      query: `email:'${email}'`,
+    });
     if (customer.data.length > 0) {
       customerId = customer.data[0].id;
     } else {
-      const created = await this.stripe.customers.create({ email,name });
+      const created = await this.stripe.customers.create({ email, name });
       customerId = created.id;
     }
     return customerId;
   }
 
-
   async stripeWebhookHandler(event: Stripe.Event): Promise<void> {
-  try {
-    switch (event.type) {
-      case 'invoice.payment_succeeded':
-        const invoice = event.data.object as Stripe.Invoice;
-        this.logger.log(`Payment succeeded for invoice ${invoice.id}`);
-        // İşlem sonrası yapılacaklar (örn. veritabanı güncelleme)
-        break;
-      case 'invoice.payment_failed':
-        const failedInvoice = event.data.object as Stripe.Invoice;
-        this.logger.error(`Payment failed for invoice ${failedInvoice.id}`);
-        // İşlem sonrası yapılacaklar (örn. kullanıcı bilgilendirme)
-        break;
-      case 'customer.subscription.created':
-        const subscription = event.data.object as Stripe.Subscription;
-        this.logger.log(`Subscription created: ${subscription.id}`);
-        // İşlem sonrası yapılacaklar (örn. veritabanı güncelleme)
-        break;
-      case 'customer.subscription.updated':
-        const updatedSubscription = event.data.object as Stripe.Subscription;
-        this.logger.log(`Subscription updated: ${updatedSubscription.id}`);
-        // İşlem sonrası yapılacaklar (örn. veritabanı güncelleme)
-        break;
-      case 'customer.subscription.deleted':
-        const deletedSubscription = event.data.object as Stripe.Subscription;
-        this.logger.log(`Subscription deleted: ${deletedSubscription.id}`);
-        // İşlem sonrası yapılacaklar (örn. veritabanı güncelleme)
-        break;
-      default:
-        this.logger.warn(`Unhandled event type: ${event.type}`);
-        break;
+    try {
+      switch (event.type) {
+        case 'invoice.payment_succeeded':
+          const invoice = event.data.object as Stripe.Invoice;
+          this.logger.log(`Payment succeeded for invoice ${invoice.id}`);
+          // İşlem sonrası yapılacaklar (örn. veritabanı güncelleme)
+          break;
+        case 'invoice.payment_failed':
+          const failedInvoice = event.data.object as Stripe.Invoice;
+          this.logger.error(`Payment failed for invoice ${failedInvoice.id}`);
+          // İşlem sonrası yapılacaklar (örn. kullanıcı bilgilendirme)
+          break;
+        case 'customer.subscription.created':
+          const subscription = event.data.object as Stripe.Subscription;
+          this.logger.log(`Subscription created: ${subscription.id}`);
+          // İşlem sonrası yapılacaklar (örn. veritabanı güncelleme)
+          break;
+        case 'customer.subscription.updated':
+          const updatedSubscription = event.data.object as Stripe.Subscription;
+          this.logger.log(`Subscription updated: ${updatedSubscription.id}`);
+          // İşlem sonrası yapılacaklar (örn. veritabanı güncelleme)
+          break;
+        case 'customer.subscription.deleted':
+          const deletedSubscription = event.data.object as Stripe.Subscription;
+          this.logger.log(`Subscription deleted: ${deletedSubscription.id}`);
+          // İşlem sonrası yapılacaklar (örn. veritabanı güncelleme)
+          break;
+        default:
+          this.logger.warn(`Unhandled event type: ${event.type}`);
+          break;
+      }
+    } catch (error) {
+      this.logger.error('Error handling Stripe webhook event', error.stack);
+      throw new InternalServerErrorException(
+        `Error handling Stripe webhook event: ${error.message}`,
+      );
     }
-  } catch (error) {
-    this.logger.error('Error handling Stripe webhook event', error.stack);
-    throw new InternalServerErrorException(
-      `Error handling Stripe webhook event: ${error.message}`,
-    );
   }
-}
-
 }

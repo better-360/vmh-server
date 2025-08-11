@@ -1,45 +1,48 @@
 // src/mail-actions/mail-actions.controller.ts
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { MailActionsService } from './actions.service';
+import { MailActionsService } from '../actions/actions.service';
 import { UpdateActionStatusDto,CreateMailActionDto,CompleteForwardDto, CancelForwardDto,QueryMailActionsDto } from 'src/dtos/mail-actions.dto';
+import { ApiTags } from '@nestjs/swagger';
 
-@Controller('admin/mail-actions')
+@ApiTags('Mail Handler Requests')
+@Controller('handler/')
 export class MailActionsController {
-  constructor(private readonly service: MailActionsService) {}
+  constructor(private readonly actionService: MailActionsService) {}
 
   // Panel listesi
-  @Get()
+  @Get('mail-actions/all')
   async list(@Query() q: QueryMailActionsDto) {
-    return this.service.listActions(q);
+    console.log('Listing mail actions with query:', q);
+    return this.actionService.listActions(q);
   }
 
   // Detay
-  @Get(':id')
+  @Get('mail-actions/:id')
   async get(@Param('id') id: string) {
-    return this.service.getActionById(id);
+    return this.actionService.getActionById(id);
   }
 
   // Aksiyon oluştur (panel veya otomasyon)
-  @Post()
+  @Post('mail-actions/create')
   async create(@Body() dto: CreateMailActionDto) {
-    return this.service.createAction(dto);
+    return this.actionService.createAction(dto);
   }
 
   // Genel status update
-  @Patch(':id/status')
+  @Patch('mail-actions/:id/status')
   async updateStatus(@Param('id') id: string, @Body() dto: UpdateActionStatusDto) {
-    return this.service.updateActionStatus(id, dto);
+    return this.actionService.updateActionStatus(id, dto);
   }
 
   // Forward tamamla
-  @Patch(':id/forward/complete')
+  @Patch('mail-actions/:id/forward/complete')
   async completeForward(@Param('id') id: string, @Body() body: CompleteForwardDto) {
-    return this.service.completeForward(id, body);
+    return this.actionService.completeForward(id, body);
   }
 
   // Forward iptal
-  @Patch(':id/forward/cancel')
+  @Patch('mail-actions/:id/forward/cancel')
   async cancelForward(@Param('id') id: string, @Body() body: CancelForwardDto) {
-    return this.service.cancelForward(id, body);
+    return this.actionService.cancelForward(id, body);
   }
 }

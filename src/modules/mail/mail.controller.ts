@@ -95,6 +95,7 @@ export class MailController {
   })
   @ApiNotFoundResponse({ description: 'Package not found' })
   async getMailById(@Param('id') id: string) {
+    console.log('Fetching mail with ID:', id);
     return this.mailService.findOne(id);
   }
 

@@ -39,7 +39,7 @@ import { MailboxResponseDto } from 'src/dtos/mailbox.dto';
   
   @ApiTags('Mail Handler Panel')
   @ApiBearerAuth()
-  @Controller('handler/')
+  @Controller('handler')
   @UseGuards(JwtAuthGuard)
   @Public()
   export class HandlerMailController {
@@ -185,7 +185,7 @@ import { MailboxResponseDto } from 'src/dtos/mailbox.dto';
       return this.mailService.findAll(query);
     }
   
-      @Get(':id')
+  @Get(':id')
   @ApiOperation({ 
     summary: 'Get mail package by ID',
     description: 'Retrieve a specific mail package with all its items and related information'

@@ -68,6 +68,11 @@ export class AdminService {
 
 
 
+  async generateSteNumber(): Promise<string> {
+    const steNumber = Math.random().toString(36).substring(2, 2 + 6);
+    return steNumber;
+  }
+
 async createWorkspaceAndMailbox(createOrderDto: CreateInitialSubscriptionOrderDto){
 const { officeLocationId, planPriceId, addons,email,firstName,lastName } = createOrderDto;
 const user= await this.prismaService.user.create({
@@ -85,6 +90,8 @@ const planPrice=await this.prismaService.planPrice.findUnique({
   include: { plan: true },
 });
 
+const generatedSteNumber = await this.generateSteNumber();
+
 const mailbox= await this.prismaService.mailbox.create({
   data: {
     workspaceId: workspace.id,
@@ -93,7 +100,7 @@ const mailbox= await this.prismaService.mailbox.create({
     planId: planPrice.plan.id, // Assuming planPriceId is the same as planId
     status: 'ACTIVE',
     isActive: true, 
-    steNumber: '1234575', // Example STE number, should be generated or provided
+    steNumber: generatedSteNumber,
     billingCycle: 'MONTHLY', // Default billing cycle, can be changed later
     startDate: new Date(),
     recipients: {

@@ -6194,7 +6194,7 @@
         ]
       }
     },
-    "/api/admin/mail-actions": {
+    "/api/handler/mail-actions/all": {
       "get": {
         "operationId": "MailActionsController_list",
         "parameters": [
@@ -6308,27 +6308,28 @@
               ],
               "type": "string"
             }
-          },
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler Requests"
+        ]
+      }
+    },
+    "/api/handler/mail-actions/{id}": {
+      "get": {
+        "operationId": "MailActionsController_get",
+        "parameters": [
           {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "description": "Page number (1..n)",
+            "name": "id",
+            "required": true,
+            "in": "path",
             "schema": {
-              "minimum": 1,
-              "example": 1,
-              "type": "number"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Number of items per page",
-            "schema": {
-              "minimum": 1,
-              "example": 10,
-              "type": "number"
+              "type": "string"
             }
           }
         ],
@@ -6336,8 +6337,13 @@
           "200": {
             "description": ""
           }
-        }
-      },
+        },
+        "tags": [
+          "Mail Handler Requests"
+        ]
+      }
+    },
+    "/api/handler/mail-actions/create": {
       "post": {
         "operationId": "MailActionsController_create",
         "parameters": [],
@@ -6355,30 +6361,13 @@
           "201": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "Mail Handler Requests"
+        ]
       }
     },
-    "/api/admin/mail-actions/{id}": {
-      "get": {
-        "operationId": "MailActionsController_get",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/admin/mail-actions/{id}/status": {
+    "/api/handler/mail-actions/{id}/status": {
       "patch": {
         "operationId": "MailActionsController_updateStatus",
         "parameters": [
@@ -6405,10 +6394,13 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "Mail Handler Requests"
+        ]
       }
     },
-    "/api/admin/mail-actions/{id}/forward/complete": {
+    "/api/handler/mail-actions/{id}/forward/complete": {
       "patch": {
         "operationId": "MailActionsController_completeForward",
         "parameters": [
@@ -6435,10 +6427,13 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "Mail Handler Requests"
+        ]
       }
     },
-    "/api/admin/mail-actions/{id}/forward/cancel": {
+    "/api/handler/mail-actions/{id}/forward/cancel": {
       "patch": {
         "operationId": "MailActionsController_cancelForward",
         "parameters": [
@@ -6465,7 +6460,10 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "Mail Handler Requests"
+        ]
       }
     }
   },
