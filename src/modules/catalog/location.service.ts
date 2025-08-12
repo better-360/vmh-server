@@ -87,48 +87,6 @@ export class LocationService {
               where: { isActive: true, isDeleted: false },
               select: { id: true, name: true, slug: true, isActive: true },
             },
-            mailboxes: {
-              select: { 
-                id: true, 
-                isActive: true,
-                workspace: {
-                  select: { id: true, name: true, isActive: true },
-                },
-              },
-              where: {
-                isActive: true,
-              },
-            },
-            aviableCarriers: {
-              include: {
-                carrier: {
-                  select: { id: true, name: true, logoUrl: true },
-                },
-              },
-              where: {
-                isActive: true,
-              },
-            },
-            deliverySpeedOptions: {
-              include: {
-                deliverySpeed: {
-                  select: { id: true, label: true, title: true, price: true },
-                },
-              },
-              where: {
-                isActive: true,
-              },
-            },
-            packagingTypeOptions: {
-              include: {
-                packagingType: {
-                  select: { id: true, label: true, title: true },
-                },
-              },
-              where: {
-                isActive: true,
-              },
-            },
           },
           orderBy: { createdAt: 'desc' },
           take: limit,

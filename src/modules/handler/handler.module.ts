@@ -3,10 +3,10 @@ import { HttpModule } from '@nestjs/axios';
 
 import { SupportService } from '../support/support.service';
 import { MailService } from '../mail/mail.service';
-import { HandlerMailController } from './mail.controller';
 import { WorkspaceService } from '../workspace/workspace.service';
 import { MailboxService } from '../mailbox/mailbox.service';
 import { LocationService } from '../catalog/location.service';
+import { MailHandlerController } from './handler.controller';
 
 @Module({
     imports: [
@@ -17,9 +17,9 @@ import { LocationService } from '../catalog/location.service';
         WorkspaceService,
         MailboxService,
         LocationService,
+
     ],
     controllers: [
-        HandlerMailController,
-    ],
+        MailHandlerController    ],
 })
 export class HandlerModule { }

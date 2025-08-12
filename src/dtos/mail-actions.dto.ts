@@ -1,4 +1,4 @@
-import { ActionStatus, PackageActionType } from '@prisma/client';
+import { ActionStatus, MailActionType } from '@prisma/client';
 import {
   IsUUID,
   IsOptional,
@@ -102,15 +102,16 @@ export class CreateMailActionDto {
     example: '0b2e9d9b-9e32-4c8c-a2d9-3f7e2e3b5c1a',
   })
   @IsUUID()
-  packageId!: string;
+  @IsOptional()
+  mailId: string;
 
   @ApiProperty({
     description: 'Type of action',
-    enum: PackageActionType,
-    example: PackageActionType.FORWARD,
+    enum: MailActionType,
+    example: MailActionType.FORWARD,
   })
-  @IsEnum(PackageActionType)
-  type!: PackageActionType;
+  @IsEnum(MailActionType)
+  type!: MailActionType;
 
   @ApiPropertyOptional({
     description:
@@ -255,11 +256,11 @@ export class CancelForwardDto {
 export class QueryMailActionsDto {
   @ApiPropertyOptional({
     description: 'Filter by action type',
-    enum: PackageActionType,
+    enum: MailActionType,
   })
   @IsOptional()
-  @IsEnum(PackageActionType)
-  type?: PackageActionType;
+  @IsEnum(MailActionType)
+  type?: MailActionType;
 
   @ApiPropertyOptional({
     description: 'Filter by action status',

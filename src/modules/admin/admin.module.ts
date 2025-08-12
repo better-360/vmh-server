@@ -20,6 +20,12 @@ import { AdminProductController } from './product.controller';
 import { AdminPriceController } from './price.controller';
 import { ProductService } from '../product/product.service';
 import { PriceService } from '../product/price.service';
+import { CarrierService, PackagingOptionService, ShippingSpeedService } from '../shipping/shipping.service';
+import { AdminCarrierController, AdminPackagingOptionController, AdminShippingSpeedController } from './shipping.controller';
+import { MailboxService } from '../mailbox/mailbox.service';
+import { AdminMailboxController } from './mailbox.controller';
+import { AdminWorkspaceController } from './workspace.controller';
+import { WorkspaceService } from '../workspace/workspace.service';
 
 
 @Module({
@@ -37,7 +43,12 @@ import { PriceService } from '../product/price.service';
     PlanAddonsService,
     PlanFeaturesService,
     ProductService,
-    PriceService
+    PriceService,
+    ShippingSpeedService,
+    PackagingOptionService,
+    CarrierService,
+    MailboxService,
+    WorkspaceService,
   ],
 
   exports: [AdminService],
@@ -50,7 +61,12 @@ import { PriceService } from '../product/price.service';
     AdminFeaturesController,
     PlanFeaturesController,
     AdminProductController,
-    AdminPriceController
+    AdminPriceController,
+    AdminShippingSpeedController,
+    AdminCarrierController,
+    AdminPackagingOptionController,
+    AdminMailboxController,
+    AdminWorkspaceController
   ],
 })
 export class AdminModule {}

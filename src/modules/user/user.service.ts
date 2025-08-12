@@ -4,7 +4,7 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { RoleType, User, WorkspaceMember } from '@prisma/client';
+import { Mailbox, RoleType, User, Workspace, WorkspaceMember } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
 import * as bcrypt from 'bcrypt';
 import {
@@ -36,7 +36,14 @@ export class UserService {
 
   private formatUser(
     user: User & { roles: { role: RoleType }[] } & {
-      workspaces: WorkspaceMember[];
+      workspaces: (WorkspaceMember & {
+        workspace: Workspace & {
+          mailboxes: (Mailbox & {
+            plan: { name: string };
+            planPrice: { amount: number };
+          })[];
+        };
+      })[];
     },
   ): IUser {
     return {
@@ -44,23 +51,32 @@ export class UserService {
       email: user.email,
       firstName: user.firstName || '',
       lastName: user.lastName || '',
-      profileImage: user.profileImage,
+      profileImage: user.profileImage || null,
       emailConfirmed: user.emailConfirmed,
       telephoneConfirmed: user.telephoneConfirmed,
       notifications: user.notifications,
       isActive: user.isActive,
       createdAt: user.createdAt,
-      telephone: user.telephone,
+      telephone: user.telephone || null,
       roles: user.roles.map((role) => role.role),
-      workspaces: user.workspaces
-        ? user.workspaces.map((workspace) => ({
-            workspaceId: workspace.workspaceId,
-            role: workspace.role,
-            joinedAt: new Date(workspace.joinedAt).toLocaleString(),
-          }))
-        : null,
+      workspaces: user.workspaces.map((member) => ({
+        workspaceId: member.workspaceId,
+        role: member.role,
+        joinedAt: member.joinedAt,
+        workspaceName: member.workspace.name,
+        mailboxes: member.workspace.mailboxes.map((mailbox) => ({
+          id: mailbox.id,
+          steNumber: mailbox.steNumber,
+          planName: mailbox.plan?.name || null,
+          billingCycle: mailbox.billingCycle,
+          status: mailbox.status,
+          startDate: mailbox.startDate,
+          endDate: mailbox.endDate,
+        })),
+      })),
     };
   }
+  
 
   async findOne(email: string): Promise<User | undefined> {
     return this.prismaService.user.findUnique({
@@ -77,7 +93,20 @@ export class UserService {
       where: { email, deletedAt: null },
       include: {
         roles: true,
-        workspaces: true,
+        workspaces: {
+          include: {
+            workspace: {
+              include: {
+                mailboxes: {
+                  include: {
+                    plan: true,       
+                    planPrice: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
     if (!user) {
@@ -102,10 +131,23 @@ export class UserService {
 
   async findUserById(id: string): Promise<IUser> {
     const user = await this.prismaService.user.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
       include: {
         roles: true,
-        workspaces: true,
+        workspaces: {
+          include: {
+            workspace: {
+              include: {
+                mailboxes: {
+                  include: {
+                    plan: true,
+                    planPrice: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -128,6 +170,7 @@ export class UserService {
     return safeUsers;
   }
 
+
   async createUser(email:string,firstName:string,lastName:string,stripeCustomerId:string): Promise<IUser> {
     const user = await this.findOne(email);
     if (user) {
@@ -136,7 +179,7 @@ export class UserService {
     const password = this.generateRandomPassword();
     const hash = await this.hashPassword(password);
     const newUser = await this.prismaService.user.create({
-      data: {password: hash,stripeCustomerId,firstName,lastName } as any,
+      data: {password: hash,stripeCustomerId,firstName,lastName, email } as any,
       select: {
         email: true,
         id: true,
@@ -155,6 +198,7 @@ export class UserService {
       email: newUser.email,
       name: `${newUser.firstName} ${newUser.lastName || ''}`.trim(),
     });
+    console.log(`New user created. Email: ${newUser.email},Pass: ${password}`);
     return await this.findUserByEmail(newUser.email);
   }
 

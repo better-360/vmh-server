@@ -8,7 +8,7 @@ import {
   WorkspaceResponseDto,
   WorkspaceMemberResponseDto,
 } from 'src/dtos/workspace.dto';
-import { Prisma, WorkspaceRole } from '@prisma/client';
+import { Prisma, RoleType, WorkspaceRole } from '@prisma/client';
 
 @Injectable()
 export class WorkspaceService {
@@ -16,15 +16,37 @@ export class WorkspaceService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+
+  async getAllWorkspaces(): Promise<WorkspaceResponseDto[]> {
+    try {
+      const workspaces = await this.prisma.workspace.findMany({
+
+        include: {
+          members: true,
+          mailboxes: true,
+        },
+        where: { isDeleted: false },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return workspaces;
+    }
+      catch (error) {
+      this.logger.error(`Failed to get all workspaces: ${error.message}`);
+      throw new BadRequestException('Failed to get workspaces');
+    }
+  }
+          
   async createWorkspace(createWorkspaceDto: CreateWorkspaceDto, ownerId: string): Promise<WorkspaceResponseDto> {
     try {
         const workspace = await this.prisma.workspace.create({
             data: {
           ...createWorkspaceDto,
-                members: {
-                    create: {
+              members: {
+              create: {
               userId: ownerId,
               role: WorkspaceRole.OWNER,
+              isDefault: true,
             },
           },
             },
@@ -88,12 +110,6 @@ export class WorkspaceService {
       if (!workspace || workspace.isDeleted) {
         throw new NotFoundException('Workspace not found');
       }
-
-      // Check if user has access to this workspace
-            const userMembership = workspace.members.find(m => m.userId === userId);
-            if (!userMembership) {
-        throw new NotFoundException('Workspace not found or access denied');
-        }
 
         return workspace;
     } catch (error) {
@@ -238,6 +254,7 @@ export class WorkspaceService {
       throw new BadRequestException('Failed to delete workspace');
     }
   }
+
   async getWorkspaceMembers(workspaceId: string, userId: string): Promise<WorkspaceMemberResponseDto[]> {
     const workspace = await this.getWorkspaceById(workspaceId, userId);
     return workspace.members;
@@ -452,7 +469,6 @@ export class WorkspaceService {
       throw new BadRequestException('Failed to get workspace statistics');
     }
   }
-
 
 
 }

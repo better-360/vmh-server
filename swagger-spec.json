@@ -310,6 +310,426 @@
         ]
       }
     },
+    "/api/customer/workspace/{workspaceId}/mailboxes": {
+      "get": {
+        "operationId": "CustomerController_findByWorkspace",
+        "summary": "Get mailboxes by workspace",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace mailboxes retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MailboxResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Customer Operations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/customer/mails": {
+      "get": {
+        "operationId": "CustomerController_getMails",
+        "summary": "Get all packages",
+        "description": "Retrieve a paginated list of all packages with filtering options",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items per page (default: 10)",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number for pagination (default: 1)",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "receivedAtEnd",
+            "required": false,
+            "in": "query",
+            "description": "Filter by received date end (YYYY-MM-DD)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "receivedAtStart",
+            "required": false,
+            "in": "query",
+            "description": "Filter by received date start (YYYY-MM-DD)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isForwarded",
+            "required": false,
+            "in": "query",
+            "description": "Filter by forwarded status",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "isShereded",
+            "required": false,
+            "in": "query",
+            "description": "Filter by shredded status",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "carrier",
+            "required": false,
+            "in": "query",
+            "description": "Filter by carrier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "senderName",
+            "required": false,
+            "in": "query",
+            "description": "Filter by sender name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "steNumber",
+            "required": false,
+            "in": "query",
+            "description": "Filter by STE number",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by package status",
+            "schema": {
+              "enum": [
+                "PENDING",
+                "FORWARDED",
+                "SHREDDED",
+                "COMPLETED",
+                "CANCELLED",
+                "IN_PROCESS"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "description": "Filter by package type",
+            "schema": {
+              "enum": [
+                "BANK_CHECK",
+                "LEGAL_DOCUMENT",
+                "ENVELOPE",
+                "PACKAGE",
+                "OTHER"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "workspaceAddressId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by workspace address ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Packages retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PackageResponseDto"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "page": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "totalPages": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Customer Operations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/workspaces/{id}": {
+      "get": {
+        "operationId": "WorkspaceController_getWorkspaceById",
+        "summary": "Workspace detayını getirir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace detayı başarıyla alındı"
+          }
+        },
+        "tags": [
+          "Workspace Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "WorkspaceController_deleteWorkspace",
+        "summary": "Workspace'i siler",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace başarıyla silindi"
+          }
+        },
+        "tags": [
+          "Workspace Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/workspaces/{id}/members": {
+      "get": {
+        "operationId": "WorkspaceController_getWorkspaceMembers",
+        "summary": "Workspace üyelerini listeler",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace üyeleri başarıyla alındı"
+          }
+        },
+        "tags": [
+          "Workspace Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "WorkspaceController_addWorkspaceMember",
+        "summary": "Workspace'e üye ekler",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkspaceMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Üye başarıyla eklendi"
+          }
+        },
+        "tags": [
+          "Workspace Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/workspaces/{id}/members/{memberId}": {
+      "put": {
+        "operationId": "WorkspaceController_updateWorkspaceMember",
+        "summary": "Workspace üyesini günceller",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkspaceMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Üye başarıyla güncellendi"
+          }
+        },
+        "tags": [
+          "Workspace Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "WorkspaceController_removeWorkspaceMember",
+        "summary": "Workspace'ten üye çıkarır",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Üye başarıyla çıkarıldı"
+          }
+        },
+        "tags": [
+          "Workspace Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/admin/stats": {
       "get": {
         "operationId": "AdminMainController_getAdminStats",
@@ -2622,6 +3042,1193 @@
         ]
       }
     },
+    "/api/admin/shipping/speeds": {
+      "post": {
+        "operationId": "AdminShippingSpeedController_create",
+        "summary": "Create a new shipping speed option",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateShippingSpeedDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Shipping speed option created."
+          },
+          "400": {
+            "description": "Invalid payload."
+          }
+        },
+        "tags": [
+          "Admin Shipping Speeds"
+        ]
+      },
+      "get": {
+        "operationId": "AdminShippingSpeedController_findAll",
+        "summary": "List all active shipping speed options",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of shipping speeds."
+          }
+        },
+        "tags": [
+          "Admin Shipping Speeds"
+        ]
+      }
+    },
+    "/api/admin/shipping/speeds/{id}": {
+      "put": {
+        "operationId": "AdminShippingSpeedController_update",
+        "summary": "Update a shipping speed option by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID of the shipping speed option",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateShippingSpeedDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shipping speed option updated."
+          },
+          "404": {
+            "description": "Option not found."
+          }
+        },
+        "tags": [
+          "Admin Shipping Speeds"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminShippingSpeedController_remove",
+        "summary": "Soft delete a shipping speed option by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID of the shipping speed option",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shipping speed option removed."
+          },
+          "404": {
+            "description": "Option not found."
+          }
+        },
+        "tags": [
+          "Admin Shipping Speeds"
+        ]
+      }
+    },
+    "/api/admin/shipping/speeds/assign": {
+      "post": {
+        "operationId": "AdminShippingSpeedController_assign",
+        "summary": "Assign a shipping speed to a location",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignShippingSpeedToLocationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Assignment created."
+          },
+          "400": {
+            "description": "Invalid assignment data."
+          }
+        },
+        "tags": [
+          "Admin Shipping Speeds"
+        ]
+      }
+    },
+    "/api/admin/shipping/speeds/remove-location/{id}": {
+      "delete": {
+        "operationId": "AdminShippingSpeedController_removeFromLocation",
+        "summary": "Remove a shipping speed from a location",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "RelationID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assignment removed."
+          },
+          "404": {
+            "description": "Assignment not found."
+          }
+        },
+        "tags": [
+          "Admin Shipping Speeds"
+        ]
+      }
+    },
+    "/api/admin/shipping/speeds/location/{locationId}": {
+      "get": {
+        "operationId": "AdminShippingSpeedController_findAssigned",
+        "summary": "List active shipping speeds for a location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "required": true,
+            "in": "path",
+            "description": "Office location ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of speeds."
+          }
+        },
+        "tags": [
+          "Admin Shipping Speeds"
+        ]
+      }
+    },
+    "/api/admin/shipping/carriers": {
+      "post": {
+        "operationId": "AdminCarrierController_create",
+        "summary": "Create a new carrier",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCarrierDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Carrier created."
+          },
+          "400": {
+            "description": "Invalid payload."
+          }
+        },
+        "tags": [
+          "Admin Carriers Management"
+        ]
+      },
+      "get": {
+        "operationId": "AdminCarrierController_findAll",
+        "summary": "List all active carriers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of carriers."
+          }
+        },
+        "tags": [
+          "Admin Carriers Management"
+        ]
+      }
+    },
+    "/api/admin/shipping/carriers/{id}": {
+      "put": {
+        "operationId": "AdminCarrierController_update",
+        "summary": "Update a carrier by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID of the carrier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCarrierDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Carrier updated."
+          },
+          "404": {
+            "description": "Carrier not found."
+          }
+        },
+        "tags": [
+          "Admin Carriers Management"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminCarrierController_remove",
+        "summary": "Soft delete a carrier by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID of the carrier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Carrier removed."
+          },
+          "404": {
+            "description": "Carrier not found."
+          }
+        },
+        "tags": [
+          "Admin Carriers Management"
+        ]
+      }
+    },
+    "/api/admin/shipping/carriers/location/{locationId}": {
+      "get": {
+        "operationId": "AdminCarrierController_findAssigned",
+        "summary": "List active carriers for a location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "required": true,
+            "in": "path",
+            "description": "Office location ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of carriers."
+          }
+        },
+        "tags": [
+          "Admin Carriers Management"
+        ]
+      }
+    },
+    "/api/admin/shipping/carriers/assign/{locationId}/{carrierId}": {
+      "post": {
+        "operationId": "AdminCarrierController_assignToLocation",
+        "summary": "Assign a carrier to a location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "required": true,
+            "in": "path",
+            "description": "Office location ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "carrierId",
+            "required": true,
+            "in": "path",
+            "description": "Carrier ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Assignment created."
+          },
+          "400": {
+            "description": "Assignment invalid or duplicate."
+          }
+        },
+        "tags": [
+          "Admin Carriers Management"
+        ]
+      }
+    },
+    "/api/admin/shipping/carriers/remove-location/{id}": {
+      "delete": {
+        "operationId": "AdminCarrierController_removeFromLocation",
+        "summary": "Remove a carrier from a location",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Relation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assignment removed."
+          },
+          "404": {
+            "description": "Assignment not found."
+          }
+        },
+        "tags": [
+          "Admin Carriers Management"
+        ]
+      }
+    },
+    "/api/admin/shipping/packaging": {
+      "post": {
+        "operationId": "AdminPackagingOptionController_create",
+        "summary": "Create a new packaging option",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePackagingOptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Packaging option created."
+          },
+          "400": {
+            "description": "Invalid payload."
+          }
+        },
+        "tags": [
+          "Admin Packaging Options"
+        ]
+      },
+      "get": {
+        "operationId": "AdminPackagingOptionController_findAll",
+        "summary": "List all active packaging options",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of packaging options."
+          }
+        },
+        "tags": [
+          "Admin Packaging Options"
+        ]
+      }
+    },
+    "/api/admin/shipping/packaging/{id}": {
+      "put": {
+        "operationId": "AdminPackagingOptionController_update",
+        "summary": "Update a packaging option by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID of the packaging option",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePackagingOptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Packaging option updated."
+          },
+          "404": {
+            "description": "Option not found."
+          }
+        },
+        "tags": [
+          "Admin Packaging Options"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminPackagingOptionController_remove",
+        "summary": "Soft delete a packaging option by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID of the packaging option",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Packaging option removed."
+          },
+          "404": {
+            "description": "Option not found."
+          }
+        },
+        "tags": [
+          "Admin Packaging Options"
+        ]
+      }
+    },
+    "/api/admin/shipping/packaging/assign": {
+      "post": {
+        "operationId": "AdminPackagingOptionController_assign",
+        "summary": "Assign a packaging option to a location",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignPackagingOptionToLocationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Assignment created."
+          },
+          "400": {
+            "description": "Invalid assignment data."
+          }
+        },
+        "tags": [
+          "Admin Packaging Options"
+        ]
+      }
+    },
+    "/api/admin/shipping/packaging/location/{locationId}/{packagingId}": {
+      "delete": {
+        "operationId": "AdminPackagingOptionController_removeFromLocation",
+        "summary": "Remove a packaging option from a location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "required": true,
+            "in": "path",
+            "description": "Office location ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "packagingId",
+            "required": true,
+            "in": "path",
+            "description": "Packaging option ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assignment removed."
+          },
+          "404": {
+            "description": "Assignment not found."
+          }
+        },
+        "tags": [
+          "Admin Packaging Options"
+        ]
+      }
+    },
+    "/api/admin/shipping/packaging/location/{locationId}": {
+      "get": {
+        "operationId": "AdminPackagingOptionController_findAssigned",
+        "summary": "List active packaging options for a location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "required": true,
+            "in": "path",
+            "description": "Office location ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of packaging options."
+          }
+        },
+        "tags": [
+          "Admin Packaging Options"
+        ]
+      }
+    },
+    "/api/admin/mailboxes": {
+      "post": {
+        "operationId": "AdminMailboxController_create",
+        "summary": "Create a new mailbox",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMailboxDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Mailbox created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailboxResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "tags": [
+          "Admin Mailboxes Management"
+        ]
+      },
+      "get": {
+        "operationId": "AdminMailboxController_findAll",
+        "summary": "Get all mailboxes",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "officeLocationId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isActive",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mailboxes retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MailboxResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Admin Mailboxes Management"
+        ]
+      }
+    },
+    "/api/admin/mailboxes/workspace/{workspaceId}": {
+      "get": {
+        "operationId": "AdminMailboxController_findByWorkspace",
+        "summary": "Get mailboxes by workspace",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace mailboxes retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MailboxResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Admin Mailboxes Management"
+        ]
+      }
+    },
+    "/api/admin/mailboxes/office-location/{officeLocationId}": {
+      "get": {
+        "operationId": "AdminMailboxController_findByOfficeLocation",
+        "summary": "Get mailboxes by office location",
+        "parameters": [
+          {
+            "name": "officeLocationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Office location mailboxes retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MailboxResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Admin Mailboxes Management"
+        ]
+      }
+    },
+    "/api/admin/mailboxes/active": {
+      "get": {
+        "operationId": "AdminMailboxController_getActiveMailboxes",
+        "summary": "Get all active mailboxes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Active mailboxes retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MailboxResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Admin Mailboxes Management"
+        ]
+      }
+    },
+    "/api/admin/mailboxes/{id}": {
+      "get": {
+        "operationId": "AdminMailboxController_findOne",
+        "summary": "Get mailbox by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mailbox retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailboxResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Mailbox not found"
+          }
+        },
+        "tags": [
+          "Admin Mailboxes Management"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminMailboxController_update",
+        "summary": "Update mailbox",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMailboxDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mailbox updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailboxResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Mailbox not found"
+          }
+        },
+        "tags": [
+          "Admin Mailboxes Management"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminMailboxController_remove",
+        "summary": "Deactivate mailbox",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mailbox deactivated successfully"
+          },
+          "404": {
+            "description": "Mailbox not found"
+          }
+        },
+        "tags": [
+          "Admin Mailboxes Management"
+        ]
+      }
+    },
+    "/api/admin/mailboxes/{id}/feature-usage/{featureId}": {
+      "get": {
+        "operationId": "AdminMailboxController_checkFeatureUsage",
+        "summary": "Check feature usage for mailbox",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "featureId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feature usage retrieved successfully"
+          },
+          "404": {
+            "description": "Mailbox or feature not found"
+          }
+        },
+        "tags": [
+          "Admin Mailboxes Management"
+        ]
+      }
+    },
+    "/api/admin/mailboxes/{id}/feature-usage/{featureId}/increment": {
+      "post": {
+        "operationId": "AdminMailboxController_incrementFeatureUsage",
+        "summary": "Increment feature usage for mailbox",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "featureId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feature usage incremented successfully"
+          },
+          "404": {
+            "description": "Mailbox or feature not found"
+          }
+        },
+        "tags": [
+          "Admin Mailboxes Management"
+        ]
+      }
+    },
+    "/api/admin/workspaces": {
+      "get": {
+        "operationId": "AdminWorkspaceController_getAllWorkspaces",
+        "summary": "Get all workspaces",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of workspaces retrieved successfully"
+          }
+        },
+        "tags": [
+          "Admin Workspace Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/workspaces/{id}": {
+      "get": {
+        "operationId": "AdminWorkspaceController_getWorkspaceById",
+        "summary": "Workspace detayını getirir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace detayı başarıyla alındı"
+          }
+        },
+        "tags": [
+          "Admin Workspace Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "AdminWorkspaceController_updateWorkspace",
+        "summary": "Workspace bilgilerini günceller",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkspaceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace başarıyla güncellendi"
+          }
+        },
+        "tags": [
+          "Admin Workspace Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "AdminWorkspaceController_deleteWorkspace",
+        "summary": "Workspace'i siler",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace başarıyla silindi"
+          }
+        },
+        "tags": [
+          "Admin Workspace Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/workspaces/{id}/members": {
+      "get": {
+        "operationId": "AdminWorkspaceController_getWorkspaceMembers",
+        "summary": "Workspace üyelerini listeler",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace üyeleri başarıyla alındı"
+          }
+        },
+        "tags": [
+          "Admin Workspace Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "AdminWorkspaceController_addWorkspaceMember",
+        "summary": "Workspace'e üye ekler",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkspaceMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Üye başarıyla eklendi"
+          }
+        },
+        "tags": [
+          "Admin Workspace Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/workspaces/{id}/members/{memberId}": {
+      "put": {
+        "operationId": "AdminWorkspaceController_updateWorkspaceMember",
+        "summary": "Workspace üyesini günceller",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkspaceMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Üye başarıyla güncellendi"
+          }
+        },
+        "tags": [
+          "Admin Workspace Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "AdminWorkspaceController_removeWorkspaceMember",
+        "summary": "Workspace'ten üye çıkarır",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Üye başarıyla çıkarıldı"
+          }
+        },
+        "tags": [
+          "Admin Workspace Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/support/add-message-to-ticket": {
       "post": {
         "operationId": "SupportController_addMessageToTicket",
@@ -3751,32 +5358,6 @@
       }
     },
     "/api/shipping/speeds": {
-      "post": {
-        "operationId": "ShippingSpeedController_create",
-        "summary": "Create a new shipping speed option",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateShippingSpeedDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Shipping speed option created."
-          },
-          "400": {
-            "description": "Invalid payload."
-          }
-        },
-        "tags": [
-          "Shipping Speeds"
-        ]
-      },
       "get": {
         "operationId": "ShippingSpeedController_findAll",
         "summary": "List all active shipping speed options",
@@ -3784,126 +5365,6 @@
         "responses": {
           "200": {
             "description": "List of shipping speeds."
-          }
-        },
-        "tags": [
-          "Shipping Speeds"
-        ]
-      }
-    },
-    "/api/shipping/speeds/{id}": {
-      "put": {
-        "operationId": "ShippingSpeedController_update",
-        "summary": "Update a shipping speed option by ID",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "ID of the shipping speed option",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateShippingSpeedDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Shipping speed option updated."
-          },
-          "404": {
-            "description": "Option not found."
-          }
-        },
-        "tags": [
-          "Shipping Speeds"
-        ]
-      },
-      "delete": {
-        "operationId": "ShippingSpeedController_remove",
-        "summary": "Soft delete a shipping speed option by ID",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "ID of the shipping speed option",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Shipping speed option removed."
-          },
-          "404": {
-            "description": "Option not found."
-          }
-        },
-        "tags": [
-          "Shipping Speeds"
-        ]
-      }
-    },
-    "/api/shipping/speeds/assign": {
-      "post": {
-        "operationId": "ShippingSpeedController_assign",
-        "summary": "Assign a shipping speed to a location",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AssignShippingSpeedToLocationDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Assignment created."
-          },
-          "400": {
-            "description": "Invalid assignment data."
-          }
-        },
-        "tags": [
-          "Shipping Speeds"
-        ]
-      }
-    },
-    "/api/shipping/speeds/remove-location/{id}": {
-      "delete": {
-        "operationId": "ShippingSpeedController_removeFromLocation",
-        "summary": "Remove a shipping speed from a location",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "RelationID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Assignment removed."
-          },
-          "404": {
-            "description": "Assignment not found."
           }
         },
         "tags": [
@@ -3937,32 +5398,6 @@
       }
     },
     "/api/shipping/packaging": {
-      "post": {
-        "operationId": "PackagingOptionController_create",
-        "summary": "Create a new packaging option",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreatePackagingOptionDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Packaging option created."
-          },
-          "400": {
-            "description": "Invalid payload."
-          }
-        },
-        "tags": [
-          "Packaging Options"
-        ]
-      },
       "get": {
         "operationId": "PackagingOptionController_findAll",
         "summary": "List all active packaging options",
@@ -3970,135 +5405,6 @@
         "responses": {
           "200": {
             "description": "List of packaging options."
-          }
-        },
-        "tags": [
-          "Packaging Options"
-        ]
-      }
-    },
-    "/api/shipping/packaging/{id}": {
-      "put": {
-        "operationId": "PackagingOptionController_update",
-        "summary": "Update a packaging option by ID",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "ID of the packaging option",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdatePackagingOptionDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Packaging option updated."
-          },
-          "404": {
-            "description": "Option not found."
-          }
-        },
-        "tags": [
-          "Packaging Options"
-        ]
-      },
-      "delete": {
-        "operationId": "PackagingOptionController_remove",
-        "summary": "Soft delete a packaging option by ID",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "ID of the packaging option",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Packaging option removed."
-          },
-          "404": {
-            "description": "Option not found."
-          }
-        },
-        "tags": [
-          "Packaging Options"
-        ]
-      }
-    },
-    "/api/shipping/packaging/assign": {
-      "post": {
-        "operationId": "PackagingOptionController_assign",
-        "summary": "Assign a packaging option to a location",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AssignPackagingOptionToLocationDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Assignment created."
-          },
-          "400": {
-            "description": "Invalid assignment data."
-          }
-        },
-        "tags": [
-          "Packaging Options"
-        ]
-      }
-    },
-    "/api/shipping/packaging/location/{locationId}/{packagingId}": {
-      "delete": {
-        "operationId": "PackagingOptionController_removeFromLocation",
-        "summary": "Remove a packaging option from a location",
-        "parameters": [
-          {
-            "name": "locationId",
-            "required": true,
-            "in": "path",
-            "description": "Office location ID",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "packagingId",
-            "required": true,
-            "in": "path",
-            "description": "Packaging option ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Assignment removed."
-          },
-          "404": {
-            "description": "Assignment not found."
           }
         },
         "tags": [
@@ -4132,32 +5438,6 @@
       }
     },
     "/api/shipping/carriers": {
-      "post": {
-        "operationId": "CarrierController_create",
-        "summary": "Create a new carrier",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateCarrierDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Carrier created."
-          },
-          "400": {
-            "description": "Invalid payload."
-          }
-        },
-        "tags": [
-          "Carriers"
-        ]
-      },
       "get": {
         "operationId": "CarrierController_findAll",
         "summary": "List all active carriers",
@@ -4165,70 +5445,6 @@
         "responses": {
           "200": {
             "description": "List of carriers."
-          }
-        },
-        "tags": [
-          "Carriers"
-        ]
-      }
-    },
-    "/api/shipping/carriers/{id}": {
-      "put": {
-        "operationId": "CarrierController_update",
-        "summary": "Update a carrier by ID",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "ID of the carrier",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateCarrierDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Carrier updated."
-          },
-          "404": {
-            "description": "Carrier not found."
-          }
-        },
-        "tags": [
-          "Carriers"
-        ]
-      },
-      "delete": {
-        "operationId": "CarrierController_remove",
-        "summary": "Soft delete a carrier by ID",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "ID of the carrier",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Carrier removed."
-          },
-          "404": {
-            "description": "Carrier not found."
           }
         },
         "tags": [
@@ -4258,312 +5474,6 @@
         },
         "tags": [
           "Carriers"
-        ]
-      }
-    },
-    "/api/shipping/carriers/assign/{locationId}/{carrierId}": {
-      "post": {
-        "operationId": "CarrierController_assignToLocation",
-        "summary": "Assign a carrier to a location",
-        "parameters": [
-          {
-            "name": "locationId",
-            "required": true,
-            "in": "path",
-            "description": "Office location ID",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "carrierId",
-            "required": true,
-            "in": "path",
-            "description": "Carrier ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Assignment created."
-          },
-          "400": {
-            "description": "Assignment invalid or duplicate."
-          }
-        },
-        "tags": [
-          "Carriers"
-        ]
-      }
-    },
-    "/api/shipping/carriers/remove-location/{id}": {
-      "delete": {
-        "operationId": "CarrierController_removeFromLocation",
-        "summary": "Remove a carrier from a location",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Relation ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Assignment removed."
-          },
-          "404": {
-            "description": "Assignment not found."
-          }
-        },
-        "tags": [
-          "Carriers"
-        ]
-      }
-    },
-    "/api/workspaces/{id}": {
-      "get": {
-        "operationId": "WorkspaceController_getWorkspaceById",
-        "summary": "Workspace detayını getirir",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Workspace detayı başarıyla alındı"
-          }
-        },
-        "tags": [
-          "Workspace Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "put": {
-        "operationId": "WorkspaceController_updateWorkspace",
-        "summary": "Workspace bilgilerini günceller",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateWorkspaceDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Workspace başarıyla güncellendi"
-          }
-        },
-        "tags": [
-          "Workspace Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "delete": {
-        "operationId": "WorkspaceController_deleteWorkspace",
-        "summary": "Workspace'i siler",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Workspace başarıyla silindi"
-          }
-        },
-        "tags": [
-          "Workspace Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/workspaces/{id}/members": {
-      "get": {
-        "operationId": "WorkspaceController_getWorkspaceMembers",
-        "summary": "Workspace üyelerini listeler",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Workspace üyeleri başarıyla alındı"
-          }
-        },
-        "tags": [
-          "Workspace Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "post": {
-        "operationId": "WorkspaceController_addWorkspaceMember",
-        "summary": "Workspace'e üye ekler",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateWorkspaceMemberDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Üye başarıyla eklendi"
-          }
-        },
-        "tags": [
-          "Workspace Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/workspaces/{id}/members/{memberId}": {
-      "put": {
-        "operationId": "WorkspaceController_updateWorkspaceMember",
-        "summary": "Workspace üyesini günceller",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "memberId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateWorkspaceMemberDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Üye başarıyla güncellendi"
-          }
-        },
-        "tags": [
-          "Workspace Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "delete": {
-        "operationId": "WorkspaceController_removeWorkspaceMember",
-        "summary": "Workspace'ten üye çıkarır",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "memberId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Üye başarıyla çıkarıldı"
-          }
-        },
-        "tags": [
-          "Workspace Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       }
     },
@@ -4756,7 +5666,7 @@
     "/api/mails/{id}": {
       "get": {
         "operationId": "MailController_getMailById",
-        "summary": "Get package by ID",
+        "summary": "Get mail by ID",
         "description": "Retrieve a specific package with all its items and related information",
         "parameters": [
           {
@@ -4823,7 +5733,7 @@
     "/api/billing/create-order": {
       "post": {
         "operationId": "BillingController_createOrder",
-        "summary": "Create initial subscription order",
+        "summary": "Create order",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -4848,6 +5758,7 @@
     "/api/billing/check-payment": {
       "get": {
         "operationId": "BillingController_checkPaymentStatus",
+        "summary": "Check payment status by intent ID",
         "parameters": [
           {
             "name": "intentId",
@@ -4868,409 +5779,9 @@
         ]
       }
     },
-    "/api/mailboxes": {
-      "post": {
-        "operationId": "MailboxController_create",
-        "summary": "Create a new mailbox",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateMailboxDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Mailbox created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MailboxResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request"
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        },
-        "tags": [
-          "mailboxes"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "get": {
-        "operationId": "MailboxController_findAll",
-        "summary": "Get all mailboxes",
-        "parameters": [
-          {
-            "name": "workspaceId",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "officeLocationId",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "isActive",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Mailboxes retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MailboxResponseDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "mailboxes"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/mailboxes/workspace/{workspaceId}": {
-      "get": {
-        "operationId": "MailboxController_findByWorkspace",
-        "summary": "Get mailboxes by workspace",
-        "parameters": [
-          {
-            "name": "workspaceId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Workspace mailboxes retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MailboxResponseDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "mailboxes"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/mailboxes/office-location/{officeLocationId}": {
-      "get": {
-        "operationId": "MailboxController_findByOfficeLocation",
-        "summary": "Get mailboxes by office location",
-        "parameters": [
-          {
-            "name": "officeLocationId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Office location mailboxes retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MailboxResponseDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "mailboxes"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/mailboxes/active": {
-      "get": {
-        "operationId": "MailboxController_getActiveMailboxes",
-        "summary": "Get all active mailboxes",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Active mailboxes retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MailboxResponseDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "mailboxes"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/mailboxes/{id}": {
-      "get": {
-        "operationId": "MailboxController_findOne",
-        "summary": "Get mailbox by ID",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Mailbox retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MailboxResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Mailbox not found"
-          }
-        },
-        "tags": [
-          "mailboxes"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "patch": {
-        "operationId": "MailboxController_update",
-        "summary": "Update mailbox",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateMailboxDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Mailbox updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MailboxResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Mailbox not found"
-          }
-        },
-        "tags": [
-          "mailboxes"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "delete": {
-        "operationId": "MailboxController_remove",
-        "summary": "Deactivate mailbox",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Mailbox deactivated successfully"
-          },
-          "404": {
-            "description": "Mailbox not found"
-          }
-        },
-        "tags": [
-          "mailboxes"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/mailboxes/{id}/feature-usage/{featureId}": {
-      "get": {
-        "operationId": "MailboxController_checkFeatureUsage",
-        "summary": "Check feature usage for mailbox",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "featureId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Feature usage retrieved successfully"
-          },
-          "404": {
-            "description": "Mailbox or feature not found"
-          }
-        },
-        "tags": [
-          "mailboxes"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/mailboxes/{id}/feature-usage/{featureId}/increment": {
-      "post": {
-        "operationId": "MailboxController_incrementFeatureUsage",
-        "summary": "Increment feature usage for mailbox",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "featureId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Feature usage incremented successfully"
-          },
-          "404": {
-            "description": "Mailbox or feature not found"
-          }
-        },
-        "tags": [
-          "mailboxes"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
     "/api/handler/office-locations": {
       "get": {
-        "operationId": "HandlerMailController_getOfficeLocations",
+        "operationId": "MailHandlerController_getOfficeLocations",
         "summary": "Get all active office locations for handler",
         "description": "Handler selects which office location to work with",
         "parameters": [],
@@ -5299,9 +5810,29 @@
         ]
       }
     },
+    "/api/handler/workspaces": {
+      "get": {
+        "operationId": "MailHandlerController_getAllWorkspaces",
+        "summary": "Get all workspaces",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of workspaces retrieved successfully"
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/handler/mailboxes/{officeLocationId}": {
       "get": {
-        "operationId": "HandlerMailController_getMailboxesByOfficeLocation",
+        "operationId": "MailHandlerController_getMailboxesByOfficeLocation",
         "summary": "Get mailboxes by office location",
         "description": "Get mailboxes by office location",
         "parameters": [
@@ -5343,7 +5874,7 @@
     },
     "/api/handler/mailboxes/by-ste/{steNumber}": {
       "get": {
-        "operationId": "HandlerMailController_getMailboxesBySteNumber",
+        "operationId": "MailHandlerController_getMailboxesBySteNumber",
         "summary": "Find mailboxes by STE number",
         "description": "Search for mailboxes using STE number to identify the correct recipient",
         "parameters": [
@@ -5388,7 +5919,7 @@
     },
     "/api/handler/mails/new": {
       "post": {
-        "operationId": "HandlerMailController_createMail",
+        "operationId": "MailHandlerController_createMail",
         "summary": "Create a new mail package",
         "description": "Register a new mail package in the system after selecting office location, mailbox and recipient",
         "parameters": [],
@@ -5436,7 +5967,7 @@
     },
     "/api/handler/{id}": {
       "put": {
-        "operationId": "HandlerMailController_updateMail",
+        "operationId": "MailHandlerController_updateMail",
         "summary": "Update mail",
         "description": "Update an existing mail by ID",
         "parameters": [
@@ -5490,7 +6021,7 @@
         ]
       },
       "get": {
-        "operationId": "HandlerMailController_getPackageById",
+        "operationId": "MailHandlerController_getPackageById",
         "summary": "Get mail package by ID",
         "description": "Retrieve a specific mail package with all its items and related information",
         "parameters": [
@@ -5532,7 +6063,7 @@
     },
     "/api/handler/all": {
       "get": {
-        "operationId": "HandlerMailController_getMails",
+        "operationId": "MailHandlerController_getMails",
         "summary": "Get all mail packages",
         "description": "Retrieve a paginated list of all mail packages with filtering options",
         "parameters": [
@@ -5752,7 +6283,7 @@
     },
     "/api/handler/mailbox/{mailboxId}/mails": {
       "get": {
-        "operationId": "HandlerMailController_getPackagesByMailbox",
+        "operationId": "MailHandlerController_getPackagesByMailbox",
         "summary": "Get mail packages by mailbox",
         "description": "Retrieve all mail packages for a specific mailbox",
         "parameters": [
@@ -5974,7 +6505,7 @@
     },
     "/api/handler/{officeLocationId}/mails": {
       "get": {
-        "operationId": "HandlerMailController_getMailsByOfficeLocation",
+        "operationId": "MailHandlerController_getMailsByOfficeLocation",
         "summary": "Get mail packages by office location",
         "description": "Retrieve all mail packages for a specific office location",
         "parameters": [
@@ -6194,9 +6725,37 @@
         ]
       }
     },
-    "/api/handler/mail-actions/all": {
+    "/api/handler/mail-actions/{id}": {
       "get": {
-        "operationId": "MailActionsController_list",
+        "operationId": "MailHandlerController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/handler/mail-actions/search": {
+      "get": {
+        "operationId": "MailHandlerController_list",
         "parameters": [
           {
             "name": "type",
@@ -6316,60 +6875,18 @@
           }
         },
         "tags": [
-          "Mail Handler Requests"
-        ]
-      }
-    },
-    "/api/handler/mail-actions/{id}": {
-      "get": {
-        "operationId": "MailActionsController_get",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
+          "Mail Handler Panel"
         ],
-        "responses": {
-          "200": {
-            "description": ""
+        "security": [
+          {
+            "bearer": []
           }
-        },
-        "tags": [
-          "Mail Handler Requests"
-        ]
-      }
-    },
-    "/api/handler/mail-actions/create": {
-      "post": {
-        "operationId": "MailActionsController_create",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateMailActionDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Mail Handler Requests"
         ]
       }
     },
     "/api/handler/mail-actions/{id}/status": {
       "patch": {
-        "operationId": "MailActionsController_updateStatus",
+        "operationId": "MailHandlerController_updateStatus",
         "parameters": [
           {
             "name": "id",
@@ -6396,13 +6913,18 @@
           }
         },
         "tags": [
-          "Mail Handler Requests"
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
     "/api/handler/mail-actions/{id}/forward/complete": {
       "patch": {
-        "operationId": "MailActionsController_completeForward",
+        "operationId": "MailHandlerController_completeForward",
         "parameters": [
           {
             "name": "id",
@@ -6429,13 +6951,18 @@
           }
         },
         "tags": [
-          "Mail Handler Requests"
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
     "/api/handler/mail-actions/{id}/forward/cancel": {
       "patch": {
-        "operationId": "MailActionsController_cancelForward",
+        "operationId": "MailHandlerController_cancelForward",
         "parameters": [
           {
             "name": "id",
@@ -6462,7 +6989,111 @@
           }
         },
         "tags": [
-          "Mail Handler Requests"
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/speeds/{locationId}": {
+      "get": {
+        "operationId": "MailActionsController_findSpeedOptions",
+        "summary": "List active shipping speeds for a location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "required": true,
+            "in": "path",
+            "description": "Office location ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of speeds."
+          }
+        },
+        "tags": [
+          "Mail Actions"
+        ]
+      }
+    },
+    "/api/packaging/{locationId}": {
+      "get": {
+        "operationId": "MailActionsController_findPackagingOptions",
+        "summary": "List active packaging options for a location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "required": true,
+            "in": "path",
+            "description": "Office location ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of packaging options."
+          }
+        },
+        "tags": [
+          "Mail Actions"
+        ]
+      }
+    },
+    "/api/carrier/{locationId}": {
+      "get": {
+        "operationId": "MailActionsController_findAllCarriers",
+        "summary": "List active carriers for a location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "required": true,
+            "in": "path",
+            "description": "Office location ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of carriers."
+          }
+        },
+        "tags": [
+          "Mail Actions"
+        ]
+      }
+    },
+    "/api/mail-actions/create": {
+      "post": {
+        "operationId": "MailActionsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMailActionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Actions"
         ]
       }
     }
@@ -6601,6 +7232,241 @@
           "currentPassword",
           "newEmail"
         ]
+      },
+      "MailboxResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Mailbox ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "workspaceId": {
+            "type": "string",
+            "description": "Workspace ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "officeLocationId": {
+            "type": "string",
+            "description": "Office Location ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "planId": {
+            "type": "string",
+            "description": "Plan ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "planPriceId": {
+            "type": "string",
+            "description": "Plan Price ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "billingCycle": {
+            "type": "string",
+            "description": "Billing cycle",
+            "enum": [
+              "MONTHLY",
+              "YEARLY",
+              "WEEKLY",
+              "QUARTERLY",
+              "ONE_TIME"
+            ],
+            "example": "MONTHLY"
+          },
+          "stripeSubscriptionId": {
+            "type": "string",
+            "description": "Stripe subscription ID",
+            "example": "sub_1234567890"
+          },
+          "status": {
+            "type": "string",
+            "description": "Mailbox status",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE",
+              "PENDING",
+              "CANCELLED",
+              "EXPIRED",
+              "SUSPENDED"
+            ],
+            "example": "ACTIVE"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Is mailbox active",
+            "example": true
+          },
+          "startDate": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Start date",
+            "example": "2024-01-01T00:00:00.000Z"
+          },
+          "endDate": {
+            "format": "date-time",
+            "type": "string",
+            "description": "End date",
+            "example": "2024-12-31T23:59:59.999Z"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Created at",
+            "example": "2024-01-01T00:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Updated at",
+            "example": "2024-01-01T00:00:00.000Z"
+          },
+          "forwardingAddressLimit": {
+            "type": "number",
+            "description": "Forwarding address limit",
+            "example": 1
+          },
+          "recipientLimit": {
+            "type": "number",
+            "description": "Recipient limit",
+            "example": 1
+          },
+          "workspace": {
+            "type": "object",
+            "description": "Workspace details"
+          },
+          "officeLocation": {
+            "type": "object",
+            "description": "Office location details"
+          },
+          "plan": {
+            "type": "object",
+            "description": "Plan details"
+          },
+          "planPrice": {
+            "type": "object",
+            "description": "Plan price details"
+          },
+          "deliveryAddresses": {
+            "description": "Delivery addresses",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "featureUsages": {
+            "description": "Feature usages",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "subscriptionItems": {
+            "description": "Subscription items",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "mails": {
+            "description": "Mails",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "recipients": {
+            "description": "Recipients",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "officeLocationId",
+          "planId",
+          "planPriceId",
+          "billingCycle",
+          "status",
+          "isActive",
+          "startDate",
+          "createdAt",
+          "updatedAt",
+          "forwardingAddressLimit",
+          "recipientLimit"
+        ]
+      },
+      "CreateWorkspaceMemberDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "User ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "workspaceId": {
+            "type": "string",
+            "description": "Workspace ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "role": {
+            "type": "string",
+            "description": "Member role",
+            "enum": [
+              "OWNER",
+              "MEMBER"
+            ],
+            "example": "MEMBER"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Is default workspace for user",
+            "example": false,
+            "default": false
+          }
+        },
+        "required": [
+          "userId",
+          "workspaceId",
+          "role"
+        ]
+      },
+      "UpdateWorkspaceMemberDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "User ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "workspaceId": {
+            "type": "string",
+            "description": "Workspace ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "role": {
+            "type": "string",
+            "description": "Member role",
+            "enum": [
+              "OWNER",
+              "MEMBER"
+            ],
+            "example": "MEMBER"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Is default workspace for user",
+            "example": false,
+            "default": false
+          },
+          "isDeleted": {
+            "type": "boolean",
+            "description": "Is member deleted",
+            "example": false
+          }
+        }
       },
       "CreateInitialSubscriptionOrderDto": {
         "type": "object",
@@ -8035,6 +8901,396 @@
           "updatedAt"
         ]
       },
+      "CreateShippingSpeedDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Unique label for the shipping speed option",
+            "example": "STANDARD"
+          },
+          "title": {
+            "type": "string",
+            "description": "Display title for the shipping speed option",
+            "example": "Standard Delivery"
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional description for the shipping speed option",
+            "example": "Delivered within 5-7 business days"
+          },
+          "price": {
+            "type": "number",
+            "description": "Default base price in cents for this shipping speed",
+            "example": 500
+          }
+        },
+        "required": [
+          "label",
+          "title",
+          "price"
+        ]
+      },
+      "UpdateShippingSpeedDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Unique label for the shipping speed option",
+            "example": "STANDARD"
+          },
+          "title": {
+            "type": "string",
+            "description": "Display title for the shipping speed option",
+            "example": "Standard Delivery"
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional description for the shipping speed option",
+            "example": "Delivered within 5-7 business days"
+          },
+          "price": {
+            "type": "number",
+            "description": "Default base price in cents for this shipping speed",
+            "example": 500
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Active flag to soft delete or restore the option",
+            "example": true
+          }
+        }
+      },
+      "AssignShippingSpeedToLocationDto": {
+        "type": "object",
+        "properties": {
+          "deliverySpeedId": {
+            "type": "string",
+            "description": "ID of the shipping speed option to assign",
+            "example": "uuid-of-speed-option"
+          },
+          "officeLocationId": {
+            "type": "string",
+            "description": "ID of the office location",
+            "example": "uuid-of-office-location"
+          },
+          "price": {
+            "type": "number",
+            "description": "Price override in cents for this speed at this location",
+            "example": 700
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Active flag for this assignment",
+            "example": true
+          }
+        },
+        "required": [
+          "deliverySpeedId",
+          "officeLocationId"
+        ]
+      },
+      "CreateCarrierDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Carrier Name",
+            "example": "UPS Cargo"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of Cargo",
+            "example": "Example"
+          },
+          "logoUrl": {
+            "type": "string",
+            "description": "Logo link of Cargo",
+            "example": "http://linl.com/example.png"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateCarrierDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Carrier Name",
+            "example": "UPS Cargo"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of Cargo",
+            "example": "Example"
+          },
+          "logoUrl": {
+            "type": "string",
+            "description": "Logo link of Cargo",
+            "example": "http://linl.com/example.png"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Active this carrier or not",
+            "example": true
+          }
+        }
+      },
+      "CreatePackagingOptionDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Unique label for the packaging option",
+            "example": "STANDARD_BOX"
+          },
+          "title": {
+            "type": "string",
+            "description": "Display title of the packaging option",
+            "example": "Standard Box"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the packaging option",
+            "example": "A standard cardboard box"
+          }
+        },
+        "required": [
+          "label",
+          "title"
+        ]
+      },
+      "UpdatePackagingOptionDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Unique label for the packaging option",
+            "example": "STANDARD_BOX"
+          },
+          "title": {
+            "type": "string",
+            "description": "Display title of the packaging option",
+            "example": "Standard Box"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the packaging option",
+            "example": "A standard cardboard box"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Active flag to soft delete or restore",
+            "example": true
+          }
+        }
+      },
+      "AssignPackagingOptionToLocationDto": {
+        "type": "object",
+        "properties": {
+          "packagingTypeId": {
+            "type": "string",
+            "description": "ID of the packaging type to assign",
+            "example": "uuid-of-packaging-type"
+          },
+          "officeLocationId": {
+            "type": "string",
+            "description": "ID of the office location",
+            "example": "uuid-of-office-location"
+          },
+          "price": {
+            "type": "number",
+            "description": "Price override in cents for this location",
+            "example": 500
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Active flag for this assignment",
+            "example": true
+          }
+        },
+        "required": [
+          "packagingTypeId",
+          "officeLocationId"
+        ]
+      },
+      "CreateMailboxDto": {
+        "type": "object",
+        "properties": {
+          "workspaceId": {
+            "type": "string",
+            "description": "Workspace ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "officeLocationId": {
+            "type": "string",
+            "description": "Office Location ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "planId": {
+            "type": "string",
+            "description": "Plan ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "planPriceId": {
+            "type": "string",
+            "description": "Plan Price ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "billingCycle": {
+            "type": "string",
+            "description": "Billing cycle",
+            "enum": [
+              "MONTHLY",
+              "YEARLY",
+              "WEEKLY",
+              "QUARTERLY",
+              "ONE_TIME"
+            ],
+            "example": "MONTHLY"
+          },
+          "stripeSubscriptionId": {
+            "type": "string",
+            "description": "Stripe subscription ID",
+            "example": "sub_1234567890"
+          },
+          "startDate": {
+            "type": "string",
+            "description": "Start date",
+            "example": "2024-01-01T00:00:00.000Z"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "End date",
+            "example": "2024-12-31T23:59:59.999Z"
+          },
+          "forwardingAddressLimit": {
+            "type": "number",
+            "description": "Forwarding address limit",
+            "example": 1,
+            "default": 1
+          },
+          "recipientLimit": {
+            "type": "number",
+            "description": "Recipient limit",
+            "example": 1,
+            "default": 1
+          }
+        },
+        "required": [
+          "workspaceId",
+          "officeLocationId",
+          "planId",
+          "planPriceId",
+          "billingCycle",
+          "startDate"
+        ]
+      },
+      "UpdateMailboxDto": {
+        "type": "object",
+        "properties": {
+          "workspaceId": {
+            "type": "string",
+            "description": "Workspace ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "officeLocationId": {
+            "type": "string",
+            "description": "Office Location ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "planId": {
+            "type": "string",
+            "description": "Plan ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "planPriceId": {
+            "type": "string",
+            "description": "Plan Price ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "billingCycle": {
+            "type": "string",
+            "description": "Billing cycle",
+            "enum": [
+              "MONTHLY",
+              "YEARLY",
+              "WEEKLY",
+              "QUARTERLY",
+              "ONE_TIME"
+            ],
+            "example": "MONTHLY"
+          },
+          "stripeSubscriptionId": {
+            "type": "string",
+            "description": "Stripe subscription ID",
+            "example": "sub_1234567890"
+          },
+          "startDate": {
+            "type": "string",
+            "description": "Start date",
+            "example": "2024-01-01T00:00:00.000Z"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "End date",
+            "example": "2024-12-31T23:59:59.999Z"
+          },
+          "forwardingAddressLimit": {
+            "type": "number",
+            "description": "Forwarding address limit",
+            "example": 1,
+            "default": 1
+          },
+          "recipientLimit": {
+            "type": "number",
+            "description": "Recipient limit",
+            "example": 1,
+            "default": 1
+          },
+          "status": {
+            "type": "string",
+            "description": "Mailbox status",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE",
+              "PENDING",
+              "CANCELLED",
+              "EXPIRED",
+              "SUSPENDED"
+            ],
+            "example": "ACTIVE"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Is mailbox active",
+            "example": true
+          }
+        }
+      },
+      "UpdateWorkspaceDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Workspace name",
+            "example": "My Company"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Is workspace active",
+            "example": true,
+            "default": true
+          },
+          "isDeleted": {
+            "type": "boolean",
+            "description": "Is workspace deleted",
+            "example": false
+          }
+        }
+      },
       "PlanFeatureResponseDto": {
         "type": "object",
         "properties": {
@@ -8432,312 +9688,6 @@
           "updatedAt"
         ]
       },
-      "CreateShippingSpeedDto": {
-        "type": "object",
-        "properties": {
-          "label": {
-            "type": "string",
-            "description": "Unique label for the shipping speed option",
-            "example": "STANDARD"
-          },
-          "title": {
-            "type": "string",
-            "description": "Display title for the shipping speed option",
-            "example": "Standard Delivery"
-          },
-          "description": {
-            "type": "string",
-            "description": "Optional description for the shipping speed option",
-            "example": "Delivered within 5-7 business days"
-          },
-          "price": {
-            "type": "number",
-            "description": "Default base price in cents for this shipping speed",
-            "example": 500
-          }
-        },
-        "required": [
-          "label",
-          "title",
-          "price"
-        ]
-      },
-      "UpdateShippingSpeedDto": {
-        "type": "object",
-        "properties": {
-          "label": {
-            "type": "string",
-            "description": "Unique label for the shipping speed option",
-            "example": "STANDARD"
-          },
-          "title": {
-            "type": "string",
-            "description": "Display title for the shipping speed option",
-            "example": "Standard Delivery"
-          },
-          "description": {
-            "type": "string",
-            "description": "Optional description for the shipping speed option",
-            "example": "Delivered within 5-7 business days"
-          },
-          "price": {
-            "type": "number",
-            "description": "Default base price in cents for this shipping speed",
-            "example": 500
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "Active flag to soft delete or restore the option",
-            "example": true
-          }
-        }
-      },
-      "AssignShippingSpeedToLocationDto": {
-        "type": "object",
-        "properties": {
-          "deliverySpeedId": {
-            "type": "string",
-            "description": "ID of the shipping speed option to assign",
-            "example": "uuid-of-speed-option"
-          },
-          "officeLocationId": {
-            "type": "string",
-            "description": "ID of the office location",
-            "example": "uuid-of-office-location"
-          },
-          "price": {
-            "type": "number",
-            "description": "Price override in cents for this speed at this location",
-            "example": 700
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "Active flag for this assignment",
-            "example": true
-          }
-        },
-        "required": [
-          "deliverySpeedId",
-          "officeLocationId"
-        ]
-      },
-      "CreatePackagingOptionDto": {
-        "type": "object",
-        "properties": {
-          "label": {
-            "type": "string",
-            "description": "Unique label for the packaging option",
-            "example": "STANDARD_BOX"
-          },
-          "title": {
-            "type": "string",
-            "description": "Display title of the packaging option",
-            "example": "Standard Box"
-          },
-          "description": {
-            "type": "string",
-            "description": "Detailed description of the packaging option",
-            "example": "A standard cardboard box"
-          }
-        },
-        "required": [
-          "label",
-          "title"
-        ]
-      },
-      "UpdatePackagingOptionDto": {
-        "type": "object",
-        "properties": {
-          "label": {
-            "type": "string",
-            "description": "Unique label for the packaging option",
-            "example": "STANDARD_BOX"
-          },
-          "title": {
-            "type": "string",
-            "description": "Display title of the packaging option",
-            "example": "Standard Box"
-          },
-          "description": {
-            "type": "string",
-            "description": "Detailed description of the packaging option",
-            "example": "A standard cardboard box"
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "Active flag to soft delete or restore",
-            "example": true
-          }
-        }
-      },
-      "AssignPackagingOptionToLocationDto": {
-        "type": "object",
-        "properties": {
-          "packagingTypeId": {
-            "type": "string",
-            "description": "ID of the packaging type to assign",
-            "example": "uuid-of-packaging-type"
-          },
-          "officeLocationId": {
-            "type": "string",
-            "description": "ID of the office location",
-            "example": "uuid-of-office-location"
-          },
-          "price": {
-            "type": "number",
-            "description": "Price override in cents for this location",
-            "example": 500
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "Active flag for this assignment",
-            "example": true
-          }
-        },
-        "required": [
-          "packagingTypeId",
-          "officeLocationId"
-        ]
-      },
-      "CreateCarrierDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Carrier Name",
-            "example": "UPS Cargo"
-          },
-          "description": {
-            "type": "string",
-            "description": "Description of Cargo",
-            "example": "Example"
-          },
-          "logoUrl": {
-            "type": "string",
-            "description": "Logo link of Cargo",
-            "example": "http://linl.com/example.png"
-          }
-        },
-        "required": [
-          "name"
-        ]
-      },
-      "UpdateCarrierDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Carrier Name",
-            "example": "UPS Cargo"
-          },
-          "description": {
-            "type": "string",
-            "description": "Description of Cargo",
-            "example": "Example"
-          },
-          "logoUrl": {
-            "type": "string",
-            "description": "Logo link of Cargo",
-            "example": "http://linl.com/example.png"
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "Active this carrier or not",
-            "example": true
-          }
-        }
-      },
-      "UpdateWorkspaceDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Workspace name",
-            "example": "My Company"
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "Is workspace active",
-            "example": true,
-            "default": true
-          },
-          "isDeleted": {
-            "type": "boolean",
-            "description": "Is workspace deleted",
-            "example": false
-          }
-        }
-      },
-      "CreateWorkspaceMemberDto": {
-        "type": "object",
-        "properties": {
-          "userId": {
-            "type": "string",
-            "description": "User ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "workspaceId": {
-            "type": "string",
-            "description": "Workspace ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "role": {
-            "type": "string",
-            "description": "Member role",
-            "enum": [
-              "OWNER",
-              "MEMBER"
-            ],
-            "example": "MEMBER"
-          },
-          "isDefault": {
-            "type": "boolean",
-            "description": "Is default workspace for user",
-            "example": false,
-            "default": false
-          }
-        },
-        "required": [
-          "userId",
-          "workspaceId",
-          "role"
-        ]
-      },
-      "UpdateWorkspaceMemberDto": {
-        "type": "object",
-        "properties": {
-          "userId": {
-            "type": "string",
-            "description": "User ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "workspaceId": {
-            "type": "string",
-            "description": "Workspace ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "role": {
-            "type": "string",
-            "description": "Member role",
-            "enum": [
-              "OWNER",
-              "MEMBER"
-            ],
-            "example": "MEMBER"
-          },
-          "isDefault": {
-            "type": "boolean",
-            "description": "Is default workspace for user",
-            "example": false,
-            "default": false
-          },
-          "isDeleted": {
-            "type": "boolean",
-            "description": "Is member deleted",
-            "example": false
-          }
-        }
-      },
       "PackageItemResponseDto": {
         "type": "object",
         "properties": {
@@ -9072,325 +10022,6 @@
           "items"
         ]
       },
-      "CreateMailboxDto": {
-        "type": "object",
-        "properties": {
-          "workspaceId": {
-            "type": "string",
-            "description": "Workspace ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "officeLocationId": {
-            "type": "string",
-            "description": "Office Location ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "planId": {
-            "type": "string",
-            "description": "Plan ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "planPriceId": {
-            "type": "string",
-            "description": "Plan Price ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "billingCycle": {
-            "type": "string",
-            "description": "Billing cycle",
-            "enum": [
-              "MONTHLY",
-              "YEARLY",
-              "WEEKLY",
-              "QUARTERLY",
-              "ONE_TIME"
-            ],
-            "example": "MONTHLY"
-          },
-          "stripeSubscriptionId": {
-            "type": "string",
-            "description": "Stripe subscription ID",
-            "example": "sub_1234567890"
-          },
-          "startDate": {
-            "type": "string",
-            "description": "Start date",
-            "example": "2024-01-01T00:00:00.000Z"
-          },
-          "endDate": {
-            "type": "string",
-            "description": "End date",
-            "example": "2024-12-31T23:59:59.999Z"
-          },
-          "forwardingAddressLimit": {
-            "type": "number",
-            "description": "Forwarding address limit",
-            "example": 1,
-            "default": 1
-          },
-          "recipientLimit": {
-            "type": "number",
-            "description": "Recipient limit",
-            "example": 1,
-            "default": 1
-          }
-        },
-        "required": [
-          "workspaceId",
-          "officeLocationId",
-          "planId",
-          "planPriceId",
-          "billingCycle",
-          "startDate"
-        ]
-      },
-      "MailboxResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Mailbox ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "workspaceId": {
-            "type": "string",
-            "description": "Workspace ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "officeLocationId": {
-            "type": "string",
-            "description": "Office Location ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "planId": {
-            "type": "string",
-            "description": "Plan ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "planPriceId": {
-            "type": "string",
-            "description": "Plan Price ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "billingCycle": {
-            "type": "string",
-            "description": "Billing cycle",
-            "enum": [
-              "MONTHLY",
-              "YEARLY",
-              "WEEKLY",
-              "QUARTERLY",
-              "ONE_TIME"
-            ],
-            "example": "MONTHLY"
-          },
-          "stripeSubscriptionId": {
-            "type": "string",
-            "description": "Stripe subscription ID",
-            "example": "sub_1234567890"
-          },
-          "status": {
-            "type": "string",
-            "description": "Mailbox status",
-            "enum": [
-              "ACTIVE",
-              "INACTIVE",
-              "PENDING",
-              "CANCELLED",
-              "EXPIRED",
-              "SUSPENDED"
-            ],
-            "example": "ACTIVE"
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "Is mailbox active",
-            "example": true
-          },
-          "startDate": {
-            "format": "date-time",
-            "type": "string",
-            "description": "Start date",
-            "example": "2024-01-01T00:00:00.000Z"
-          },
-          "endDate": {
-            "format": "date-time",
-            "type": "string",
-            "description": "End date",
-            "example": "2024-12-31T23:59:59.999Z"
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string",
-            "description": "Created at",
-            "example": "2024-01-01T00:00:00.000Z"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string",
-            "description": "Updated at",
-            "example": "2024-01-01T00:00:00.000Z"
-          },
-          "forwardingAddressLimit": {
-            "type": "number",
-            "description": "Forwarding address limit",
-            "example": 1
-          },
-          "recipientLimit": {
-            "type": "number",
-            "description": "Recipient limit",
-            "example": 1
-          },
-          "workspace": {
-            "type": "object",
-            "description": "Workspace details"
-          },
-          "officeLocation": {
-            "type": "object",
-            "description": "Office location details"
-          },
-          "plan": {
-            "type": "object",
-            "description": "Plan details"
-          },
-          "planPrice": {
-            "type": "object",
-            "description": "Plan price details"
-          },
-          "deliveryAddresses": {
-            "description": "Delivery addresses",
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "featureUsages": {
-            "description": "Feature usages",
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "subscriptionItems": {
-            "description": "Subscription items",
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "mails": {
-            "description": "Mails",
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "recipients": {
-            "description": "Recipients",
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "workspaceId",
-          "officeLocationId",
-          "planId",
-          "planPriceId",
-          "billingCycle",
-          "status",
-          "isActive",
-          "startDate",
-          "createdAt",
-          "updatedAt",
-          "forwardingAddressLimit",
-          "recipientLimit"
-        ]
-      },
-      "UpdateMailboxDto": {
-        "type": "object",
-        "properties": {
-          "workspaceId": {
-            "type": "string",
-            "description": "Workspace ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "officeLocationId": {
-            "type": "string",
-            "description": "Office Location ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "planId": {
-            "type": "string",
-            "description": "Plan ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "planPriceId": {
-            "type": "string",
-            "description": "Plan Price ID",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "billingCycle": {
-            "type": "string",
-            "description": "Billing cycle",
-            "enum": [
-              "MONTHLY",
-              "YEARLY",
-              "WEEKLY",
-              "QUARTERLY",
-              "ONE_TIME"
-            ],
-            "example": "MONTHLY"
-          },
-          "stripeSubscriptionId": {
-            "type": "string",
-            "description": "Stripe subscription ID",
-            "example": "sub_1234567890"
-          },
-          "startDate": {
-            "type": "string",
-            "description": "Start date",
-            "example": "2024-01-01T00:00:00.000Z"
-          },
-          "endDate": {
-            "type": "string",
-            "description": "End date",
-            "example": "2024-12-31T23:59:59.999Z"
-          },
-          "forwardingAddressLimit": {
-            "type": "number",
-            "description": "Forwarding address limit",
-            "example": 1,
-            "default": 1
-          },
-          "recipientLimit": {
-            "type": "number",
-            "description": "Recipient limit",
-            "example": 1,
-            "default": 1
-          },
-          "status": {
-            "type": "string",
-            "description": "Mailbox status",
-            "enum": [
-              "ACTIVE",
-              "INACTIVE",
-              "PENDING",
-              "CANCELLED",
-              "EXPIRED",
-              "SUSPENDED"
-            ],
-            "example": "ACTIVE"
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "Is mailbox active",
-            "example": true
-          }
-        }
-      },
       "CreateMailDto": {
         "type": "object",
         "properties": {
@@ -9651,66 +10282,6 @@
           }
         }
       },
-      "CreateMailActionDto": {
-        "type": "object",
-        "properties": {
-          "packageId": {
-            "type": "string",
-            "description": "The Mail (package) ID related to the action",
-            "example": "0b2e9d9b-9e32-4c8c-a2d9-3f7e2e3b5c1a"
-          },
-          "type": {
-            "type": "string",
-            "description": "Type of action",
-            "enum": [
-              "FORWARD",
-              "SHRED",
-              "SCAN",
-              "HOLD",
-              "JUNK"
-            ],
-            "example": "FORWARD"
-          },
-          "meta": {
-            "type": "object",
-            "description": "Additional details (FORWARD requires { forward: CreateForwardRequestInput })",
-            "example": {
-              "forward": {
-                "mailboxId": "4c1c8e08-6d9e-4ea7-9b0c-4d6c5a5f4a11",
-                "officeLocationId": "9a0f2eb1-2f9b-4c82-8d51-1d9a3e9b3d77",
-                "deliveryAddressId": "a1b2c3d4-1111-2222-3333-444455556666",
-                "deliverySpeedOptionId": "11111111-2222-3333-4444-555555555555",
-                "packagingTypeOptionId": "77777777-8888-9999-aaaa-bbbbbbbbbbbb",
-                "carrierId": "f0d8f6d5-3e76-4e8e-8f3a-7d2c7b2a9b12"
-              }
-            }
-          },
-          "markShredded": {
-            "type": "boolean",
-            "description": "Quickly mark the mail as shredded when SHRED action is completed",
-            "example": true
-          },
-          "markJunk": {
-            "type": "boolean",
-            "description": "Mark the mail as JUNK",
-            "example": false
-          },
-          "markHold": {
-            "type": "boolean",
-            "description": "Mark the mail as HOLD",
-            "example": false
-          },
-          "markScanned": {
-            "type": "boolean",
-            "description": "Mark the mail as SCANNED",
-            "example": false
-          }
-        },
-        "required": [
-          "packageId",
-          "type"
-        ]
-      },
       "UpdateActionStatusDto": {
         "type": "object",
         "properties": {
@@ -9779,6 +10350,66 @@
         },
         "required": [
           "reason"
+        ]
+      },
+      "CreateMailActionDto": {
+        "type": "object",
+        "properties": {
+          "packageId": {
+            "type": "string",
+            "description": "The Mail (package) ID related to the action",
+            "example": "0b2e9d9b-9e32-4c8c-a2d9-3f7e2e3b5c1a"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of action",
+            "enum": [
+              "FORWARD",
+              "SHRED",
+              "SCAN",
+              "HOLD",
+              "JUNK"
+            ],
+            "example": "FORWARD"
+          },
+          "meta": {
+            "type": "object",
+            "description": "Additional details (FORWARD requires { forward: CreateForwardRequestInput })",
+            "example": {
+              "forward": {
+                "mailboxId": "4c1c8e08-6d9e-4ea7-9b0c-4d6c5a5f4a11",
+                "officeLocationId": "9a0f2eb1-2f9b-4c82-8d51-1d9a3e9b3d77",
+                "deliveryAddressId": "a1b2c3d4-1111-2222-3333-444455556666",
+                "deliverySpeedOptionId": "11111111-2222-3333-4444-555555555555",
+                "packagingTypeOptionId": "77777777-8888-9999-aaaa-bbbbbbbbbbbb",
+                "carrierId": "f0d8f6d5-3e76-4e8e-8f3a-7d2c7b2a9b12"
+              }
+            }
+          },
+          "markShredded": {
+            "type": "boolean",
+            "description": "Quickly mark the mail as shredded when SHRED action is completed",
+            "example": true
+          },
+          "markJunk": {
+            "type": "boolean",
+            "description": "Mark the mail as JUNK",
+            "example": false
+          },
+          "markHold": {
+            "type": "boolean",
+            "description": "Mark the mail as HOLD",
+            "example": false
+          },
+          "markScanned": {
+            "type": "boolean",
+            "description": "Mark the mail as SCANNED",
+            "example": false
+          }
+        },
+        "required": [
+          "packageId",
+          "type"
         ]
       }
     }

@@ -24,14 +24,18 @@ import { ProductModule } from './product/product.module';
 import { HandlerModule } from './handler/handler.module';
 import { EntitlementsModule } from './entitlements/entitlements.module';
 import { MailActionsModule } from './actions/actions.module';
+import { CustomerModule } from './customer/customer.module';
 
 @Module({
   imports: [
     EventEmitterModule.forRoot(),
     CaslModule,
+    EntitlementsModule,
     PrismaModule,
     AuthModule,
     UserModule,
+    CustomerModule,
+    WorkspaceModule,
     FileManagerModule,
     EmailModule,
     AdminModule,
@@ -43,19 +47,20 @@ import { MailActionsModule } from './actions/actions.module';
     ReportModule,
     SubscriptionModule,
     ShippingModule,
-    WorkspaceModule,
     MailModule,
     BillingModule,
     EasyPostModule,
-    MailboxModule,
     ProductModule,
+    MailboxModule,
     HandlerModule,
-    EntitlementsModule,
     MailActionsModule,
   ],
   exports: [
+    EntitlementsModule,
     AuthModule,
     UserModule,
+    WorkspaceModule,
+    CustomerModule,
     FileManagerModule,
     EmailModule,
     AdminModule,
@@ -66,14 +71,12 @@ import { MailActionsModule } from './actions/actions.module';
     ReportModule,
     SubscriptionModule,
     ShippingModule,
-    WorkspaceModule,
     MailModule,
     BillingModule,
     EasyPostModule,
     MailboxModule,
     ProductModule,
     HandlerModule,
-    EntitlementsModule,
     MailActionsModule,
   ],
 })

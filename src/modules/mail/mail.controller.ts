@@ -84,7 +84,7 @@ export class MailController {
 
   @Get(':id')
   @ApiOperation({ 
-    summary: 'Get package by ID',
+    summary: 'Get mail by ID',
     description: 'Retrieve a specific package with all its items and related information'
   })
   @ApiParam({ name: 'id', description: 'Package ID', example: '123e4567-e89b-12d3-a456-426614174000' })

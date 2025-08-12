@@ -2,10 +2,11 @@ import { HttpException, Injectable } from '@nestjs/common';
 import { CreateInitialSubscriptionOrderDto } from 'src/dtos/checkout.dto';
 import { PrismaService } from 'src/prisma.service';
 import { WorkspaceService } from '../workspace/workspace.service';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prismaService: PrismaService,private readonly workspaceService:WorkspaceService) {}
+  constructor(private readonly prismaService: PrismaService,private readonly workspaceService:WorkspaceService,private readonly userService:UserService) {}
 
   async getSystemStats() {
     try {
@@ -68,22 +69,21 @@ export class AdminService {
 
 
 
-  async generateSteNumber(): Promise<string> {
+async generateSteNumber(): Promise<string> {
     const steNumber = Math.random().toString(36).substring(2, 2 + 6);
     return steNumber;
   }
 
 async createWorkspaceAndMailbox(createOrderDto: CreateInitialSubscriptionOrderDto){
 const { officeLocationId, planPriceId, addons,email,firstName,lastName } = createOrderDto;
-const user= await this.prismaService.user.create({
-  data: {
-    email,
-    firstName,
-    lastName,
-    password: 'defaultPassword', // You should handle password securely
-  },
-});
-const workspace= await this.workspaceService.createWorkspace({name:`${firstName} ${lastName}`},user.id);
+
+
+const user= await this.userService.createUser(
+  email,
+  firstName,
+  lastName,
+  'fakeStripeCustomerId', // Placeholder, replace with actual Stripe customer ID
+);
 
 const planPrice=await this.prismaService.planPrice.findUnique({
   where: { id: planPriceId },
@@ -94,14 +94,14 @@ const generatedSteNumber = await this.generateSteNumber();
 
 const mailbox= await this.prismaService.mailbox.create({
   data: {
-    workspaceId: workspace.id,
+    workspaceId: user.workspaces[0].workspaceId,
     officeLocationId,
     planPriceId,
-    planId: planPrice.plan.id, // Assuming planPriceId is the same as planId
+    planId: planPrice.plan.id,
     status: 'ACTIVE',
     isActive: true, 
     steNumber: generatedSteNumber,
-    billingCycle: 'MONTHLY', // Default billing cycle, can be changed later
+    billingCycle: 'MONTHLY',
     startDate: new Date(),
     recipients: {
       create: {
@@ -112,18 +112,7 @@ const mailbox= await this.prismaService.mailbox.create({
     },
   },
   });
-
-  const addon=this.prismaService.price.findUnique({
-    where: { id: planPriceId },
-    include: { product: true },
-  });
-
-
-return {
-  user,
-  workspace,
-  mailbox,
-  }
+return mailbox;
 }
 
 }

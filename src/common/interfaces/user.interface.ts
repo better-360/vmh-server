@@ -22,7 +22,7 @@
     roles: RoleType[];
     address?: Address;
     createdAt: Date;
-    workspaces?: IWorkspaceMember[]| null;
+    workspaces?: IWorkspaceMember[]| any[];
   }
 
 export interface Address {

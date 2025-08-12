@@ -42,22 +42,6 @@ export class WorkspaceController {
     };
   }
 
-  @ApiOperation({ summary: 'Workspace bilgilerini günceller' })
-  @ApiResponse({ status: 200, description: 'Workspace başarıyla güncellendi' })
-  @Put(':id')
-  async updateWorkspace(
-    @Request() req,
-    @Param('id') id: string,
-    @Body() updateWorkspaceDto: UpdateWorkspaceDto,
-  ) {
-    const dtoInstance = await validateAndTransform(UpdateWorkspaceDto, updateWorkspaceDto);
-    const workspace = await this.workspaceService.updateWorkspace(id, dtoInstance, req.user.id);
-    return {
-      message: 'Workspace başarıyla güncellendi',
-      data: workspace,
-    };
-  }
-
   @ApiOperation({ summary: 'Workspace\'i siler' })
   @ApiResponse({ status: 200, description: 'Workspace başarıyla silindi' })
   @Delete(':id')

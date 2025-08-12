@@ -8,6 +8,7 @@ import {
     Query, 
     UseGuards,
     HttpStatus,
+    Patch,
   } from '@nestjs/common';
   import { 
     ApiTags, 
@@ -36,17 +37,23 @@ import { LocationService } from '../catalog/location.service';
 import { MailboxService } from '../mailbox/mailbox.service';
 import { OfficeLocationResponseDto } from 'src/dtos/location.dto';
 import { MailboxResponseDto } from 'src/dtos/mailbox.dto';
+import { WorkspaceService } from '../workspace/workspace.service';
+import { UpdateActionStatusDto,CreateMailActionDto,CompleteForwardDto, CancelForwardDto,QueryMailActionsDto } from 'src/dtos/mail-actions.dto';
+import { MailActionsService } from '../actions/actions.service';
+
   
   @ApiTags('Mail Handler Panel')
   @ApiBearerAuth()
   @Controller('handler')
   @UseGuards(JwtAuthGuard)
   @Public()
-  export class HandlerMailController {
+  export class MailHandlerController {
   constructor(
     private readonly mailService: MailService,
     private readonly locationService: LocationService,
     private readonly mailboxService: MailboxService,
+    private readonly workspaceService: WorkspaceService,
+    private readonly actionService: MailActionsService,
     ) {}
 
   // 1. Office Location Selection
@@ -63,6 +70,17 @@ import { MailboxResponseDto } from 'src/dtos/mailbox.dto';
   async getOfficeLocations() {
     return this.locationService.getActiveLocations();
   }
+
+    @Get('workspaces')
+    @ApiOperation({ summary: 'Get all workspaces' })
+    @ApiResponse({
+        status: 200,
+        description: 'List of workspaces retrieved successfully',
+      })
+    getAllWorkspaces() {
+        return this.workspaceService.getAllWorkspaces();
+      }
+    
 
   @Get('mailboxes/:officeLocationId')
   @ApiOperation({ 
@@ -280,5 +298,38 @@ import { MailboxResponseDto } from 'src/dtos/mailbox.dto';
       return this.mailService.findAll({ officeLocationId, ...query });
     }
   
+
+        // Detay
+  @Get('mail-actions/:id')
+  async get(@Param('id') id: string) {
+    return this.actionService.getActionById(id);
+  }
+
+  // Panel listesi
+  @Get('mail-actions/search')
+  async list(@Query() q: QueryMailActionsDto) {
+    console.log('Listing mail actions with query:', q);
+    return this.actionService.listActions(q);
+  }
+
+
+
+  // Genel status update
+  @Patch('mail-actions/:id/status')
+  async updateStatus(@Param('id') id: string, @Body() dto: UpdateActionStatusDto) {
+    return this.actionService.updateActionStatus(id, dto);
+  }
+
+  // Forward tamamla
+  @Patch('mail-actions/:id/forward/complete')
+  async completeForward(@Param('id') id: string, @Body() body: CompleteForwardDto) {
+    return this.actionService.completeForward(id, body);
+  }
+
+  // Forward iptal
+  @Patch('mail-actions/:id/forward/cancel')
+  async cancelForward(@Param('id') id: string, @Body() body: CancelForwardDto) {
+    return this.actionService.cancelForward(id, body);
+  }
     
   } 

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { ActionStatus, PackageActionType, Prisma } from '@prisma/client';
+import { ActionStatus, MailActionType, Prisma } from '@prisma/client';
 import { UpdateActionStatusDto,CreateMailActionDto,CompleteForwardDto, CancelForwardDto,QueryMailActionsDto, ForwarMeta } from 'src/dtos/mail-actions.dto';
 import { PrismaService } from 'src/prisma.service';
 
@@ -13,7 +13,7 @@ export class MailActionsService {
       from, to, sort = 'requestedAt', order = 'desc',
     } = q;
 
-    const where: Prisma.PackageActionWhereInput = {
+    const where: Prisma.MailActionWhereInput = {
       ...(type && { type }),
       ...(status && { status }),
       ...(from || to ? {
@@ -34,7 +34,7 @@ export class MailActionsService {
     };
 
     const [items] = await this.prisma.$transaction([
-      this.prisma.packageAction.findMany({
+      this.prisma.mailAction.findMany({
         where,
         include: {
           mail: {
@@ -58,7 +58,7 @@ export class MailActionsService {
   }
 
   async getActionById(id: string) {
-    const act = await this.prisma.packageAction.findUnique({
+    const act = await this.prisma.mailAction.findUnique({
       where: { id },
       include: {
         mail: true,
@@ -69,52 +69,43 @@ export class MailActionsService {
   }
 
   async createAction(dto: CreateMailActionDto) {
-    // Mail var mı?
-    const mail = await this.prisma.mail.findUnique({ where: { id: dto.packageId } });
-    if (!mail) throw new NotFoundException('Mail (package) not found');
+    const mail = await this.prisma.mail.findUnique({ where: { id: dto.mailId } });
+    if (!mail) throw new NotFoundException('Mail not found');
 
-    // FORWARD ise zorunlu meta.forward beklenir
-    const isForward = dto.type === PackageActionType.FORWARD;
+    const isForward = dto.type === MailActionType.FORWARD;
 
     if (isForward) {
       if (!dto.meta?.forward) {
-
-        
         throw new BadRequestException('FORWARD requires meta.forward payload');
       }
-
-
       const fwd = dto.meta.forward as ForwarMeta;
-
       if(!fwd.mailboxId || !fwd.officeLocationId || !fwd.deliveryAddressId || !fwd.deliverySpeedOptionId || !fwd.packagingTypeOptionId) {
         throw new BadRequestException('FORWARD meta requires mailboxId, officeLocationId, deliveryAddressId, deliverySpeedOptionId, and packagingTypeOptionId');
       }
+
 
       return await this.prisma.$transaction(async (tx) => {
         // 1) ForwardingRequest oluştur
         const forwarding = await tx.forwardingRequest.create({
           data: {
-            mailId: dto.packageId,
+            mailId: dto.mailId,
             mailboxId: fwd.mailboxId,
             officeLocationId: fwd.officeLocationId,
             deliveryAddressId: fwd.deliveryAddressId,
             deliverySpeedOptionId: fwd.deliverySpeedOptionId,
             packagingTypeOptionId: fwd.packagingTypeOptionId,
             carrierId: fwd.carrierId ?? null,
-
-            // maliyetler daha sonra belirlenecekse 0 yaz
             shippingCost: 0,
             packagingCost: 0,
             totalCost: 0,
-            // status: PENDING, paymentStatus: PENDING Prisma default’unuza bırakıldı
           },
         });
 
         // 2) Action kaydı
-        const action = await tx.packageAction.create({
+        const action = await tx.mailAction.create({
           data: {
-            packageId: dto.packageId,
-            type: PackageActionType.FORWARD,
+            mailId: dto.mailId,
+            type: MailActionType.FORWARD,
             status: ActionStatus.PENDING,
             meta: { forwardingRequestId: forwarding.id, ...dto.meta },
           },
@@ -122,7 +113,7 @@ export class MailActionsService {
 
         // 3) (opsiyonel) Mail.status’i güncelle (örn. “IN_PROGRESS” gibi)
         await tx.mail.update({
-          where: { id: dto.packageId },
+          where: { id: dto.mailId },
           data: { status: 'IN_PROGRESS' as any },
         });
 
@@ -131,9 +122,9 @@ export class MailActionsService {
     }
 
     // Diğer aksiyonlar için tek kayıt
-    const action = await this.prisma.packageAction.create({
+    const action = await this.prisma.mailAction.create({
       data: {
-        packageId: dto.packageId,
+      mailId: dto.mailId,
         type: dto.type,
         status: ActionStatus.PENDING,
         meta: dto.meta ?? {},
@@ -148,41 +139,41 @@ export class MailActionsService {
     if (dto.markScanned) patch.currentStatus = 'SCANNED' as any;
 
     if (Object.keys(patch).length) {
-      await this.prisma.mail.update({ where: { id: dto.packageId }, data: patch });
+      await this.prisma.mail.update({ where: { id: dto.mailId }, data: patch });
     }
 
     return { action };
   }
 
   async updateActionStatus(id: string, dto: UpdateActionStatusDto) {
-    const action = await this.prisma.packageAction.findUnique({
+    const action = await this.prisma.mailAction.findUnique({
       where: { id },
       include: { mail: true },
     });
     if (!action) throw new NotFoundException('Action not found');
 
-    const nextData: Prisma.PackageActionUpdateInput = {
+    const nextData: Prisma.MailActionUpdateInput = {
       status: dto.status,
       ...(dto.status === ActionStatus.DONE && { completedAt: new Date() }),
       ...(dto.status !== ActionStatus.DONE && { completedAt: null }),
       ...(dto.reason && { meta: { ...(action.meta as any), reason: dto.reason } }),
     };
 
-    const updated = await this.prisma.packageAction.update({
+    const updated = await this.prisma.mailAction.update({
       where: { id },
       data: nextData,
     });
 
     // Non-forward tamamlandıysa mail flag/state güncellemeleri
-    if (updated.type !== PackageActionType.FORWARD && dto.status === ActionStatus.DONE) {
+    if (updated.type !== MailActionType.FORWARD && dto.status === ActionStatus.DONE) {
       const mailPatch: Prisma.MailUpdateInput = {};
-      if (updated.type === PackageActionType.SHRED) mailPatch.isShereded = true;
-      if (updated.type === PackageActionType.JUNK) mailPatch.currentStatus = 'JUNK' as any;
-      if (updated.type === PackageActionType.HOLD) mailPatch.currentStatus = 'HOLD' as any;
-      if (updated.type === PackageActionType.SCAN) mailPatch.currentStatus = 'SCANNED' as any;
+      if (updated.type === MailActionType.SHRED) mailPatch.isShereded = true;
+      if (updated.type === MailActionType.JUNK) mailPatch.currentStatus = 'JUNK' as any;
+      if (updated.type === MailActionType.HOLD) mailPatch.currentStatus = 'HOLD' as any;
+      if (updated.type === MailActionType.SCAN) mailPatch.currentStatus = 'SCANNED' as any;
 
       if (Object.keys(mailPatch).length) {
-        await this.prisma.mail.update({ where: { id: updated.packageId }, data: mailPatch });
+        await this.prisma.mail.update({ where: { id: updated.mailId }, data: mailPatch });
       }
     }
 
@@ -191,11 +182,11 @@ export class MailActionsService {
 
   async completeForward(id: string, body: CompleteForwardDto) {
     // Action + meta.forwardingRequestId bul
-    const action = await this.prisma.packageAction.findUnique({
+    const action = await this.prisma.mailAction.findUnique({
       where: { id },
     });
     if (!action) throw new NotFoundException('Action not found');
-    if (action.type !== PackageActionType.FORWARD) {
+    if (action.type !== MailActionType.FORWARD) {
       throw new BadRequestException('Not a FORWARD action');
     }
 
@@ -224,14 +215,14 @@ export class MailActionsService {
       });
 
       // Action DONE
-      const updatedAction = await tx.packageAction.update({
+      const updatedAction = await tx.mailAction.update({
         where: { id },
         data: { status: ActionStatus.DONE, completedAt: new Date() },
       });
 
       // Mail güncelle
       await tx.mail.update({
-        where: { id: action.packageId },
+        where: { id: action.mailId },
         data: {
           isForwarded: true,
           currentStatus: 'FORWARDED' as any,
@@ -244,9 +235,9 @@ export class MailActionsService {
   }
 
   async cancelForward(id: string, dto: CancelForwardDto) {
-    const action = await this.prisma.packageAction.findUnique({ where: { id } });
+    const action = await this.prisma.mailAction.findUnique({ where: { id } });
     if (!action) throw new NotFoundException('Action not found');
-    if (action.type !== PackageActionType.FORWARD) {
+    if (action.type !== MailActionType.FORWARD) {
       throw new BadRequestException('Not a FORWARD action');
     }
 
@@ -264,7 +255,7 @@ export class MailActionsService {
         },
       });
 
-      const updatedAction = await tx.packageAction.update({
+      const updatedAction = await tx.mailAction.update({
         where: { id },
         data: {
           status: ActionStatus.FAILED,
@@ -274,7 +265,7 @@ export class MailActionsService {
 
       // Mail’i stok durumuna çekmek isteyebilirsiniz
       await tx.mail.update({
-        where: { id: action.packageId },
+        where: { id: action.mailId },
         data: { currentStatus: 'IN_WAREHOUSE' as any },
       });
 
@@ -289,4 +280,7 @@ export class MailActionsService {
     }
     return (box.length * box.width * box.height) / divisor;
   }
+
 }
+
+

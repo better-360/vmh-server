@@ -484,9 +484,8 @@
     trackingUrl    String?
     isShereded     Boolean       @default(false)
     isForwarded    Boolean       @default(false)
-    currentStatus  PackageStatus @default(PENDING)
     type           MailType
-
+    status          MailStatus       @default(PENDING)
     senderName    String?
     senderAddress String?
     carrier       String?
@@ -497,12 +496,12 @@
     weightKg   Float? // kg
     volumeDesi Float?
     volumeCm3   Float?
+    
     photoUrls String[]
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    status          PackageStatus       @default(PENDING)
-    actions         PackageAction[] 
+    actions         MailAction[] 
     mailbox         Mailbox             @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
     forwardRequests ForwardingRequest[]
     recipient      Recipient? @relation(fields: [recipientId], references: [id], onDelete: Cascade)
@@ -511,16 +510,16 @@
     @@index([steNumber])
   }
 
-  model PackageAction {
+  model MailAction {
     id          String            @id @default(uuid()) @db.Uuid
-    packageId   String            @db.Uuid
-    type        PackageActionType
+    mailId   String            @db.Uuid
+    type        MailActionType
     status      ActionStatus // örn: PENDING, IN_PROGRESS, DONE, FAILED
     requestedAt DateTime          @default(now())
     completedAt DateTime?
     updatedAt   DateTime          @updatedAt
     meta        Json? // ilgili aksiyonun detayları
-    mail        Mail              @relation(fields: [packageId], references: [id], onDelete: Cascade)
+    mail        Mail              @relation(fields: [mailId], references: [id], onDelete: Cascade)
   }
 
   model ForwardingRequest {
@@ -767,7 +766,7 @@
     PICKUP
   }
 
-  enum PackageStatus {
+  enum MailStatus {
     PENDING // Yeni geldi, işlenmeyi bekliyor
     FORWARDED // Paket yönlendirildi
     SHREDDED // Paket imha edildi
@@ -940,7 +939,7 @@
     OTHER
   }
 
-  enum PackageActionType {
+  enum MailActionType {
     FORWARD
     SHRED
     SCAN

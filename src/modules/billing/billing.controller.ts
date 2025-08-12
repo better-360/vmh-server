@@ -35,7 +35,7 @@ export class BillingController {
     return this.billingService.createInitialSubscriptionOrder(createOrderDto);
   }
 
-  @ApiOperation({ summary: 'Create initial subscription order' })
+  @ApiOperation({ summary: 'Create order' })
   @Public()
   @Post('create-order')
   async createOrder(@Body() createOrderDto: CreateOrderDto, @Req() req: any) {
@@ -45,6 +45,8 @@ export class BillingController {
   }
 
   @Get('check-payment')
+  @Public()
+  @ApiOperation({ summary: 'Check payment status by intent ID' })
   async checkPaymentStatus(@Query('intentId') intentId: string) {
   const paymentIntent = await this.stripeService.retrievePaymentIntent(intentId);
   console.log('paymentIntent', paymentIntent);

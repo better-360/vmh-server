@@ -10,19 +10,19 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { MailboxService } from './mailbox.service';
 import { 
   CreateMailboxDto, 
   UpdateMailboxDto, 
   MailboxResponseDto 
 } from 'src/dtos/mailbox.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { MailboxService } from '../mailbox/mailbox.service';
+import { Public } from 'src/common/decorators/public.decorator';
 
-@ApiTags('mailboxes')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
-@Controller('mailboxes')
-export class MailboxController {
+@ApiTags('Admin Mailboxes Management')
+@Public()
+@Controller('admin/mailboxes')
+export class AdminMailboxController {
   constructor(private readonly mailboxService: MailboxService) {}
 
   @Post()
