@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import {
   ChangeEmailDto,
   LoginDto,
+  SetActiveContextDto,
   UpdateUserDto,
 } from 'src/dtos/user.dto';
 import { IUser } from 'src/common/interfaces/user.interface';
@@ -332,4 +333,52 @@ async changeUserEmail(userId: string, data: ChangeEmailDto) {
     const saltOrRounds = 10;
     return bcrypt.hash(password, saltOrRounds);
   }
+
+
+    async setContext(userId, dto: SetActiveContextDto) {
+    const member = await this.prismaService.workspaceMember.findFirst({
+      where: { workspaceId: dto.workspaceId, userId },
+      select: { workspaceId: true },
+    });
+    if (!member) throw new Error('Not a member of workspace');
+
+    if (dto.mailboxId) {
+      const ok = await this.prismaService.mailbox.findFirst({
+        where: { id: dto.mailboxId, workspaceId: dto.workspaceId, isActive: true },
+        select: { id: true },
+      });
+      if (!ok) throw new Error('Mailbox not in workspace');
+    }
+
+    await this.prismaService.user.update({
+      where: { id: userId },
+      data: {
+        currentWorkspaceId: dto.workspaceId,
+        currentMailboxId: dto.mailboxId ?? null,
+      },
+    });
+
+    return { ok: true };
+  }
+
+  async getContext(userId: string) {
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: {
+        currentWorkspaceId: true,
+        currentMailboxId: true,
+        workspaces: {
+          where: { workspaceId: { not: null } },
+          select: { workspaceId: true, role: true },
+        },
+      },
+    });
+    if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    return {
+      currentWorkspaceId: user.currentWorkspaceId,
+      currentMailboxId: user.currentMailboxId,
+      workspaces: user.workspaces,
+    };
+  }
+  
 }

@@ -440,7 +440,7 @@
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Filter by package status",
+            "description": "Filter by status",
             "schema": {
               "enum": [
                 "PENDING",
@@ -10355,7 +10355,7 @@
       "CreateMailActionDto": {
         "type": "object",
         "properties": {
-          "packageId": {
+          "mailId": {
             "type": "string",
             "description": "The Mail (package) ID related to the action",
             "example": "0b2e9d9b-9e32-4c8c-a2d9-3f7e2e3b5c1a"
@@ -10408,7 +10408,7 @@
           }
         },
         "required": [
-          "packageId",
+          "mailId",
           "type"
         ]
       }

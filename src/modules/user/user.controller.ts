@@ -4,23 +4,19 @@ import {
   Post,
   Request,
   HttpStatus,
-  UseInterceptors,
-  UploadedFile,
   Delete,
   Get,
   HttpCode,
+  Put,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import {
   ChangeEmailDto,
-  ChangePasswordDto,
+  SetActiveContextDto,
   UpdateUserDto,
 } from 'src/dtos/user.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { FileManagerService } from '../file-manager/file-manager.service';
 import { validateAndTransform } from '../../utils/validate';
-import { EmailService } from '../email/email.service';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @ApiBearerAuth()
 @ApiTags('User Management')
@@ -28,17 +24,32 @@ import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swa
 export class UserController {
   constructor(
     private readonly userService: UserService,
-    private readonly emailService: EmailService,
-    private readonly fileManagerService: FileManagerService,
   ) {}
 
   @ApiOperation({
     summary: 'Mevcut oturum açmış kullanıcının bilgilerini getirir',
   })
-  @Post('me')
+  @Get('me')
   getMe(@Request() req) {
     return req.user;
   }
+
+  @Get('context')
+  getContext(@Request() req) {
+    return this.userService.getContext(req.user.id);
+  }
+
+  @ApiOperation({ summary: 'Kullanıcının aktif contextini günceller' })
+  @Put('context')
+  async setContext(@Request() req, @Body() data: SetActiveContextDto) {
+    const dtoInstance = await validateAndTransform(SetActiveContextDto, data);
+    await this.userService.setContext(req.user.id, dtoInstance);
+    return {
+      code: HttpStatus.OK,
+      message: 'Context updated',
+    };
+  }
+
 
   @ApiOperation({ summary: 'Kullanıcı bilgilerini günceller' })
   @Post('update-me')

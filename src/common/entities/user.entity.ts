@@ -24,6 +24,8 @@ export class UserEntity implements PrismaUser {
   lastLogin: Date;
   roles: string[];
   stripeCustomerId: string;
+  currentWorkspaceId: string;
+  currentMailboxId: string;
   constructor(partial: Partial<UserEntity>) {
     Object.assign(this, partial);
   }

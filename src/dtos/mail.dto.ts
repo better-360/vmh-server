@@ -1072,16 +1072,6 @@ export class CreateMailDto {
   status?: PackageStatus;
 
   @ApiPropertyOptional({
-    description: 'Current status',
-    enum: PackageStatus,
-    example: PackageStatus.PENDING,
-    default: PackageStatus.PENDING,
-  })
-  @IsEnum(PackageStatus)
-  @IsOptional()
-  currentStatus?: PackageStatus;
-
-  @ApiPropertyOptional({
     description: 'Is mail shredded',
     example: false,
     default: false,
@@ -1138,13 +1128,6 @@ export class MailResponseDto {
     example: false,
   })
   isForwarded: boolean;
-
-  @ApiProperty({
-    description: 'Current mail status',
-    enum: PackageStatus,
-    example: PackageStatus.PENDING,
-  })
-  currentStatus: PackageStatus;
 
   @ApiProperty({
     description: 'Mail type',

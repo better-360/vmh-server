@@ -21,7 +21,6 @@ export class MailService {
   private mapMailToDto(mail: any): MailResponseDto {
     return {
       ...mail,
-      currentStatus: this.mapPackageStatus(mail.currentStatus),
       status: this.mapPackageStatus(mail.status),
     } as MailResponseDto;
   }

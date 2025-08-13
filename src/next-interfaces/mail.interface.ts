@@ -9,7 +9,6 @@ export interface IMail {
   receivedAt: Date;
   isShereded: boolean;
   isForwarded: boolean;
-  currentStatus: 'PENDING' | 'FORWARDED' | 'SHREDDED' | 'COMPLETED' | 'CANCELLED' | 'IN_PROCESS';
   type: 'BANK_CHECK' | 'LEGAL_DOCUMENT' | 'ENVELOPE' | 'PACKAGE' | 'OTHER';
   senderName?: string;
   senderAddress?: string;
@@ -45,7 +44,6 @@ export interface ICreateMail {
   volumeDesi?: number;
   photoUrls?: string[];
   status?: 'PENDING' | 'FORWARDED' | 'SHREDDED' | 'COMPLETED' | 'CANCELLED' | 'IN_PROCESS';
-  currentStatus?: 'PENDING' | 'FORWARDED' | 'SHREDDED' | 'COMPLETED' | 'CANCELLED' | 'IN_PROCESS';
   isShereded?: boolean;
   isForwarded?: boolean;
 }
@@ -65,7 +63,6 @@ export interface IUpdateMail {
   volumeDesi?: number;
   photoUrls?: string[];
   status?: 'PENDING' | 'FORWARDED' | 'SHREDDED' | 'COMPLETED' | 'CANCELLED' | 'IN_PROCESS';
-  currentStatus?: 'PENDING' | 'FORWARDED' | 'SHREDDED' | 'COMPLETED' | 'CANCELLED' | 'IN_PROCESS';
   isShereded?: boolean;
   isForwarded?: boolean;
 }

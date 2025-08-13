@@ -10,6 +10,7 @@ import {
   IsStrongPassword,
   IsEmail,
   ValidateNested,
+  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -166,4 +167,13 @@ export class ChangeEmailDto {
   @IsString()
   @IsEmail()
   newEmail: string;
+}
+
+export class SetActiveContextDto {
+  @IsUUID()
+  workspaceId: string;
+
+  @IsOptional()
+  @IsUUID()
+  mailboxId?: string;
 }

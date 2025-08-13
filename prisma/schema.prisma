@@ -24,6 +24,8 @@
     updatedAt          DateTime          @updatedAt
     deletedAt          DateTime?
     isActive           Boolean           @default(true)
+    currentWorkspaceId String?
+    currentMailboxId   String?
     forms              Forms[]
     attachment         Attachment[]
     invoices           Invoice[]

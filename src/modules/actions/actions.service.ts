@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { ActionStatus, MailActionType, Prisma } from '@prisma/client';
+import { ActionStatus, MailActionType, MailStatus, Prisma } from '@prisma/client';
 import { UpdateActionStatusDto,CreateMailActionDto,CompleteForwardDto, CancelForwardDto,QueryMailActionsDto, ForwarMeta } from 'src/dtos/mail-actions.dto';
 import { PrismaService } from 'src/prisma.service';
 
@@ -43,7 +43,6 @@ export class MailActionsService {
               steNumber: true,
               mailboxId: true,
               trackingNumber: true,
-              currentStatus: true,
               isForwarded: true,
               isShereded: true,
               senderName: true,
@@ -134,9 +133,9 @@ export class MailActionsService {
     // İsteğe göre flag’leri pratikçe güncelle
     const patch: Prisma.MailUpdateInput = {};
     if (dto.markShredded) patch.isShereded = true;
-    if (dto.markJunk) patch.currentStatus = 'JUNK' as any;
-    if (dto.markHold) patch.currentStatus = 'HOLD' as any;
-    if (dto.markScanned) patch.currentStatus = 'SCANNED' as any;
+    if (dto.markJunk) patch.status = MailStatus.FORWARDED;
+    if (dto.markHold) patch.status = 'HOLD' as any;
+    if (dto.markScanned) patch.status = 'SCANNED' as any;
 
     if (Object.keys(patch).length) {
       await this.prisma.mail.update({ where: { id: dto.mailId }, data: patch });
@@ -163,20 +162,6 @@ export class MailActionsService {
       where: { id },
       data: nextData,
     });
-
-    // Non-forward tamamlandıysa mail flag/state güncellemeleri
-    if (updated.type !== MailActionType.FORWARD && dto.status === ActionStatus.DONE) {
-      const mailPatch: Prisma.MailUpdateInput = {};
-      if (updated.type === MailActionType.SHRED) mailPatch.isShereded = true;
-      if (updated.type === MailActionType.JUNK) mailPatch.currentStatus = 'JUNK' as any;
-      if (updated.type === MailActionType.HOLD) mailPatch.currentStatus = 'HOLD' as any;
-      if (updated.type === MailActionType.SCAN) mailPatch.currentStatus = 'SCANNED' as any;
-
-      if (Object.keys(mailPatch).length) {
-        await this.prisma.mail.update({ where: { id: updated.mailId }, data: mailPatch });
-      }
-    }
-
     return updated;
   }
 
@@ -225,7 +210,7 @@ export class MailActionsService {
         where: { id: action.mailId },
         data: {
           isForwarded: true,
-          currentStatus: 'FORWARDED' as any,
+          status: 'FORWARDED',
           trackingNumber: body.trackingCode ?? undefined,
         },
       });
@@ -266,7 +251,7 @@ export class MailActionsService {
       // Mail’i stok durumuna çekmek isteyebilirsiniz
       await tx.mail.update({
         where: { id: action.mailId },
-        data: { currentStatus: 'IN_WAREHOUSE' as any },
+        data: { status: 'IN_WAREHOUSE' as any },
       });
 
       return { action: updatedAction, forwarding };
