@@ -1,0 +1,14 @@
+// import { Module } from '@nestjs/common';
+// import { HttpModule } from '@nestjs/axios';
+// import { OrderController } from './order.controller.ts.disabled';
+// import { OrderService } from './order.service.ts.disabled';
+// import { StripeService } from '../stripe/stripe.service';
+// import { CompanyService } from '../company/company.service';
+// import { UserService } from '../user/user.service';
+
+// @Module({
+//     imports: [HttpModule],
+//     providers: [OrderService,StripeService,CompanyService,UserService],
+//     controllers: [OrderController],
+// })
+// export class OrderModule {}

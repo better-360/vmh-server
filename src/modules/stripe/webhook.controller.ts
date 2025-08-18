@@ -12,7 +12,6 @@ export class WebhookController {
   constructor(private configService: ConfigService,private billingService:BillingService) { 
     this.stripe = new Stripe(configService.get('STRIPE_SECRET_KEY'), {
     });
-  
   }
 
   @Post()

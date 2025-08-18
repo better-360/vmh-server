@@ -1,0 +1,406 @@
+// import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
+// import { PrismaService } from 'src/prisma.service';
+// import Stripe from 'stripe';
+// import { StripeService } from '../stripe/stripe.service';
+// import { EventEmitter2 } from '@nestjs/event-emitter';
+// import { Events } from 'src/common/enums/event.enum';
+// import { OrderStatus } from '@prisma/client';
+
+// interface OrderItem{
+//   productId:string;
+//   priceId:string;
+//   type: 'PRODUCT' | 'PRICING_PLAN' | 'ADDON';
+//   quantity:number;
+// }
+
+// @Injectable()
+// export class OrderService {
+//   constructor(
+//     private readonly prismaService: PrismaService,
+//     private readonly stripeService: StripeService,
+//     private readonly eventEmitter: EventEmitter2,
+//   ) {}
+
+//   async getOrderStatus(orderId: string) {
+//     const order = await this.prismaService.order.findUnique({ where: { id: orderId } });
+//     if (!order) throw new NotFoundException('Order not found');
+//     return { id: order.id, status: order.status };
+//   }
+
+  
+//   async createOrder(userId:string,companyId:string, orderItems: OrderItem[],amount:number,stripeCheckoutSessionId?:string,invoiceId?:string) {
+//     try {
+//       const order = await this.prismaService.order.create({
+//         data: {
+//           stripeCheckoutSessionId: stripeCheckoutSessionId ? stripeCheckoutSessionId : null,
+//           invoiceId: invoiceId ? invoiceId : null,
+//           orderItems: {
+//             createMany: {
+//               data: orderItems.map((item) => ({
+//                 productId: item.productId || null,
+//                 priceId: item.priceId || null,
+//                 type: item.type,
+//                 quantity: item.quantity || 1
+//               })),
+//             },
+//           },
+//         },
+//       });
+//       return order;
+//     } catch (error) {
+//       throw new HttpException(error, 500);
+//     }
+//   }
+
+
+//   async getAllOrders() {
+//     try {
+//       const orders = await this.prismaService.order.findMany({
+//         select: {
+//           id:true,
+//           status:true,
+//           currency:true,
+//           createdAt:true,
+//           updatedAt:true,
+//           invoiceLink:true,
+//           orderItems:{
+//             include:{
+//               product:{
+//                 select:{
+//                   name:true,
+//                   id:true,
+//                   stripeProductId:true,
+//                   updatedAt:true,
+//                   createdAt:true,
+//                   description:true,
+//                 }
+//               },
+//               price:{
+//                 select:{
+//                   unit_amount:true,
+//                   currency:true,
+//                   id:true,
+//                   stripePriceId:true
+//                 }
+//               }
+//             }
+//           },
+//           user: {
+//             select:{firstName:true, lastName:true, email:true,id:true,customerStripeID:true}
+//           }
+//       },
+//       });
+//       return orders;
+//     } catch (error) {
+//       throw new HttpException(error, 500);
+//     }
+//   }
+
+//   async getWorkspace({ userId, companyId }: { userId: string; companyId: string }) {
+//     const workspace = await this.prismaService.workspace.findUnique({
+//       where: { id: companyId },
+//       include:{
+//         members:true,
+//             }
+//     });
+//     if(!workspace.members.some(cu => cu.userId === userId)){
+//       throw new HttpException('User is not a member of this company', 403);
+//     }
+//     if (!workspace) {
+//       throw new HttpException('Company not found', 404);
+//     }
+//     const user = await this.prismaService.user.findUnique({
+//       where: { id: userId },
+//     });
+
+//     if (!user) {
+//       throw new HttpException('User not found', 404);
+//     }
+//     try {
+//       const orders = await this.prismaService.order.findMany({
+//         where:{mailboxId:companyId},
+//         select: {
+//           id:true,
+//           status:true,
+//           currency:true,
+//           createdAt:true,
+//           updatedAt:true,
+//           companyId:true,
+//           paymentMethod:true,
+//           invoiceId:true,
+//           stripeCheckoutSessionId:true,
+//           invoiceLink:true,
+//           orderItems:{
+//             include:{
+//               product:{
+//                 select:{
+//                   name:true,
+//                   id:true,
+//                   stripeProductId:true,
+//                   updatedAt:true,
+//                   createdAt:true,
+//                   description:true,
+//                 }
+//               },
+//               price:{
+//                 select:{
+//                   unit_amount:true,
+//                   currency:true,
+//                   id:true,
+//                   stripePriceId:true
+//                 }
+//               }
+//             }
+//           },
+//           user: {
+//             select:{firstName:true, lastName:true, email:true,id:true,customerStripeID:true}
+//           }
+//       },
+//       });
+      
+//       return orders;
+//     } catch (error) {
+//       throw new HttpException(error, 500);
+//     }
+//   }
+
+
+// async getOrderById(id: string){
+//   return await this.prismaService.order.findUnique({
+//     where: { id },
+// })
+// }
+
+// async deleteOrder(id: string) {
+//     try {
+//       const order = await this.prismaService.order.delete({
+//         where: {
+//           id,
+//         },
+//       });
+//       return order;
+//     } catch (error) {
+//       throw new HttpException(error, 500);
+//     }
+//   }
+
+//  async updateOrderStatus(id: string, status: OrderStatus) {
+//     return this.prismaService.order.update({
+//       where: {
+//         id,
+//       },
+//       data: {
+//         status,
+//       },
+//     });
+//   }
+
+//   async updateOrder(orderId:string,data: any) {
+//     return this.prismaService.order.update({
+//       where: {
+//        id:orderId,
+//       },
+//       data: {
+//         ...data,
+//       },
+//     });
+//   }
+
+
+//   // -----------------------------
+//   // WEBHOOK DELEGATION HELPERS
+//   // -----------------------------
+
+//   // checkout.session.completed → sadece eşle ve processing’e çek (nihai teyit invoice.paid)
+//   async handleCheckoutSessionCompleted(sessionId: string) {
+//     const session = await this.stripeService.retrieveCheckoutSession(sessionId);
+//     const orderId = session.metadata?.orderId;
+//     if (!orderId) return;
+
+//     // Attach invoice to session
+//     const invoiceId = typeof session.invoice === 'string' ? session.invoice : session.invoice?.id;
+//     await this.attachStripeSession(orderId, session.id, invoiceId || null);
+//     await this.updateOrderStatus(orderId, OrderStatus.IN_PROGRESS);
+
+//     // Tek seferlik (mode=payment) durumunda PaymentIntent succeeded yakalanacak.
+//     // Aktivasyon burada yapılmaz; invoice.paid veya payment_intent.succeeded beklenir.
+//   }
+
+//   // invoice.paid → aktivasyon (subscription + one-time addon ilk faturada tahsil)
+//   async handleInvoicePaid(invoice: Stripe.Invoice) {
+//     const orderId = invoice.metadata?.orderId as string | undefined;
+//     if (!orderId) return; // Fallback: subscription.metadata.orderId kullan (Stripe’den gönderilir)
+
+//     const order = await this.prismaService.order.findUnique({ where: { id: orderId } });
+//     if (!order) throw new HttpException('Order not found for invoice.paid', 404);
+
+//     await this.prismaService.order.update({ where: { id: orderId }, data: { invoiceId: invoice.id } });
+//     await this.updateOrderStatus(orderId, OrderStatus.COMPLETED);
+
+//     // Aktivasyon akışı: paymentType’a göre
+//     const paymentType = invoice.metadata?.paymentType as string | undefined;
+//     if (paymentType === 'companyFormation') {
+//       await this.activateCompanyFormation(invoice);
+//     } else if (paymentType === 'singleItemPurchase') {
+//       await this.activateSingleItemPurchase(invoice);
+//     }
+
+//     await this.updateOrderStatus(orderId, OrderStatus.COMPLETED);
+//   }
+
+//   // payment_intent.succeeded → tek seferlik ödeme teyidi (mode=payment)
+//   async handlePaymentIntentSucceeded(pi: Stripe.PaymentIntent) {
+//     const orderId = (pi.metadata?.orderId || '') as string;
+//     if (!orderId) return;
+
+//     await this.updateOrderStatus(orderId, OrderStatus.COMPLETED);
+
+//     const paymentType = pi.metadata?.paymentType as string | undefined;
+//     if (paymentType === 'singleItemPurchase') {
+//       // Tek seferlik satın alım aktivasyonu
+//       await this.activateSingleItemPurchaseByPI(pi);
+//       await this.updateOrderStatus(orderId, OrderStatus.IN_PROGRESS);
+//     }
+//   }
+
+//   // -----------------------------
+//   // ACTIVATION ROUTINES
+//   // -----------------------------
+
+//   // SINGLE ITEM aktivasyonu (invoice.paid)
+//   private async activateSingleItemPurchase(invoice: Stripe.Invoice) {
+//     const companyId = invoice.metadata?.companyId as string;
+//     const productId = invoice.lines?.data?.[0]?.price?.product as string | undefined;
+//     const priceId = invoice.lines?.data?.[0]?.price?.id as string | undefined;
+
+//     // Metadata’da explicit varsa onu kullan; yoksa invoice line’dan resolve et
+//     const metaProductId = invoice.metadata?.productId as string | undefined;
+//     const metaPriceId = invoice.metadata?.priceId as string | undefined;
+
+//     await this.companyService.createSingleItemPurchase({
+//       companyId,
+//       productId: metaProductId || productId!,
+//       priceId: metaPriceId || priceId!,
+//     });
+//   }
+
+//   // SINGLE ITEM aktivasyonu (payment_intent.succeeded)
+//   private async activateSingleItemPurchaseByPI(pi: Stripe.PaymentIntent) {
+//     const companyId = pi.metadata?.companyId as string;
+//     const productId = pi.metadata?.productId as string | undefined;
+//     const priceId = pi.metadata?.priceId as string | undefined;
+
+//     if (productId && priceId) {
+//       await this.companyService.createSingleItemPurchase({ companyId, productId, priceId });
+//     }
+//   }
+
+
+//   async updateOrderByInvoiceId(invoiceId: string, data: any) {
+//     try {
+//       return await this.prismaService.order.updateMany({
+//         where: {
+//           invoiceId: invoiceId,
+//         },
+//         data: {
+//           ...data,
+//         },
+//       });
+//     } catch (error) {
+//       throw new HttpException(error, 500);
+//     }
+//   }
+
+//   async updateOrderByCheckoutSessionId(checkoutSessionId: string, data: any) {
+//     try {
+//       return await this.prismaService.order.updateMany({
+//         where: {
+//           stripeCheckoutSessionId: checkoutSessionId,
+//         },
+//         data: {
+//           ...data,
+//         },
+//       });
+//     } catch (error) {
+//       throw new HttpException(error, 500);
+//     }
+//   }
+
+//   // Webhook işlemleri için yeni helper metodlar
+//   async getOrderByCheckoutSessionId(checkoutSessionId: string) {
+//     try {
+//       return await this.prismaService.order.findFirst({
+//         where: {
+//           stripeCheckoutSessionId: checkoutSessionId,
+//         },
+//         include: {
+//           company: true,
+//           user: true,
+//           orderItems: {
+//             include: {
+//               product: true,
+//               price: true,
+//             },
+//           },
+//         },
+//       });
+//     } catch (error) {
+//       throw new HttpException(error, 500);
+//     }
+//   }
+
+//   async getOrderStatusByCheckoutSessionId(checkoutSessionId: string) {
+//     const session = await this.stripeService.retrieveCheckoutSession(checkoutSessionId);
+//     const order = await this.prismaService.order.findFirst({
+//       where: { stripeCheckoutSessionId: checkoutSessionId },
+//     });
+//     if (!order) throw new NotFoundException('Order not found');
+//     return {
+//       orderId: order.id,
+//       orderStatus: order.status,
+//       sessionId: session.id,
+//       sessionStatus: session.status,
+//       paymentType: session.metadata?.paymentType,
+//     }
+//   }
+
+//   async getOrderByInvoiceId(invoiceId: string) {
+//     try {
+//       return await this.prismaService.order.findFirst({
+//         where: {
+//           invoiceId: invoiceId,
+//         },
+//         include: {
+//           company: true,
+//           user: true,
+//           orderItems: {
+//             include: {
+//               product: true,
+//               price: true,
+//             },
+//           },
+//         },
+//       });
+//     } catch (error) {
+//       throw new HttpException(error, 500);
+//     }
+//   }
+
+//   async attachStripeSession(orderId: string, sessionId: string, invoiceId?: string | null) {
+//     return this.prismaService.order.update({
+//       where: { id: orderId },
+//       data: { stripeCheckoutSessionId: sessionId, invoiceId: invoiceId ?? undefined },
+//     });
+//   }
+// }
+
+// // =============================
+// // NOTLAR
+// // - Webhook Controller tarafında şu event’lerde OrderService çağrılır:
+// //   * checkout.session.completed  → orderService.handleCheckoutSessionCompleted(session.id)
+// //   * invoice.paid               → orderService.handleInvoicePaid(invoice)
+// //   * payment_intent.succeeded   → orderService.handlePaymentIntentSucceeded(paymentIntent)
+// // - Aktivasyon sadece invoice.paid / PI.succeeded ile yapılır. Checkout endpoint aktivasyon yapmaz.
+// // - Session create sırasında orderId metadata’sını subscription/payment intent metadata’larına yaydığımız için
+// //   webhook’ta order’ı doğrudan bulabiliyoruz.
+

@@ -7,7 +7,10 @@ import {
   Body, 
   Param, 
   Query, 
-  UseGuards 
+  UseGuards, 
+  DefaultValuePipe,
+  ParseBoolPipe,
+  ParseIntPipe
 } from '@nestjs/common';
 import { 
   ApiTags, 
@@ -40,36 +43,16 @@ export class AdminFeaturesController {
   ) {}
   
   @Get('all')
-  @ApiOperation({ 
-    summary: 'Get all features',
-    description: 'Retrieve a paginated list of all features with optional filtering and search capabilities'
-  })
-  @ApiQuery({ name: 'isActive', required: false, type: Boolean, description: 'Filter by active status' })
-  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search in feature name and description' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number for pagination (default: 1)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 10)' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Features retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        data: { type: 'array', items: { type: 'object' } },
-        meta: {
-          type: 'object',
-          properties: {
-            total: { type: 'number' },
-            page: { type: 'number' },
-            limit: { type: 'number' },
-            totalPages: { type: 'number' }
-          }
-        }
-      }
-    }
-  })
-  async getFeatures(@Query() query: any) {
-    return this.featuresService.getFeatures(query);
-  }
+async getFeatures(
+  @Query('search') search?: string,
+  @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit?: number,
+  @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset?: number,
+) {
+  return this.featuresService.getFeatures(search, limit, offset);
+}
+
+
+  
 
   @Get('/:id')
   @ApiOperation({ 

@@ -1,8 +1,22 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { CreateFeatureDto, UpdateFeatureDto, FeatureResponseDto } from 'src/dtos/feature.dto';
+import {
+  CreateFeatureDto,
+  UpdateFeatureDto,
+  FeatureResponseDto,
+} from 'src/dtos/feature.dto';
 import { Prisma } from '@prisma/client';
-import { CreatePlanFeatureDto, PlanFeatureResponseDto, UpdatePlanFeatureDto } from 'src/dtos/plan_entitlements.dto';
+import {
+  CreatePlanFeatureDto,
+  PlanFeatureResponseDto,
+  UpdatePlanFeatureDto,
+} from 'src/dtos/plan_entitlements.dto';
 
 @Injectable()
 export class FeaturesService {
@@ -14,7 +28,9 @@ export class FeaturesService {
   // FEATURE CRUD OPERATIONS
   // =====================
 
-  async createFeature(createFeatureDto: CreateFeatureDto): Promise<FeatureResponseDto> {
+  async createFeature(
+    createFeatureDto: CreateFeatureDto,
+  ): Promise<FeatureResponseDto> {
     try {
       // Check if feature with same name already exists
       const existingFeature = await this.prisma.feature.findFirst({
@@ -25,7 +41,9 @@ export class FeaturesService {
       });
 
       if (existingFeature) {
-        throw new ConflictException(`Feature with name "${createFeatureDto.name}" already exists`);
+        throw new ConflictException(
+          `Feature with name "${createFeatureDto.name}" already exists`,
+        );
       }
 
       const feature = await this.prisma.feature.create({
@@ -43,7 +61,6 @@ export class FeaturesService {
   }
 
   async getFeatures(
-    isActive?: boolean,
     search?: string,
     limit: number = 50,
     offset: number = 0,
@@ -52,10 +69,6 @@ export class FeaturesService {
       const where: Prisma.FeatureWhereInput = {
         isDeleted: false,
       };
-
-      if (isActive !== undefined) {
-        where.isActive = isActive;
-      }
 
       if (search) {
         where.OR = [
@@ -74,11 +87,20 @@ export class FeaturesService {
         ];
       }
 
-      return await this.prisma.feature.findMany({
-        where,
-        orderBy: {
-          name: 'asc',
+      return this.prisma.feature.findMany({
+        where: {
+          isDeleted: false,
+          ...{ isActive:true },
+          ...(search
+            ? {
+                OR: [
+                  { name: { contains: search, mode: 'insensitive' } },
+                  { description: { contains: search, mode: 'insensitive' } },
+                ],
+              }
+            : {}),
         },
+        orderBy: { name: 'asc' },
         take: limit,
         skip: offset,
       });
@@ -128,7 +150,10 @@ export class FeaturesService {
     }
   }
 
-  async updateFeature(id: string, updateFeatureDto: UpdateFeatureDto): Promise<FeatureResponseDto> {
+  async updateFeature(
+    id: string,
+    updateFeatureDto: UpdateFeatureDto,
+  ): Promise<FeatureResponseDto> {
     try {
       // Check if feature exists
       const existingFeature = await this.prisma.feature.findUnique({
@@ -140,7 +165,10 @@ export class FeaturesService {
       }
 
       // Check if name is being updated and conflicts with another feature
-      if (updateFeatureDto.name && updateFeatureDto.name !== existingFeature.name) {
+      if (
+        updateFeatureDto.name &&
+        updateFeatureDto.name !== existingFeature.name
+      ) {
         const nameConflict = await this.prisma.feature.findFirst({
           where: {
             name: updateFeatureDto.name,
@@ -150,7 +178,9 @@ export class FeaturesService {
         });
 
         if (nameConflict) {
-          throw new ConflictException(`Feature with name "${updateFeatureDto.name}" already exists`);
+          throw new ConflictException(
+            `Feature with name "${updateFeatureDto.name}" already exists`,
+          );
         }
       }
 
@@ -161,7 +191,10 @@ export class FeaturesService {
 
       return feature;
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof ConflictException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
         throw error;
       }
       this.logger.error(`Failed to update feature: ${error.message}`);
@@ -189,8 +222,13 @@ export class FeaturesService {
       }
 
       // Check if feature is being used in any active plans or products
-      if (existingFeature.planFeatures.length > 0 || existingFeature.productFeature.length > 0) {
-        throw new ConflictException('Cannot delete feature that is being used in plans or products');
+      if (
+        existingFeature.planFeatures.length > 0 ||
+        existingFeature.productFeature.length > 0
+      ) {
+        throw new ConflictException(
+          'Cannot delete feature that is being used in plans or products',
+        );
       }
 
       await this.prisma.feature.update({
@@ -202,12 +240,14 @@ export class FeaturesService {
         },
       });
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof ConflictException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
         throw error;
       }
       this.logger.error(`Failed to delete feature: ${error.message}`);
       throw new BadRequestException('Failed to delete feature');
     }
   }
-
 }

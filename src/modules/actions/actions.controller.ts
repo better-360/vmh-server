@@ -13,7 +13,7 @@ import { CreateMailActionDto } from 'src/dtos/mail-actions.dto';
 
 @ApiTags('Mail Actions')
 @Public()
-@Controller('')
+@Controller('actions')
 export class MailActionsController {
   constructor(private readonly actionsService: MailActionsService,
     private readonly packagingService: PackagingOptionService,

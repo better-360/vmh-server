@@ -309,6 +309,63 @@ export class OfficeLocationResponseDto {
   forwardRequest?: any[];
 }
 
+export class ActiveOfficeLocationResponseDto {
+  @ApiProperty({
+    description: 'Location ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'Location label',
+    example: 'Soho - NYC',
+  })
+  label: string;
+
+
+  @ApiProperty({
+    description: 'City',
+    example: 'New York',
+  })
+  city: string;
+
+  @ApiProperty({
+    description: 'State or Province',
+    example: 'NY',
+  })
+  state: string;
+
+  @ApiProperty({
+    description: 'Country',
+    example: 'United States',
+  })
+  country: string;
+
+  @ApiPropertyOptional({
+    description: 'Location description',
+    example: 'Premium office space in the heart of Soho',
+  })
+  description?: string;
+
+  @ApiProperty({
+    description: 'Is location active',
+    example: true,
+  })
+  isActive: boolean;
+
+  @ApiProperty({
+    description: 'Creation date',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    description: 'Last update date',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  updatedAt: Date;
+}
+
 export class OfficeLocationQueryDto {
 
   @ApiPropertyOptional({

@@ -19,6 +19,7 @@ import { CreateInitialSubscriptionOrderDto, CreateOrderDto } from 'src/dtos/chec
 import { StripeService } from '../stripe/stripe.service';
 import { BillingService } from './billing.service';
 
+@Public()
 @ApiTags('Billing')
 @Controller('billing')
 export class BillingController {
@@ -29,8 +30,7 @@ export class BillingController {
 
 
   @ApiOperation({ summary: 'Create initial subscription order' })
-  @Public()
-  @Post('create-initial-subscription-order')
+  @Post('init')
   async createInitialSubscriptionOrder(@Body() createOrderDto: CreateInitialSubscriptionOrderDto) {
     return this.billingService.createInitialSubscriptionOrder(createOrderDto);
   }
@@ -45,7 +45,6 @@ export class BillingController {
   }
 
   @Get('check-payment')
-  @Public()
   @ApiOperation({ summary: 'Check payment status by intent ID' })
   async checkPaymentStatus(@Query('intentId') intentId: string) {
   const paymentIntent = await this.stripeService.retrievePaymentIntent(intentId);
@@ -54,5 +53,8 @@ export class BillingController {
   return { status: paymentIntent.status }; // success, failed, pending...
 }
 
-
+  @Get('public-key')
+  getPublishableKey() {
+    return { publishableKey: process.env.STRIPE_PUBLISHABLE_KEY };
+  }
 }

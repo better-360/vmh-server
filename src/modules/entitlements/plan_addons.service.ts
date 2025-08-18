@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException, Logger, ConflictException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { CreatePlanAddonDto, UpdatePlanAddonDto } from "src/dtos/plan_entitlements.dto";
 import { PrismaService } from "src/prisma.service";
 
@@ -11,7 +12,8 @@ export class PlanAddonsService {
 
   async assignProductToPlanAddon(data: CreatePlanAddonDto) {
   return await this.prisma.$transaction(async (tx) => {
-    let productPrices = [];
+    try {
+      let productPrices = [];
     if (data.priceIds && data.priceIds.length > 0) {
       productPrices = await tx.price.findMany({
         where: { id: { in: data.priceIds } },
@@ -37,6 +39,15 @@ export class PlanAddonsService {
       )
     );
     return createdAddons;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        throw new ConflictException('Addon already exists');
+      }
+      }
+      this.logger.error(`Failed to assign product to plan addon: ${error.message}`, error.stack);
+      throw new BadRequestException('Failed to assign product to plan addon');
+    }
   });
 }
 

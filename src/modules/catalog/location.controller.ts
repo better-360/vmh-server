@@ -10,6 +10,7 @@ import { LocationService } from './location.service';
 import {
   OfficeLocationResponseDto,
   OfficeLocationQueryDto,
+  ActiveOfficeLocationResponseDto,
 } from 'src/dtos/location.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { PlansService } from './plans.service';
@@ -47,7 +48,7 @@ export class LocationController {
   @ApiResponse({
     status: 200,
     description: 'Active office locations retrieved successfully',
-    type: [OfficeLocationResponseDto],
+    type: [ActiveOfficeLocationResponseDto],
   })
   async getActiveOfficeLocations() {
     return await this.locationService.getActiveLocations();

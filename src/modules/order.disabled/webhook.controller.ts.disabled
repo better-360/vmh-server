@@ -1,0 +1,58 @@
+// // webhook.controller.ts
+// import { Controller, Post, Req, Res, Headers } from '@nestjs/common';
+// import { Response } from 'express';
+// import Stripe from 'stripe';
+// import { ConfigService } from '@nestjs/config';
+// import { OrderService } from './order.service.ts.disabled';
+// import { OrderStatus } from '@prisma/client';
+// import { Public } from 'src/common/decorators/public.decorator';
+
+// @Public()
+// @Controller('webhook')
+// export class WebhookController {
+//   private stripe: Stripe;
+
+//   constructor(
+//     private configService: ConfigService,
+//     private readonly orderService: OrderService, 
+//   ) { 
+//     this.stripe = new Stripe(configService.get('STRIPE_SECRET_KEY'), {
+//     });
+//   }
+
+//   @Post()
+//   async handleStripeWebhook(@Req() req: any, @Res() res: Response, @Headers('stripe-signature') signature: string,
+//   ) {
+//     const endpointSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET_KEY');
+//     const event = this.stripe.webhooks.constructEvent(
+//       req.rawBody, signature, endpointSecret
+//     );
+//     console.log('New event received:', event.type);
+
+//     switch (event.type) {
+//       case 'checkout.session.completed':
+//         await this.orderService.handleCheckoutSessionCompleted(event.data.object.id);
+//         break;
+//       case 'invoice.paid':
+//         await this.orderService.handleInvoicePaid(event.data.object as Stripe.Invoice);
+//         break;
+//       case 'payment_intent.succeeded':
+//         await this.orderService.handlePaymentIntentSucceeded(
+//           event.data.object as Stripe.PaymentIntent,
+//         );
+//         break;
+//       case 'invoice.payment_failed':
+//         await this.orderService.updateOrderByInvoiceId(event.data.object.id, {
+//           status: OrderStatus.FAILED
+//         });
+//         break;
+//       case 'checkout.session.expired':
+//         await this.orderService.updateOrderByCheckoutSessionId(event.data.object.id, {
+//           status: OrderStatus.FAILED
+//         });
+//         break;
+//     }
+//     res.status(200).json({ received: true });
+//   }
+
+// }

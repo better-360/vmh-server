@@ -4,7 +4,8 @@ import {
   CreateOfficeLocationDto, 
   UpdateOfficeLocationDto, 
   OfficeLocationResponseDto,
-  OfficeLocationQueryDto 
+  OfficeLocationQueryDto, 
+  ActiveOfficeLocationResponseDto
 } from 'src/dtos/location.dto';
 import { Prisma } from '@prisma/client';
 
@@ -287,18 +288,23 @@ export class LocationService {
     }
   }
 
-  async getActiveLocations(): Promise<OfficeLocationResponseDto[]> {
+  async getActiveLocations() : Promise<ActiveOfficeLocationResponseDto[]> {
     try {
       return await this.prisma.officeLocation.findMany({
         where: {
           isActive: true,
           isDeleted: false,
         },
-        include: {
-          plans: {
-            where: { isActive: true, isDeleted: false },
-            select: { id: true, name: true, slug: true },
-          },
+        select: {
+          id: true,
+          label: true,
+          city: true,
+          state: true,
+          country: true,
+          isActive: true,
+          isDeleted: true,
+          createdAt: true,
+          updatedAt: true,
         },
         orderBy: [
           { country: 'asc' },
