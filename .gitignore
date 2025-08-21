@@ -43,3 +43,5 @@ uploads/images
 
 
 .env.local
+prisma/ERD.pdf
+prisma/dbml/
