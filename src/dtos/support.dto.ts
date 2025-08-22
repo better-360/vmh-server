@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator';
 enum TicketStatus {
   OPEN = 'OPEN',
   IN_PROGRESS = 'IN_PROGRESS',
@@ -32,11 +32,25 @@ export class EditTicketStatusDto {
 
 
 export class MessageAttachment {
-  @ApiProperty({ example: 'Dosya adı' })
+  @ApiProperty({ 
+    description: 'File name',
+    example: 'document.pdf' 
+  })
+  @IsString()
   name: string;
-  @ApiProperty({ example: 'https://example.com/file.pdf' })
+  
+  @ApiProperty({ 
+    description: 'File URL',
+    example: 'https://example.com/file.pdf' 
+  })
+  @IsString()
   url: string;
-  @ApiProperty({ example: 'pdf' })
+  
+  @ApiProperty({ 
+    description: 'File type',
+    example: 'pdf' 
+  })
+  @IsString()
   type: string;
 }
 
@@ -64,16 +78,26 @@ export class TicketMessageDto {
 }
 
 
-export class CreateTicketDto {
-
-  @ApiPropertyOptional({
-    description: 'Company ID of the ticket',
-    example: 'UUID',
+export class FirstTicketMessageDto {
+  @ApiProperty({
+    description: 'Message of the ticket',
+    example: 'I cannot login to my account',
   })
   @IsString()
-  @IsOptional()
-  companyId?: string;
+  message: string;
 
+  @ApiPropertyOptional({ 
+    description: 'Message attachments',
+    type: [MessageAttachment] 
+  })
+  @ValidateNested({ each: true })
+  @Type(() => MessageAttachment)
+  @IsOptional()
+  @IsArray()
+  attachments?: MessageAttachment[];
+}
+
+export class CreateTicketDto {
   @ApiProperty({
     description: 'Subject of the ticket',
     example: 'I have a problem with my account',
@@ -88,9 +112,13 @@ export class CreateTicketDto {
   @IsString()
   category: string;
 
-  @ApiProperty({type: [TicketMessageDto]})
-  @Type(() => TicketMessageDto)
-  message: TicketMessageDto;
+  @ApiProperty({
+    description: 'Initial message for the ticket',
+    type: FirstTicketMessageDto
+  })
+  @ValidateNested()
+  @Type(() => FirstTicketMessageDto)
+  message: FirstTicketMessageDto;
 
   @ApiProperty({
     description: 'Status of the ticket',

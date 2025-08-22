@@ -26,6 +26,7 @@ import {
 } from 'src/dtos/checkout.dto';
 
 import { BillingCycle, OrderType } from '@prisma/client';
+import { ContextDto } from 'src/dtos/user.dto';
 
 @Injectable()
 export class BillingService {
@@ -267,7 +268,7 @@ export class BillingService {
    * (Optional) Existing subscription order (add items)
    * Kept as-is but you’ll likely shift to priceId arrays similar to initial flow.
    */
-  async createOrder(dto: CreateOrderDto, userId: string, workspaceId: string): Promise<OrderResponseDto> {
+  async createOrder(dto: CreateOrderDto, userId: string, context: ContextDto): Promise<OrderResponseDto> {
     try {
       let totalAmount = 0;
       const orderItems = [];
@@ -288,7 +289,8 @@ export class BillingService {
         metadata: {
           orderType: 'subscription',
           customerEmail: user.email,
-          workspaceId,
+          workspaceId: context.workspaceId,
+          mailboxId: context.mailboxId,
           itemCount: dto.items.length.toString(),
           cart: JSON.stringify(dto.items),
         },
@@ -304,7 +306,8 @@ export class BillingService {
           stripeCustomerId: customerId,
           type: OrderType.SUBSCRIPTION,
           metadata: {
-            workspaceId,
+            workspaceId: context.workspaceId,
+            mailboxId: context.mailboxId,
             subscriptionId: dto.subscriptionId,
           },
           items: { create: orderItems },

@@ -177,3 +177,13 @@ export class SetActiveContextDto {
   @IsUUID()
   mailboxId?: string;
 }
+
+
+export class ContextDto {
+  @IsUUID()
+  workspaceId: string;
+
+  @IsOptional()
+  @IsUUID()
+  mailboxId?: string;
+}

@@ -3,6 +3,7 @@ import { EditTicketStatusDto, TicketMessageDto } from 'src/dtos/support.dto';
 import { SupportService } from '../support/support.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/common/decorators/roles.decorator';
+import { CurrentUser } from 'src/common/decorators';
 
 @ApiBearerAuth()
 @ApiTags('Admin - Support Management')
@@ -20,15 +21,13 @@ export class AdminSupportController {
   @ApiOperation({ summary: 'Belirtilen destek biletinin detaylarını getirir (Sadece ADMIN)' })
   @Roles('ADMIN')
   @Get('ticket/:id/details')
-  async getTicket(@Req() req) {
-    const ticketId = req.params.id;
+  async getTicket(@Param('id') ticketId: string) {
     return await this.supportService.getTicketById(ticketId);
   }
 
   @ApiOperation({ summary: 'Bir destek biletine yetkili tarafından mesaj ekler (Sadece ADMIN)' })
   @Post('support/add-message-to-ticket')
-  async addMessageToTicket(@Body() data: TicketMessageDto, @Req() req) {
-    const userId = req.user.id;
+  async addMessageToTicket(@Body() data: TicketMessageDto, @CurrentUser('id') userId: string) {
     return await this.supportService.addMessageFromStaff(userId, data);
   }
 
@@ -36,10 +35,9 @@ export class AdminSupportController {
   @Post('ticket/:ticketId/edit')
   async editTicket(
     @Param('ticketId') ticketId: string,
-    @Req() req,
+    @CurrentUser('id') userId: string,
     @Body() data: EditTicketStatusDto,
   ) {
-    const userId = req.user.id;
     return await this.supportService.editTicketStatus(userId, ticketId, data.status,data.priority);
   }
 }

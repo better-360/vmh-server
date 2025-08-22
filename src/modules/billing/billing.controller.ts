@@ -18,7 +18,8 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateInitialSubscriptionOrderDto, CreateOrderDto } from 'src/dtos/checkout.dto';
 import { StripeService } from '../stripe/stripe.service';
 import { BillingService } from './billing.service';
-
+import { Context, CurrentUser } from 'src/common/decorators';
+import { ContextDto } from 'src/dtos/user.dto';
 @Public()
 @ApiTags('Billing')
 @Controller('billing')
@@ -35,13 +36,11 @@ export class BillingController {
     return this.billingService.createInitialSubscriptionOrder(createOrderDto);
   }
 
-  @ApiOperation({ summary: 'Create order' })
+  @ApiOperation({ summary: 'Create order', description: 'Create order for a specific workspace'})
   @Public()
   @Post('create-order')
-  async createOrder(@Body() createOrderDto: CreateOrderDto, @Req() req: any) {
-    const userId = req.user.id;
-    const workspaceId = req.user.workspaces[0].workspaceId;
-    throw new BadRequestException('Billing service temporarily disabled during schema migration');
+  async createOrder(@Body() createOrderDto: CreateOrderDto, @CurrentUser('id') userId: string,@Context() context: ContextDto) {
+    return await this.billingService.createOrder(createOrderDto, userId, context);
   }
 
   @Get('check-payment')

@@ -13,7 +13,6 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import {
-  CreateWorkspaceDto,
   UpdateWorkspaceDto,
   CreateWorkspaceMemberDto,
   UpdateWorkspaceMemberDto,
@@ -27,6 +26,7 @@ import {
 } from '@nestjs/swagger';
 import { validateAndTransform } from 'src/utils/validate';
 import { WorkspaceService } from '../workspace/workspace.service';
+import { CurrentUser } from 'src/common/decorators';
 
 @ApiBearerAuth()
 @ApiTags('Admin Workspace Management')
@@ -51,15 +51,15 @@ export class AdminWorkspaceController {
     description: 'Workspace detayı başarıyla alındı',
   })
   @Get(':id')
-  async getWorkspaceById(@Request() req, @Param('id') workspaceId: string) {
-    return await this.workspaceService.getWorkspaceById(workspaceId, req.user.id);
+  async getWorkspaceById(@CurrentUser('id') userId: string, @Param('id') workspaceId: string) {
+    return await this.workspaceService.getWorkspaceById(workspaceId, userId);
   }
 
   @ApiOperation({ summary: 'Workspace bilgilerini günceller' })
   @ApiResponse({ status: 200, description: 'Workspace başarıyla güncellendi' })
   @Put(':id')
   async updateWorkspace(
-    @Request() req,
+    @CurrentUser('id') userId: string,
     @Param('id') id: string,
     @Body() updateWorkspaceDto: UpdateWorkspaceDto,
   ) {
@@ -70,7 +70,7 @@ export class AdminWorkspaceController {
     const workspace = await this.workspaceService.updateWorkspace(
       id,
       dtoInstance,
-      req.user.id,
+      userId,
     );
     return {
       message: 'Workspace başarıyla güncellendi',
@@ -82,8 +82,8 @@ export class AdminWorkspaceController {
   @ApiResponse({ status: 200, description: 'Workspace başarıyla silindi' })
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async deleteWorkspace(@Request() req, @Param('id') id: string) {
-    const result = await this.workspaceService.deleteWorkspace(id, req.user.id);
+  async deleteWorkspace(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    const result = await this.workspaceService.deleteWorkspace(id, userId);
     return result;
   }
 
@@ -94,10 +94,10 @@ export class AdminWorkspaceController {
     description: 'Workspace üyeleri başarıyla alındı',
   })
   @Get(':id/members')
-  async getWorkspaceMembers(@Request() req, @Param('id') id: string) {
+  async getWorkspaceMembers(@CurrentUser('id') userId: string, @Param('id') id: string) {
     const members = await this.workspaceService.getWorkspaceMembers(
       id,
-      req.user.id,
+      userId,
     );
     return {
       message: 'Workspace üyeleri başarıyla alındı',
@@ -109,7 +109,7 @@ export class AdminWorkspaceController {
   @ApiResponse({ status: 201, description: 'Üye başarıyla eklendi' })
   @Post(':id/members')
   async addWorkspaceMember(
-    @Request() req,
+   @CurrentUser('id') userId: string,
     @Param('id') id: string,
     @Body() addMemberDto: CreateWorkspaceMemberDto,
   ) {
@@ -120,7 +120,7 @@ export class AdminWorkspaceController {
     const member = await this.workspaceService.addWorkspaceMember(
       id,
       dtoInstance,
-      req.user.id,
+      userId,
     );
     return {
       message: 'Üye başarıyla eklendi',
@@ -132,7 +132,7 @@ export class AdminWorkspaceController {
   @ApiResponse({ status: 200, description: 'Üye başarıyla güncellendi' })
   @Put(':id/members/:memberId')
   async updateWorkspaceMember(
-    @Request() req,
+    @CurrentUser('id') userId: string,
     @Param('id') id: string,
     @Param('memberId') memberId: string,
     @Body() updateMemberDto: UpdateWorkspaceMemberDto,
@@ -145,7 +145,7 @@ export class AdminWorkspaceController {
       id,
       memberId,
       dtoInstance,
-      req.user.id,
+      userId,
     );
     return {
       message: 'Üye başarıyla güncellendi',
@@ -158,14 +158,14 @@ export class AdminWorkspaceController {
   @Delete(':id/members/:memberId')
   @HttpCode(HttpStatus.OK)
   async removeWorkspaceMember(
-    @Request() req,
+    @CurrentUser('id') userId: string,
     @Param('id') id: string,
     @Param('memberId') memberId: string,
   ) {
     const result = await this.workspaceService.removeWorkspaceMember(
       id,
       memberId,
-      req.user.id,
+      userId,
     );
     return result;
   }

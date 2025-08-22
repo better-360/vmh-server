@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { UserService } from '../user/user.service';
-import { ChangePasswordDto, LoginDto } from 'src/dtos/user.dto';
+import { ChangePasswordDto, LoginDto, SetActiveContextDto } from 'src/dtos/user.dto';
 import { TokenService } from './token.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Events } from 'src/common/enums/event.enum';
@@ -24,17 +24,22 @@ export class AuthService {
 
   async signIn(credentials: LoginDto) {
     const user = await this.userService.findUserByEmail(credentials.email);
+    console.log('user', user);
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
+    
     const isPasswordValid = await this.userService.checkPassword(credentials);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    // Set default context only if user doesn't have one
+    await this.setDefaultContextIfNeeded(user);
+
     const { ...rest } = user;
     const accessToken = this.tokenService.generateAccessToken(user);
     const refreshToken = this.tokenService.generateRefreshToken(user);
-
 
     this.eventEmitter.emit(Events.USER_LOGIN, {
       email: user.email,
@@ -42,12 +47,26 @@ export class AuthService {
     });
 
     return {
-      user: { ...rest},
+      user: { ...rest },
       tokens: {
         accessToken,
         refreshToken,
       },
     };
+  }
+
+  private async setDefaultContextIfNeeded(user: any) {
+    // Only set context if user doesn't have one
+    if (!user.currentWorkspaceId||!user.currentMailboxId && user.workspaces?.length > 0) {
+      const firstWorkspaceMember = user.workspaces[0];
+      const firstMailbox = firstWorkspaceMember.mailboxes?.[0];
+      const defaultContext: SetActiveContextDto = {
+        workspaceId: firstWorkspaceMember.workspaceId,
+        mailboxId: firstMailbox?.id || null,
+      };
+      await this.userService.setContext(user.id, defaultContext);
+      console.log('current workspace updated');
+    }
   }
 
   async deleteAccount(userId: string) {

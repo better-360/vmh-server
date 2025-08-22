@@ -2,7 +2,6 @@ import {
   Controller,
   Body,
   Post,
-  Request,
   Get,
   Req,
   Param,
@@ -11,48 +10,54 @@ import { SupportService } from './support.service';
 import { CreateTicketDto, EditTicketStatusDto, TicketMessageDto } from 'src/dtos/support.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
+import { Context } from 'src/common/decorators/context.decorator';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { ContextDto } from 'src/dtos/user.dto';
 
 @ApiTags('Support - Ticket System')
 @Controller('support')
 export class SupportController {
   constructor(private readonly supportService: SupportService) {}
 
-  // @ApiOperation({ summary: 'Yeni bir destek bileti (ticket) oluşturur' })
-  // @Post('create-ticket')
-  // async createTicket(@Request() req, @Body() data: CreateTicketDto) {
-  //   const userId = req.user.id;
-  //   return await this.supportService.createTicket(userId, data);
-  // }
+  @ApiOperation({ summary: 'Create a new support ticket' })
+  @Post('create-ticket')
+  async createTicket(
+    @CurrentUser('id') userId: string,
+    @Context() context: ContextDto,
+    @Body() data: CreateTicketDto
+  ) {
+    return await this.supportService.createTicket(userId, context, data);
+  }
 
-  @ApiOperation({ summary: 'Mevcut bir ticket’a mesaj ekler' })
+  @ApiOperation({ summary: 'Add a message to an existing ticket' })
   @Post('add-message-to-ticket')
-  async addMessageToTicket(@Request() req, @Body() data: TicketMessageDto) {
-    const userId = req.user.id;
+  async addMessageToTicket(
+    @CurrentUser('id') userId: string,
+    @Body() data: TicketMessageDto
+  ) {
     return await this.supportService.addMessage(userId, data);
   }
 
-  @ApiOperation({ summary: 'Bir ticket’ın durumunu günceller' })
+  @ApiOperation({ summary: 'Update ticket status' })
   @Post('ticket/:ticketId/edit')
   async editTicket(
     @Param('ticketId') ticketId: string,
-    @Req() req,
+    @CurrentUser('id') userId: string,
     @Body() data: EditTicketStatusDto
   ) {
-    const userId = req.user.id;
-    return await this.supportService.editTicketStatus(userId, ticketId, data.status,data.priority);
+    return await this.supportService.editTicketStatus(userId, ticketId, data.status, data.priority);
   }
 
-  @ApiOperation({ summary: 'Kullanıcının oluşturduğu tüm destek biletlerini (tickets) getirir' })
+  @ApiOperation({ summary: 'Get all user tickets' })
   @Get('my-tickets')
-  async getMyTickets(@Request() req) {
-    const userId = req.user.id;
+  async getMyTickets(@CurrentUser('id') userId: string) {
     return await this.supportService.getUserTickets(userId);
   }
 
   @Public()
-  @ApiOperation({ summary: 'Belirtilen destek biletinin detaylarını getirir' })
+  @ApiOperation({ summary: 'Get ticket details by ID' })
   @Get('ticket/:id')
-  async getTicket(@Req() req , @Param('id') ticketId: string) {
+  async getTicket(@Param('id') ticketId: string) {
     return await this.supportService.getTicketById(ticketId);
   }
 }

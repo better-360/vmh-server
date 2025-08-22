@@ -1,10 +1,11 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Ticket, TicketStatus } from '@prisma/client';
-import { CreateTicketDto, EditTicketStatusDto, TicketMessageDto } from 'src/dtos/support.dto';
+import { CreateTicketDto, EditTicketStatusDto, FirstTicketMessageDto, TicketMessageDto } from 'src/dtos/support.dto';
 import { PrismaService } from 'src/prisma.service';
 import { EmailService } from '../email/email.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Events } from 'src/common/enums/event.enum';
+import { ContextDto } from 'src/dtos/user.dto';
 
 @Injectable()
 export class SupportService {
@@ -103,52 +104,44 @@ export class SupportService {
     return editedticket;
   }
 
-  // async createTicket(userId: string, data: CreateTicketDto): Promise<Ticket> {
-  //   // gelen değer bir nesne veya nesneler dizisi olabilir.
-  //   const { message, companyId, ...ticketData } = data;
-  //   // Eğer message bir dizi değilse, diziye çeviriyoruz.
-  //   const messagesArray = Array.isArray(message) ? message : [message];
-  
-  //   const ticket = await this.prismaService.ticket.create({
-  //     data: {
-  //       ...ticketData,
-  //       messages: {
-  //         create: messagesArray.map((msg: TicketMessageDto) => {
-  //           // Attachments varsa, bunları array'e çevir ve uploadedBy ekle
-  //           const attachmentsData = msg.attachments
-  //             ? (Array.isArray(msg.attachments)
-  //                 ? msg.attachments
-  //                 : [msg.attachments]
-  //               ).map(att => ({
-  //                 ...att,
-  //                 uploadedBy: { connect: { id: userId } },
-  //               }))
-  //             : undefined;
-              
-  //           return {
-  //             message: msg.message,
-  //             userId,
-  //             isStaff: false,
-  //             attachments: attachmentsData ? { create: attachmentsData } : undefined,
-  //           };
-  //         }),
-  //       },
-  //       user: {
-  //         connect: {
-  //           id: userId,
-  //         },
-  //       },
-  //       company: companyId
-  //         ? {
-  //             connect: {
-  //               id: companyId,
-  //             },
-  //           }
-  //         : undefined,
-  //     },
-  //   });
-  //   return ticket;
-  // }
+  async createTicket(userId: string, context:ContextDto, data: CreateTicketDto): Promise<Ticket> {
+    // gelen değer bir nesne veya nesneler dizisi olabilir.
+    const { message, ...ticketData } = data;
+    // Eğer message bir dizi değilse, diziye çeviriyoruz
+  console.log('message', message);
+  console.log('ticketData', ticketData);
+  console.log('context', context);
+    const ticket = await this.prismaService.ticket.create({
+      data: {
+        ...ticketData,
+        workspaceId: context.workspaceId,
+        messages: {
+          create: {
+            message: message.message,
+            userId,
+            fromStaff: false,
+            attachments: message.attachments ? { create: message.attachments.map(att => ({
+              ...att,
+              uploadedBy: { connect: { id: userId } },
+            })) } : undefined,
+          },
+        },
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
+        mailbox: context.mailboxId
+          ? {
+              connect: {
+                id: context.mailboxId,
+              },
+            }
+          : undefined,
+      },
+    });
+    return ticket;
+  }
 
   async getTicketById(ticketId: string): Promise<Ticket> {
     const ticket = await this.prismaService.ticket.findUnique({

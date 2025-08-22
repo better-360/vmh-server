@@ -1,4 +1,4 @@
-  import { RoleType,  WorkspaceRole } from '@prisma/client';
+  import { OfficeLocation, RoleType,  WorkspaceRole } from '@prisma/client';
 
   export interface IWorkspaceMember {
     workspaceId: string;
@@ -23,6 +23,9 @@
     address?: Address;
     createdAt: Date;
     workspaces?: IWorkspaceMember[]| any[];
+    currentWorkspaceId?: string;
+    currentMailboxId?: string;
+    currentOfficeLocation?: any;
   }
 
 export interface Address {

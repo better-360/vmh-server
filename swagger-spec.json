@@ -60,6 +60,46 @@
         ]
       }
     },
+    "/api/auth/set-context": {
+      "put": {
+        "operationId": "AuthController_setContext",
+        "summary": "Set Context",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetActiveContextDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/auth/get-context": {
+      "get": {
+        "operationId": "AuthController_getContext",
+        "summary": "Get Context",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
     "/api/auth/refresh-token": {
       "post": {
         "operationId": "AuthController_refreshToken",
@@ -850,7 +890,16 @@
       "get": {
         "operationId": "AdminSupportController_getTicket",
         "summary": "Belirtilen destek biletinin detaylarını getirir (Sadece ADMIN)",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -4230,10 +4279,35 @@
         ]
       }
     },
+    "/api/support/create-ticket": {
+      "post": {
+        "operationId": "SupportController_createTicket",
+        "summary": "Create a new support ticket",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTicketDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Support - Ticket System"
+        ]
+      }
+    },
     "/api/support/add-message-to-ticket": {
       "post": {
         "operationId": "SupportController_addMessageToTicket",
-        "summary": "Mevcut bir ticket’a mesaj ekler",
+        "summary": "Add a message to an existing ticket",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -4258,7 +4332,7 @@
     "/api/support/ticket/{ticketId}/edit": {
       "post": {
         "operationId": "SupportController_editTicket",
-        "summary": "Bir ticket’ın durumunu günceller",
+        "summary": "Update ticket status",
         "parameters": [
           {
             "name": "ticketId",
@@ -4292,7 +4366,7 @@
     "/api/support/my-tickets": {
       "get": {
         "operationId": "SupportController_getMyTickets",
-        "summary": "Kullanıcının oluşturduğu tüm destek biletlerini (tickets) getirir",
+        "summary": "Get all user tickets",
         "parameters": [],
         "responses": {
           "200": {
@@ -4307,7 +4381,7 @@
     "/api/support/ticket/{id}": {
       "get": {
         "operationId": "SupportController_getTicket",
-        "summary": "Belirtilen destek biletinin detaylarını getirir",
+        "summary": "Get ticket details by ID",
         "parameters": [
           {
             "name": "id",
@@ -5735,6 +5809,7 @@
       "post": {
         "operationId": "BillingController_createOrder",
         "summary": "Create order",
+        "description": "Create order for a specific workspace",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -7149,6 +7224,10 @@
           "password"
         ]
       },
+      "SetActiveContextDto": {
+        "type": "object",
+        "properties": {}
+      },
       "TokenDto": {
         "type": "object",
         "properties": {
@@ -7193,10 +7272,6 @@
           "currentPassword",
           "newPassword"
         ]
-      },
-      "SetActiveContextDto": {
-        "type": "object",
-        "properties": {}
       },
       "UpdateUserDto": {
         "type": "object",
@@ -7541,14 +7616,17 @@
         "properties": {
           "name": {
             "type": "string",
-            "example": "Dosya adı"
+            "description": "File name",
+            "example": "document.pdf"
           },
           "url": {
             "type": "string",
+            "description": "File URL",
             "example": "https://example.com/file.pdf"
           },
           "type": {
             "type": "string",
+            "description": "File type",
             "example": "pdf"
           }
         },
@@ -9309,6 +9387,60 @@
             "example": false
           }
         }
+      },
+      "FirstTicketMessageDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Message of the ticket",
+            "example": "I cannot login to my account"
+          },
+          "attachments": {
+            "description": "Message attachments",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MessageAttachment"
+            }
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "CreateTicketDto": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "description": "Subject of the ticket",
+            "example": "I have a problem with my account"
+          },
+          "category": {
+            "type": "string",
+            "description": "Category of the ticket",
+            "example": "ACCOUNT|PAYMENT|TECHNICAL"
+          },
+          "message": {
+            "description": "Initial message for the ticket",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FirstTicketMessageDto"
+              }
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "description": "Status of the ticket",
+            "example": "LOW|MEDIUM|HIGH"
+          }
+        },
+        "required": [
+          "subject",
+          "category",
+          "message",
+          "priority"
+        ]
       },
       "PlanFeatureResponseDto": {
         "type": "object",

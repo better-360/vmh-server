@@ -60,7 +60,6 @@ generator dbml {
     deletedAt   DateTime?
     isDeleted   Boolean           @default(false) // Workspace silinmiş mi?
     members     WorkspaceMember[]
-    tickets     Ticket[]
     invoices    Invoice[]
     invitations Invitation[]
     mailboxes   Mailbox[]
@@ -99,6 +98,8 @@ generator dbml {
     mails             Mail[]
     orders            Order[]
     recipients        Recipient[]
+    tickets     Ticket[]
+
 
     @@unique([workspaceId, officeLocationId, isActive], name: "OneActiveSubscriptionPerOffice")
     @@index([workspaceId, isActive])
@@ -724,7 +725,8 @@ generator dbml {
     messages    TicketMessage[]
     attachments Attachment[]    @relation("AttachmentToTicket")
     workspaceId String?         @db.Uuid // İsteğe bağlı, eğer ticket bir workspace'e ait ise
-    workspace   Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+    mailboxId   String?         @db.Uuid // İsteğe bağlı, eğer ticket bir mailbox'e ait ise
+    mailbox     Mailbox?        @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
   }
 
   model TicketMessage {

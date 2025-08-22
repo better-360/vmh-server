@@ -17,6 +17,7 @@ import {
 } from 'src/dtos/user.dto';
 import { validateAndTransform } from '../../utils/validate';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from 'src/common/decorators';
 
 @ApiBearerAuth()
 @ApiTags('User Management')
@@ -35,15 +36,15 @@ export class UserController {
   }
 
   @Get('context')
-  getContext(@Request() req) {
-    return this.userService.getContext(req.user.id);
+  getContext(@CurrentUser('id') userId: string) {
+    return this.userService.getContext(userId);
   }
 
   @ApiOperation({ summary: 'Kullanıcının aktif contextini günceller' })
   @Put('context')
-  async setContext(@Request() req, @Body() data: SetActiveContextDto) {
+  async setContext(@CurrentUser('id') userId: string, @Body() data: SetActiveContextDto) {
     const dtoInstance = await validateAndTransform(SetActiveContextDto, data);
-    await this.userService.setContext(req.user.id, dtoInstance);
+    await this.userService.setContext(userId, dtoInstance);
     return {
       code: HttpStatus.OK,
       message: 'Context updated',
@@ -54,8 +55,7 @@ export class UserController {
   @ApiOperation({ summary: 'Kullanıcı bilgilerini günceller' })
   @Post('update-me')
   @HttpCode(HttpStatus.OK)
-  async updateUser(@Request() req, @Body() updateUserDto: UpdateUserDto) {
-    const userId = req.user.id;
+  async updateUser(@CurrentUser('id') userId: string, @Body() updateUserDto: UpdateUserDto) {
     const dtoInstance = await validateAndTransform(
       UpdateUserDto,
       updateUserDto,
@@ -68,8 +68,8 @@ export class UserController {
 
   @ApiOperation({ summary: 'Mevcut oturum açmış kullanıcıyı siler' })
   @Delete('delete-me')
-  async deleteUser(@Request() req) {
-    await this.userService.deleteUser(req.user.id);
+  async deleteUser(@CurrentUser('id') userId: string) {
+    await this.userService.deleteUser(userId);
     return {
       code: HttpStatus.OK,
       message: 'User deleted',
@@ -78,10 +78,10 @@ export class UserController {
 
   @ApiOperation({ summary: 'Kullanıcı e-posta adresini günceller' })
   @Post('update-email')
-  async updateEmail(@Request() req, @Body() data: ChangeEmailDto) {
+    async updateEmail(@CurrentUser('id') userId: string, @Body() data: ChangeEmailDto) {
     const dtoInstance = await validateAndTransform(ChangeEmailDto, data);
     const updatedUser = await this.userService.changeUserEmail(
-      req.user.id,
+      userId,
       dtoInstance,
     );
 

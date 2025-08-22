@@ -68,18 +68,17 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers.authorization;
 
-    if (authHeader) {
+    if (authHeader && authHeader.startsWith('Bearer ')) {
       try {
-        const token = authHeader.split(' ')[1]; // "Bearer token" formatından token'ı al
-        const user = await super.canActivate(context);
-
-        if (user) {
-          request.user = user;
-        }
+        // JWT strategy'yi çalıştırarak user'ı validate et
+        const result = await super.canActivate(context);
+        // JWT strategy başarılıysa user zaten request'e set edilmiş olur
       } catch (error) {
         console.warn('Optional JWT Token validation failed', error.message);
         request.user = null; // Token varsa ama geçersizse user null olsun
       }
+    } else {
+      request.user = null; // Token yoksa user null
     }
 
     return true; // Public endpoint olduğu için her halükarda erişime izin ver

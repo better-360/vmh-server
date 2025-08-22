@@ -4,7 +4,7 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { Mailbox, RoleType, User, Workspace, WorkspaceMember } from '@prisma/client';
+import { Mailbox, OfficeLocation, RoleType, User, Workspace, WorkspaceMember } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
 import * as bcrypt from 'bcrypt';
 import {
@@ -84,7 +84,22 @@ export class UserService {
       where: { email },
       include: {
         roles: true,
-        workspaces: true,
+        workspaces: {
+          include: {
+            workspace: {
+              include: {
+                mailboxes: {
+                  include: {
+                    plan: true,
+                    planPrice: true,
+                    officeLocation: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        
       },
     });
   }
@@ -102,6 +117,21 @@ export class UserService {
                   include: {
                     plan: true,       
                     planPrice: true,
+                    officeLocation: {
+                      select: {
+                        id: true,
+                        label: true,
+                        addressLine: true,
+                        addressLine2: true,
+                        city: true,
+                        state: true,
+                        country: true,
+                        phone: true,
+                        email: true,
+                        workingHours: true,
+                        timezone: true,
+                      },
+                    },
                   },
                 },
               },
@@ -110,10 +140,18 @@ export class UserService {
         },
       },
     });
+
     if (!user) {
       throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
     }
-    return user ? this.formatUser(user) : null;
+    
+    const formattedUser = this.formatUser(user);
+    
+    // Add context information to user object for JWT payload
+    formattedUser.currentWorkspaceId = user.currentWorkspaceId;
+    formattedUser.currentMailboxId = user.currentMailboxId;
+    formattedUser.currentOfficeLocation = user.workspaces[0].workspace.mailboxes[0].officeLocation;
+    return formattedUser;
   }
 
   async checkUserByEmail(
@@ -375,8 +413,8 @@ async changeUserEmail(userId: string, data: ChangeEmailDto) {
     });
     if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     return {
-      currentWorkspaceId: user.currentWorkspaceId,
-      currentMailboxId: user.currentMailboxId,
+      workspaceId: user.currentWorkspaceId,
+      mailboxId: user.currentMailboxId,
       workspaces: user.workspaces,
     };
   }

@@ -10,15 +10,19 @@ import {
   Get,
   Query,
   Res,
+  Patch,
+  Put,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ChangePasswordDto, CheckEmailisExistDto, LoginDto } from 'src/dtos/user.dto';
+import { ChangePasswordDto, CheckEmailisExistDto, LoginDto, SetActiveContextDto } from 'src/dtos/user.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { TokenDto } from 'src/dtos/token.dto';
 import { PasswordResetService } from './reset.service';
 import { EmailVerifyService } from './verify.service';
 import { TokenService } from './token.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { UserService } from '../user/user.service';
+import { CurrentUser } from 'src/common/decorators';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -28,6 +32,7 @@ export class AuthController {
     private readonly passwordResetService: PasswordResetService,
     private readonly tokenService: TokenService,
     private readonly emailVerifyService: EmailVerifyService,
+    private readonly userService: UserService,
   ) {}
   
 
@@ -58,6 +63,23 @@ export class AuthController {
       ...userData,
     };
   }
+
+  @ApiOperation({ summary: 'Set Context' })
+  @Put('set-context')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async setContext(@Body() contextData: SetActiveContextDto, @CurrentUser('id') userId: string) {
+    return await this.userService.setContext(userId, contextData);
+  }
+
+  @ApiOperation({ summary: 'Get Context' })
+  @Get('get-context')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async getContext(@CurrentUser('id') userId: string) {
+    return await this.userService.getContext(userId);
+  }
+
 
   @ApiOperation({ summary: 'Generate new acces token with using refresh token' })
   @Public()
@@ -123,8 +145,8 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Change Password' })
   @Post('change-my-password')
-  async changePassword(@Req() req:any,@Body() data: ChangePasswordDto) {
-    return this.authService.changeUserpassword(req.user.id,data);
+  async changePassword(@CurrentUser('id') userId: string, @Body() data: ChangePasswordDto) {
+    return this.authService.changeUserpassword(userId,data);
   }
 
 }
