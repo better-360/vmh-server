@@ -28,4 +28,5 @@ export enum Events {
     DOCUMENT_UPDATED="document.updated",
     DOCUMENT_DELETED="document.deleted",
     DOCUMENT_COMMENTED="document.commented",
+    MAIL_ACTION_CREATED="mailAction.created",
   }

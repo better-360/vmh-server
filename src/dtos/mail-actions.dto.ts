@@ -345,3 +345,23 @@ export class ForwarMeta {
   @IsOptional()
   carrierId: string;
 }
+
+
+export class CreateMailActionRequestDto {
+  @ApiProperty({
+    description: 'The Mail (package) ID related to the action',
+    example: '0b2e9d9b-9e32-4c8c-a2d9-3f7e2e3b5c1a',
+  })
+  @IsUUID()
+  @IsOptional()
+  mailId: string;
+
+  @ApiProperty({
+    description: 'Type of action',
+    enum: MailActionType,
+    example: MailActionType.SHRED,
+  })
+  @IsEnum(MailActionType)
+  type!: MailActionType;
+
+}

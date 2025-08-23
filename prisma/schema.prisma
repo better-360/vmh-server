@@ -486,7 +486,6 @@ generator dbml {
 
   model Mail {
     id             String        @id @default(uuid()) @db.Uuid
-    steNumber      String // Paketin üzerindeki STE numarası
     mailboxId String        @db.Uuid
     receivedAt     DateTime
     trackingNumber String?
@@ -516,7 +515,6 @@ generator dbml {
     recipient      Recipient? @relation(fields: [recipientId], references: [id], onDelete: Cascade)
     recipientId    String?    @db.Uuid
     @@index([mailboxId])
-    @@index([steNumber])
   }
 
   model MailAction {

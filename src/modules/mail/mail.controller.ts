@@ -21,8 +21,12 @@ import {
   PackageResponseDto,
   MailType,
   PackageStatus,
+  MailResponseDto,
 } from 'src/dtos/mail.dto';
 import { Public } from 'src/common/decorators/public.decorator';
+import { Context } from 'src/common/decorators/context.decorator';
+import { ContextDto } from 'src/dtos/user.dto';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 
 @ApiTags('Mail Management')
 @ApiBearerAuth()
@@ -32,55 +36,20 @@ import { Public } from 'src/common/decorators/public.decorator';
 export class MailController {
   constructor(private readonly mailService: MailService) {}
 
-  // =====================
-  // PACKAGE ENDPOINTS
-  // =====================
 
-  @Get('all')
-  @ApiOperation({ 
-    summary: 'Get all packages',
-    description: 'Retrieve a paginated list of all packages with filtering options'
+  @Get()
+  @ApiOperation({
+    summary: 'Get all mails',
+    description: 'Retrieve all mails'
   })
-  @ApiQuery({ name: 'workspaceAddressId', required: false, type: String, description: 'Filter by workspace address ID' })
-  @ApiQuery({ name: 'officeLocationId', required: false, type: String, description: 'Filter by office location ID' })
-  @ApiQuery({ name: 'type', required: false, enum: MailType, description: 'Filter by package type' })
-  @ApiQuery({ name: 'status', required: false, enum: PackageStatus, description: 'Filter by package status' })
-  @ApiQuery({ name: 'steNumber', required: false, type: String, description: 'Filter by STE number' })
-  @ApiQuery({ name: 'senderName', required: false, type: String, description: 'Filter by sender name' })
-  @ApiQuery({ name: 'carrier', required: false, type: String, description: 'Filter by carrier' })
-  @ApiQuery({ name: 'isShereded', required: false, type: Boolean, description: 'Filter by shredded status' })
-  @ApiQuery({ name: 'isForwarded', required: false, type: Boolean, description: 'Filter by forwarded status' })
-  @ApiQuery({ name: 'receivedAtStart', required: false, type: String, description: 'Filter by received date start (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'receivedAtEnd', required: false, type: String, description: 'Filter by received date end (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number for pagination (default: 1)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 10)' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
-    description: 'Packages retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        data: { 
-          type: 'array', 
-          items: { 
-            $ref: '#/components/schemas/PackageResponseDto'
-          }
-        },
-        meta: {
-          type: 'object',
-          properties: {
-            total: { type: 'number' },
-            page: { type: 'number' },
-            limit: { type: 'number' },
-            totalPages: { type: 'number' }
-          }
-        }
-      }
-    }
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'All mails retrieved',
+    type: [MailResponseDto]
   })
-  async getMails(@Query() query: any) {
-    return this.mailService.findAll(query);
-  }
+  async getMails(@Query() query: any, @Context() context: ContextDto) {
+    throw new Error('This endpoint is deprecated. Use /customer/mails for customer access or /admin/mails for admin access.');
+  } 
 
   @Get(':id')
   @ApiOperation({ 

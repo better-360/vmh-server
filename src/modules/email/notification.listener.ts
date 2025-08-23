@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { EmailService } from './email.service';
 import { Events } from '../../common/enums/event.enum';
+import { Mail, MailActionType } from '@prisma/client';
 
 @Injectable()
 export class NotificationListener implements OnModuleInit {
@@ -76,5 +77,14 @@ export class NotificationListener implements OnModuleInit {
       payload.ticket_subject,
       payload.ticket_number,
     );
+  }
+
+  @OnEvent(Events.MAIL_ACTION_CREATED)
+  async sendMailActionCreatedMail(payload: {
+    mail: Mail;
+    type: MailActionType;
+  }) {
+    console.log(`Mail action created: ${payload.mail.id} - ${payload.type}`);
+    // Notify handler to send mail to user
   }
 }

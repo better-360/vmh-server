@@ -7,6 +7,9 @@ import {
   PackageStatus as MailDtoPackageStatus
 } from 'src/dtos/mail.dto';
 import { Prisma } from '@prisma/client';
+import { ContextDto } from 'src/dtos/user.dto';
+import { isMemberOfMailbox } from 'src/utils/validate';
+import { MailEntity } from 'src/common/entities/mail.entity';
 
 @Injectable()
 export class MailService {
@@ -48,7 +51,6 @@ export class MailService {
 
       const mail = await this.prisma.mail.create({
         data: {
-          steNumber: mailbox.steNumber,
           type: createMailDto.type,
           receivedAt: new Date(createMailDto.receivedAt),
           photoUrls: createMailDto.photoUrls || [],
@@ -94,28 +96,40 @@ export class MailService {
     }
   }
 
-  async findAll(filters: any = {}): Promise<MailResponseDto[]> {
+    async findAll(filters: any = {}, userId: string, context: ContextDto, ability?: any): Promise<MailResponseDto[]> {
     const where: Prisma.MailWhereInput = {};
-    
+
+    // Basit authorization kontrolü - CASL kompleksliğini bypass et
+    if (ability) {
+      // Admin/Staff ise tüm mail'leri görebilir
+      const isAdmin = ability.can('manage', 'all') || ability.can('manage', 'MailEntity');
+      
+      if (!isAdmin) {
+        // Customer ise sadece kendi mailbox'ındaki mail'leri görebilir
+        if (!context?.mailboxId) {
+          throw new BadRequestException('Context mailboxId is required for customers');
+        }
+        
+        console.log(`Customer ${userId} accessing mailbox ${context.mailboxId}`);
+        where.mailboxId = context.mailboxId;
+      } else {
+        console.log(`Admin/Staff ${userId} accessing all mails`);
+      }
+    } else if (context?.mailboxId) {
+      // CASL yoksa fallback - sadece kendi mailbox'ı
+      console.log(`Fallback: User ${userId} accessing mailbox ${context.mailboxId}`);
+      where.mailboxId = context.mailboxId;
+    }
+
+    // Ek filtreler
     if (filters.mailboxId) where.mailboxId = filters.mailboxId;
     if (filters.status) where.status = filters.status;
     if (filters.type) where.type = filters.type;
-    if (filters.steNumber) {
-      where.steNumber = {
-        contains: filters.steNumber,
-        mode: 'insensitive',
-      };
-    }
 
     const mails = await this.prisma.mail.findMany({
       where,
       include: {
-        mailbox: {
-          include: {
-            workspace: true,
-            officeLocation: true,
-          },
-        },
+        mailbox: true,
         actions: {
           orderBy: { requestedAt: 'desc' },
         },

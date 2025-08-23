@@ -5,7 +5,9 @@ import {
   UpdateMailboxDto, 
   MailboxResponseDto 
 } from 'src/dtos/mailbox.dto';
-import { Prisma, Mailbox } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { ContextDto } from 'src/dtos/user.dto';
+import { isMemberOfMailbox } from 'src/utils/validate';
 
 @Injectable()
 export class MailboxService {
@@ -312,5 +314,35 @@ export class MailboxService {
       }
       throw new BadRequestException(`Failed to find mailboxes by STE number: ${error.message}`);
     }
+  }
+
+  async getMyMails(userId:string,context:ContextDto){
+    if(!await isMemberOfMailbox(userId,context.mailboxId,this.prisma)){
+      throw new BadRequestException(`User with ID ${userId} is not a member of mailbox with ID ${context.mailboxId}`);
+    }
+    const mailbox=await this.prisma.mailbox.findUnique({
+      where: {
+        id: context.mailboxId,
+        isActive: true,
+        workspaceId: context.workspaceId,
+      },
+      include: {
+        workspace: {
+          include: {
+            members: true,
+          },
+        },
+      },
+    });
+    if(!mailbox){
+      throw new NotFoundException(`Mailbox with ID ${context.mailboxId} not found`);
+    }
+
+    const mails= await this.prisma.mail.findMany({
+      where: {
+        mailboxId: context.mailboxId,
+      },
+    });
+    return mails;
   }
 }

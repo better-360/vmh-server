@@ -200,7 +200,8 @@ import { MailActionsService } from '../actions/actions.service';
       }
     })
     async getMails(@Query() query: MailQueryDto) {
-      return this.mailService.findAll(query);
+      // Internal handler endpoint - deprecated, use admin endpoints instead
+      throw new Error('This internal endpoint is deprecated. Use /admin/mails instead');
     }
   
   @Get(':id')
@@ -255,7 +256,8 @@ import { MailActionsService } from '../actions/actions.service';
     @Param('mailboxId') mailboxId: string,
     @Query() query: MailQueryDto
   ) {
-    return this.mailService.findAll({ mailboxId, ...query });
+    // Internal handler endpoint - deprecated, use admin endpoints instead
+    throw new Error('This internal endpoint is deprecated. Use /admin/mails instead');
   }
   
   @Get(':officeLocationId/mails')
@@ -295,7 +297,8 @@ import { MailActionsService } from '../actions/actions.service';
       @Param('officeLocationId') officeLocationId: string,
       @Query() query: MailQueryDto
     ) {
-      return this.mailService.findAll({ officeLocationId, ...query });
+      // Internal handler endpoint - deprecated, use admin endpoints instead
+      throw new Error('This internal endpoint is deprecated. Use /admin/mails instead');
     }
   
 

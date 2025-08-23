@@ -1,11 +1,13 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ActionStatus, MailActionType, MailStatus, Prisma } from '@prisma/client';
-import { UpdateActionStatusDto,CreateMailActionDto,CompleteForwardDto, CancelForwardDto,QueryMailActionsDto, ForwarMeta } from 'src/dtos/mail-actions.dto';
+import { UpdateActionStatusDto,CreateMailActionDto,CompleteForwardDto, CancelForwardDto,QueryMailActionsDto, ForwarMeta, CreateMailActionRequestDto } from 'src/dtos/mail-actions.dto';
 import { PrismaService } from 'src/prisma.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Events } from 'src/common/enums/event.enum';
 
 @Injectable()
 export class MailActionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly eventEmitter: EventEmitter2) {}
 
   async listActions(q: QueryMailActionsDto) {
     const {
@@ -24,7 +26,6 @@ export class MailActionsService {
       } : {}),
       ...(search ? {
         OR: [
-          { mail: { steNumber: { contains: search, mode: 'insensitive' } } },
           { mail: { trackingNumber: { contains: search, mode: 'insensitive' } } },
           { mail: { senderName: { contains: search, mode: 'insensitive' } } },
         ],
@@ -40,7 +41,6 @@ export class MailActionsService {
           mail: {
             select: {
               id: true,
-              steNumber: true,
               mailboxId: true,
               trackingNumber: true,
               isForwarded: true,
@@ -66,6 +66,33 @@ export class MailActionsService {
     if (!act) throw new NotFoundException('Action not found');
     return act;
   }
+
+async createActionRequest(dto: CreateMailActionRequestDto, userId: string, ability: any){
+  const mail = await this.prisma.mail.findUnique({ 
+    where: { id: dto.mailId },
+    include: { mailbox: { include: { workspace: { include: { members: true } } } } }
+  });
+  if (!mail) throw new NotFoundException('Mail not found');
+
+  const isAdmin = ability.can('manage', 'all') || ability.can('manage', 'MailEntity');
+  if (!isAdmin) {
+    // User'ın bu mailbox'ın workspace'inde üye olup olmadığını kontrol et
+    const isMember = mail.mailbox.workspace.members.some(member => member.userId === userId);
+    if (!isMember) {
+      throw new BadRequestException('You are not allowed to create action for this mail');
+    }
+  }
+
+  const action = await this.prisma.mailAction.create({
+    data: {
+      mailId: dto.mailId,
+      type: dto.type,
+      status: ActionStatus.PENDING,
+    },
+  });
+  this.eventEmitter.emit(Events.MAIL_ACTION_CREATED, {mail, type: dto.type, action});
+  return { action };
+}
 
   async createAction(dto: CreateMailActionDto) {
     const mail = await this.prisma.mail.findUnique({ where: { id: dto.mailId } });
