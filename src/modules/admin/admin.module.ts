@@ -27,7 +27,11 @@ import { AdminMailboxController } from './mailbox.controller';
 import { AdminWorkspaceController } from './workspace.controller';
 import { WorkspaceService } from '../workspace/workspace.service';
 import { AdminMailController } from './mail.controller';
+import { AdminHandlerController } from './handler.controller';
+import { HandlerService } from '../handler/handler.service';
 import { CaslAbilityFactory } from 'src/authorization/casl/ability.factory';
+import { AdminTaskController } from './task.controller';
+import { TaskService } from '../task/task.service';
 
 
 @Module({
@@ -52,6 +56,8 @@ import { CaslAbilityFactory } from 'src/authorization/casl/ability.factory';
     MailboxService,
     WorkspaceService,
     CaslAbilityFactory,
+    HandlerService,
+    TaskService,
   ],
 
   exports: [AdminService],
@@ -70,7 +76,9 @@ import { CaslAbilityFactory } from 'src/authorization/casl/ability.factory';
     AdminPackagingOptionController,
     AdminMailboxController,
     AdminWorkspaceController,
-    AdminMailController
+    AdminMailController,
+    AdminHandlerController,
+    AdminTaskController,
   ],
 })
 export class AdminModule {}

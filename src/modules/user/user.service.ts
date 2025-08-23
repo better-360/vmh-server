@@ -4,7 +4,7 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { Mailbox, OfficeLocation, RoleType, User, Workspace, WorkspaceMember } from '@prisma/client';
+import { Mailbox, MailHandlerAssignment, OfficeLocation, RoleType, User, Workspace, WorkspaceMember } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
 import * as bcrypt from 'bcrypt';
 import {
@@ -36,7 +36,7 @@ export class UserService {
   }
 
   private formatUser(
-    user: User & { roles: { role: RoleType }[] } & {
+    user: User & { roles: { role: RoleType }[] } & { handlerAssignments: MailHandlerAssignment[] } & {
       workspaces: (WorkspaceMember & {
         workspace: Workspace & {
           mailboxes: (Mailbox & {
@@ -60,6 +60,7 @@ export class UserService {
       createdAt: user.createdAt,
       telephone: user.telephone || null,
       roles: user.roles.map((role) => role.role),
+      assigneedLocationId: user.handlerAssignments[0]?.officeLocationId || undefined,
       workspaces: user.workspaces.map((member) => ({
         workspaceId: member.workspaceId,
         role: member.role,
@@ -84,6 +85,7 @@ export class UserService {
       where: { email },
       include: {
         roles: true,
+        handlerAssignments: true,
         workspaces: {
           include: {
             workspace: {
@@ -109,6 +111,8 @@ export class UserService {
       where: { email, deletedAt: null },
       include: {
         roles: true,
+        handlerAssignments: true,
+        tasks: true,
         workspaces: {
           include: {
             workspace: {
@@ -173,6 +177,8 @@ export class UserService {
       where: { id, deletedAt: null },
       include: {
         roles: true,
+        handlerAssignments: true,
+        tasks: true,
         workspaces: {
           include: {
             workspace: {
@@ -199,11 +205,11 @@ export class UserService {
   async getAllUsers(): Promise<IUser[]> {
     const users = await this.prismaService.user.findMany({
       where: { deletedAt: null },
-      include: { roles: true, workspaces: true },
+      include: { roles: true, handlerAssignments: true, workspaces: true },
     });
     const safeUsers = users.map((user) =>
       this.formatUser(
-        user as User & { roles: { role: RoleType }[] } & { workspaces: any[] },
+        user as User & { roles: { role: RoleType }[] } & { handlerAssignments: MailHandlerAssignment[] } & { workspaces: any[] },
       ),
     );
     return safeUsers;

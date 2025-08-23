@@ -83,14 +83,51 @@ async createActionRequest(dto: CreateMailActionRequestDto, userId: string, abili
     }
   }
 
-  const action = await this.prisma.mailAction.create({
-    data: {
-      mailId: dto.mailId,
-      type: dto.type,
-      status: ActionStatus.PENDING,
-    },
+  const { action } = await this.prisma.$transaction(async (tx) => {
+    // 1) Any active action (PENDING or IN_PROGRESS) for this mail blocks new requests
+    const active = await tx.mailAction.findFirst({
+      where: {
+        mailId: dto.mailId,
+        status: { in: [ActionStatus.PENDING, ActionStatus.IN_PROGRESS] },
+      },
+      select: { id: true, type: true, status: true },
+    });
+
+    if (active) {
+      throw new BadRequestException(
+        `There is already an active action (type: ${active.type}) for this mail. Please wait until it is completed.`,
+      );
+    }
+
+    // 2) Defensive: if another request of the same type slipped in concurrently
+    const sameTypeActive = await tx.mailAction.findFirst({
+      where: {
+        mailId: dto.mailId,
+        type: dto.type,
+        status: { in: [ActionStatus.PENDING, ActionStatus.IN_PROGRESS] },
+      },
+      select: { id: true },
+    });
+
+    if (sameTypeActive) {
+      throw new BadRequestException(
+        `There is already an active ${dto.type} action for this mail.`,
+      );
+    }
+
+    // 3) Create the action
+    const created = await tx.mailAction.create({
+      data: {
+        mailId: dto.mailId,
+        type: dto.type,
+        status: ActionStatus.PENDING,
+      },
+    });
+
+    return { action: created };
   });
-  this.eventEmitter.emit(Events.MAIL_ACTION_CREATED, {mail, type: dto.type, action});
+
+  this.eventEmitter.emit(Events.MAIL_ACTION_CREATED, { mail, type: dto.type, action });
   return { action };
 }
 
@@ -294,5 +331,3 @@ async createActionRequest(dto: CreateMailActionRequestDto, userId: string, abili
   }
 
 }
-
-

@@ -16,13 +16,12 @@ export class SupportService {
   ) {}
 
   async getAllTickets(): Promise<Ticket[]> {
-    const tickets = await this.prismaService.ticket.findMany({
+    return this.prismaService.ticket.findMany({
       include: {
         user: true,
       },
-      orderBy: { createdAt: 'desc' }, // isteğe bağlı sıralama
+      orderBy: { createdAt: 'desc' },
     });
-    return tickets;
   }
 
   async getUserTickets(userId: string): Promise<Ticket[]> {
@@ -155,6 +154,7 @@ export class SupportService {
           orderBy: { createdAt: 'asc' },
         },
         user: true,
+        mailbox: true,
       },
     });
     if (!ticket) {
@@ -162,23 +162,6 @@ export class SupportService {
     }
     return ticket;
   }
-
-  // async getCompanyTickets(companyId: string): Promise<Ticket[]> {
-  //   return await this.prismaService.ticket.findMany({
-  //     include: {
-  //       user: true,
-  //       company: true,
-  //     },
-  //     where: {
-  //      company:{
-  //       some:{
-  //         id:companyId
-  //       }
-  //      }
-  //     },      
-  //     orderBy: { createdAt: 'desc' }, // isteğe bağlı sıralama
-  //   });
-  // }
 
   async addMessageFromStaff(
     userId: string,
@@ -291,6 +274,14 @@ export class SupportService {
           },
         },
       },
+    });
+  }
+
+  async getTicketsByOfficeLocation(officeLocationId: string) {
+    return this.prismaService.ticket.findMany({
+      where: { mailbox: { officeLocationId } },
+      include: { user: true, mailbox: true },
+      orderBy: { createdAt: 'desc' },
     });
   }
 }

@@ -9,6 +9,7 @@ import {
     UseGuards,
     HttpStatus,
     Patch,
+    Delete,
   } from '@nestjs/common';
   import { 
     ApiTags, 
@@ -40,6 +41,9 @@ import { MailboxResponseDto } from 'src/dtos/mailbox.dto';
 import { WorkspaceService } from '../workspace/workspace.service';
 import { UpdateActionStatusDto,CreateMailActionDto,CompleteForwardDto, CancelForwardDto,QueryMailActionsDto } from 'src/dtos/mail-actions.dto';
 import { MailActionsService } from '../actions/actions.service';
+import { CreateTaskDto, TaskMessageDto,UpdateTaskDto } from 'src/dtos/support.dto';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { TaskService } from '../task/task.service';
 
   
   @ApiTags('Mail Handler Panel')
@@ -54,6 +58,7 @@ import { MailActionsService } from '../actions/actions.service';
     private readonly mailboxService: MailboxService,
     private readonly workspaceService: WorkspaceService,
     private readonly actionService: MailActionsService,
+    private readonly taskService: TaskService,
     ) {}
 
   // 1. Office Location Selection
@@ -335,4 +340,51 @@ import { MailActionsService } from '../actions/actions.service';
     return this.actionService.cancelForward(id, body);
   }
     
+
+
+
+
+
+  // TASK
+
+
+  @Get('tasks/office-location/:officeLocationId')
+  @ApiOperation({ summary: 'List tasks by office location' })
+  @ApiParam({ name: 'officeLocationId' })
+  listByOffice(@Param('officeLocationId') officeLocationId: string, @CurrentUser('id') userId: string) {
+    return this.taskService.listTasksByOfficeLocation(officeLocationId);
+  }
+
+  @Post('tasks')
+  @ApiOperation({ summary: 'Create a task' })
+  create(@Body() dto: CreateTaskDto, @CurrentUser('id') userId: string) {
+      return this.taskService.createTaskByUser(userId, dto);
+  }
+
+  @Patch('tasks/:id')
+  @ApiOperation({ summary: 'Update a task' })
+  update(@Param('id') id: string, @Body() dto: UpdateTaskDto) {
+      return this.taskService.updateTask(id, dto as any);
+  }
+
+  @Delete('tasks/:id')
+  @ApiOperation({ summary: 'Delete a task' })
+  delete(@Param('id') id: string) {
+      return this.taskService.deleteTask(id);
+  }
+    
+
+  @Get('tasks/:id')
+  @ApiOperation({ summary: 'Get a task' })
+  getTask(@Param('id') id: string, @CurrentUser('id') userId: string) {
+      return this.taskService.getTaskById(id);
+  }
+
+
+  @Post('tasks/:id/messages')
+  @ApiOperation({ summary: 'Add a message to a task' })
+  addMessage(@Param('id') id: string, @Body() dto: TaskMessageDto, @CurrentUser('id') userId: string) {
+      return this.taskService.addMessage(id, userId, dto);
+  }
+  
   } 

@@ -28,4 +28,5 @@ export class MailEntity implements PrismaMail {
   constructor(partial: Partial<MailEntity>) {
     Object.assign(this, partial);
   }
+  isScanned: boolean;
 }

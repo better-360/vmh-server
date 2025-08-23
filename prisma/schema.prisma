@@ -40,7 +40,9 @@ generator dbml {
     invitations        Invitation[]
     ticketMessages     TicketMessage[]
     workspaces         WorkspaceMember[]
-  }
+    handlerAssignments MailHandlerAssignment[]
+    tasks              Task[] @relation("CreatedTasks")
+}
 
   model Workspace {
     id          String            @id @default(uuid()) @db.Uuid
@@ -90,12 +92,14 @@ generator dbml {
     orders            Order[]
     recipients        Recipient[]
     tickets     Ticket[]
+    tasks         Task[]
+
 
 
     @@unique([workspaceId, officeLocationId, isActive], name: "OneActiveSubscriptionPerOffice")
     @@index([workspaceId, isActive])
     @@index([officeLocationId, isActive])
-  }
+}
 
   model Recipient {
     id String @id @default(uuid()) @db.Uuid
@@ -429,6 +433,7 @@ generator dbml {
     aviableCarriers      CarrierAvailability[] // Bu lokasyonda kullanılabilir kargo firmaları
     deliverySpeedOptions DeliverySpeedPlanMapping[] // Bu lokasyonda kullanılabilir teslimat hızları
     packagingTypeOptions PackagingTypePlanMapping[] // Bu lokasyonda kullanılabilir paketleme türleri
+    handlers            MailHandlerAssignment[] // Bu lokasyonda görevli mail handlerlar
   }
 
   model FeatureUsage {
@@ -492,6 +497,7 @@ generator dbml {
     trackingUrl    String?
     isShereded     Boolean       @default(false)
     isForwarded    Boolean       @default(false)
+    isScanned     Boolean       @default(false)
     type           MailType
     status          MailStatus       @default(PENDING)
     senderName    String?
@@ -504,7 +510,7 @@ generator dbml {
     weightKg   Float? // kg
     volumeDesi Float?
     volumeCm3   Float?
-    
+
     photoUrls String[]
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -512,9 +518,26 @@ generator dbml {
     actions         MailAction[] 
     mailbox         Mailbox             @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
     forwardRequests ForwardingRequest[]
+    checkDeposit CheckDeposit[]
     recipient      Recipient? @relation(fields: [recipientId], references: [id], onDelete: Cascade)
     recipientId    String?    @db.Uuid
     @@index([mailboxId])
+}
+
+  model CheckDeposit {
+    id          String   @id @default(uuid()) @db.Uuid
+    mailId      String   @db.Uuid
+    amount      Int      // Kuruş cinsinden tutar
+    currency    String   @default("USD")
+    depositedAt DateTime?
+    status      ActionStatus @default(PENDING) // PENDING, COMPLETED, FAILED
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+    completedAt DateTime?
+
+    mail Mail @relation(fields: [mailId], references: [id], onDelete: Cascade)
+
+    @@index([mailId])
   }
 
   model MailAction {
@@ -527,6 +550,8 @@ generator dbml {
     updatedAt   DateTime          @updatedAt
     meta        Json? // ilgili aksiyonun detayları
     mail        Mail              @relation(fields: [mailId], references: [id], onDelete: Cascade)
+
+    @@unique([mailId, type], name: "OneActionPerTypeAndMail")
   }
 
   model ForwardingRequest {
@@ -657,6 +682,21 @@ generator dbml {
     @@unique([packagingTypeId, officeLocationId])
   }
 
+  model MailHandlerAssignment {
+    id               String         @id @default(uuid()) @db.Uuid
+    userId           String         @unique @db.Uuid
+    officeLocationId String         @db.Uuid
+
+    isActive  Boolean   @default(true)
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+
+    user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+    officeLocation OfficeLocation @relation(fields: [officeLocationId], references: [id], onDelete: Cascade)
+
+    @@index([officeLocationId])
+  }
+
   model Forms {
     id          String     @id @default(uuid()) @db.Uuid
     userId      String     @db.Uuid
@@ -701,6 +741,7 @@ generator dbml {
 
   model Ticket {
     id          String          @id @default(uuid()) @db.Uuid
+    officeLocationId String?       @db.Uuid
     ticketNo    Int             @default(autoincrement())
     userId      String          @db.Uuid
     subject     String
@@ -730,7 +771,49 @@ generator dbml {
     attachments Attachment[] @relation("AttachmentToTicketMessage")
   }
 
-  model Attachment {
+model Task {
+  id              String        @id @default(uuid()) @db.Uuid
+  mailboxId       String        @db.Uuid
+  creatorId       String?       @db.Uuid
+  officeLocationId String?       @db.Uuid
+
+  title           String?
+  description     String?
+  Icon            String?
+  status          TaskStatus
+  priority        TaskPriority
+  type            TaskType
+
+  dueDate         DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  completedAt     DateTime?
+  deletedAt       DateTime?
+  mailbox         Mailbox       @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
+  messages        TaskMessage[]
+  attachments     Attachment[]  @relation("AttachmentToTask")
+  creator         User?         @relation("CreatedTasks", fields: [creatorId], references: [id])
+
+  @@index([mailboxId])
+  @@index([creatorId])
+  @@index([status])
+  @@index([priority])
+  @@index([type])
+  @@index([dueDate])
+  @@index([createdAt])
+}
+
+model TaskMessage {
+  id          String       @id @default(uuid()) @db.Uuid
+  taskId      String       @db.Uuid
+  message     String
+  fromStaff   Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  task        Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  attachments Attachment[] @relation("AttachmentToTaskMessage")
+}
+
+model Attachment {
     id            String          @id @default(uuid()) @db.Uuid
     name          String
     url           String
@@ -741,6 +824,8 @@ generator dbml {
     uploadedBy    User            @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
     ticket        Ticket[]        @relation("AttachmentToTicket")
     ticketMessage TicketMessage[] @relation("AttachmentToTicketMessage")
+    task          Task[]          @relation("AttachmentToTask")
+    taskMessage   TaskMessage[]   @relation("AttachmentToTaskMessage")
   }
 
   enum ForwardRequestStatus {
@@ -862,11 +947,8 @@ generator dbml {
   }
 
   enum TaskType {
-    GENERAL
-    LEGAL
-    ACCOUNTING
-    TAX
-    HR
+    AUTOMATIC
+    MANUAL
     OTHER
   }
 
@@ -953,6 +1035,7 @@ generator dbml {
     SCAN
     HOLD
     JUNK
+    CHECK_DEPOSIT
   }
 
   enum ActionStatus {

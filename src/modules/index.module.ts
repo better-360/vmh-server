@@ -25,6 +25,7 @@ import { HandlerModule } from './handler/handler.module';
 import { EntitlementsModule } from './entitlements/entitlements.module';
 import { MailActionsModule } from './actions/actions.module';
 import { CustomerModule } from './customer/customer.module';
+import { TaskModule } from './task/task.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { CustomerModule } from './customer/customer.module';
     MailboxModule,
     HandlerModule,
     MailActionsModule,
+    TaskModule,
   ],
   exports: [
     EntitlementsModule,
@@ -78,6 +80,7 @@ import { CustomerModule } from './customer/customer.module';
     ProductModule,
     HandlerModule,
     MailActionsModule,
+    TaskModule,
   ],
 })
 export class MainModule {}

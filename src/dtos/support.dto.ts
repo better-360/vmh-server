@@ -1,6 +1,8 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsDateString, IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsUUID } from 'class-validator';
+import { TaskStatus, TaskPriority, TaskType, $Enums } from '@prisma/client';
 enum TicketStatus {
   OPEN = 'OPEN',
   IN_PROGRESS = 'IN_PROGRESS',
@@ -128,3 +130,85 @@ export class CreateTicketDto {
   priority: TicketPriority;
 
 }
+
+export class TaskDto {
+
+  @ApiPropertyOptional({ description: 'Title' ,example:'Task title',default:'Task title'})
+  @IsString()
+  @IsOptional()
+  title?: string;
+
+  @ApiPropertyOptional({ description: 'Description' ,example:'Task description',default:'Task description'})
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({ description: 'Icon' ,example:'system',default:'system'})
+  @IsString()
+  @IsOptional()
+  Icon?: string;
+
+  @ApiProperty({ enum: TaskPriority ,example:'MEDIUM',default:TaskPriority.MEDIUM})
+  @IsEnum(TaskPriority)
+  priority: TaskPriority;
+
+  @ApiPropertyOptional({ description: 'Due date (ISO)' ,example:'2025-01-01',default:'2025-01-01'})
+  @IsDateString()
+  @IsOptional()
+  dueDate?: string;
+
+}
+
+export class CreateTaskDto extends PartialType(TaskDto) {
+
+  @ApiProperty({ description: 'Mailbox ID' ,example:'123e4567-e89b-12d3-a456-426614174000',default:"e7195890-483d-40c6-86e7-f51fa2d0a6e9"})
+  @IsUUID()
+  mailboxId: string;
+
+  @ApiPropertyOptional({ type: FirstTicketMessageDto ,example:{message:'Task message'},default:{message:'Task message'}})
+  @ValidateNested()
+  @Type(() => FirstTicketMessageDto)
+  @IsOptional()
+  message?: FirstTicketMessageDto;
+}
+
+export class UpdateTaskDto extends PartialType(TaskDto) {
+  @ApiProperty({ description: 'Task ID' ,example:'123e4567-e89b-12d3-a456-426614174000',default:'123e4567-e89b-12d3-a456-426614174000'})
+  @IsUUID()
+  id: string;
+
+  @ApiPropertyOptional({ description: 'Due date (ISO)' ,example:'2025-01-01',default:'2025-01-01'})
+  @IsDateString()
+  @IsOptional()
+  dueDate?: string;
+
+  @ApiProperty({ enum: TaskStatus ,description:'Task status',example:'OPEN',default:'OPEN'})
+  @IsEnum(TaskStatus)
+  status: TaskStatus;
+
+  @ApiProperty({ enum: TaskType ,description:'Task type',example:'MANUAL',default:'MANUAL'})
+  @IsEnum(TaskType)
+  type: TaskType;
+
+}
+
+export class TaskMessageDto {
+  @ApiProperty({
+    description: 'Message of the ticket',
+    example: 'I cannot login to my account',
+  })
+  @IsString()
+  message: string;
+
+  @ApiPropertyOptional({ 
+    description: 'Message attachments',
+    type: [MessageAttachment] 
+  })
+  @ValidateNested({ each: true })
+  @Type(() => MessageAttachment)
+  @IsOptional()
+  @IsArray()
+  attachments?: MessageAttachment[];
+}
+
+

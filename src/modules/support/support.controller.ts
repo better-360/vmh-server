@@ -1,10 +1,11 @@
-import {
+import { 
   Controller,
   Body,
   Post,
   Get,
   Req,
   Param,
+  Query,
 } from '@nestjs/common';
 import { SupportService } from './support.service';
 import { CreateTicketDto, EditTicketStatusDto, TicketMessageDto } from 'src/dtos/support.dto';
@@ -52,6 +53,12 @@ export class SupportController {
   @Get('my-tickets')
   async getMyTickets(@CurrentUser('id') userId: string) {
     return await this.supportService.getUserTickets(userId);
+  }
+
+  @ApiOperation({ summary: 'List tickets by office location (admin/staff)' })
+  @Get('office-location/:officeLocationId')
+  async listByOffice(@Param('officeLocationId') officeLocationId: string) {
+    return await this.supportService.getTicketsByOfficeLocation(officeLocationId);
   }
 
   @Public()

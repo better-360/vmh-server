@@ -804,6 +804,35 @@
         ]
       }
     },
+    "/api/admin/support/office-location/{officeLocationId}": {
+      "get": {
+        "operationId": "AdminSupportController_getTicketsByOffice",
+        "summary": "Office location bazlı biletleri getirir (ADMIN/STAFF)",
+        "parameters": [
+          {
+            "name": "officeLocationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Support Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/admin/ticket/{id}/details": {
       "get": {
         "operationId": "AdminSupportController_getTicket",
@@ -4383,6 +4412,351 @@
         ]
       }
     },
+    "/api/admin/handlers/assign": {
+      "post": {
+        "operationId": "AdminHandlerController_assign",
+        "summary": "Assign a user to an office location as handler",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignHandlerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Mail Handlers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/handlers/{userId}": {
+      "delete": {
+        "operationId": "AdminHandlerController_revoke",
+        "summary": "Revoke handler assignment from user",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Mail Handlers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "AdminHandlerController_toggle",
+        "summary": "Toggle assignment active status",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToggleHandlerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Mail Handlers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/handlers/office-location/{officeLocationId}": {
+      "get": {
+        "operationId": "AdminHandlerController_listByLocation",
+        "summary": "List handlers by office location",
+        "parameters": [
+          {
+            "name": "officeLocationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Mail Handlers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/handlers/user/{userId}": {
+      "get": {
+        "operationId": "AdminHandlerController_getByUser",
+        "summary": "Get assignment by user",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Mail Handlers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/tasks/office-location/{officeLocationId}": {
+      "get": {
+        "operationId": "AdminTaskController_listByOffice",
+        "summary": "List tasks by office location",
+        "parameters": [
+          {
+            "name": "officeLocationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Tasks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/tasks": {
+      "post": {
+        "operationId": "AdminTaskController_create",
+        "summary": "Create task",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Tasks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/tasks/{id}": {
+      "get": {
+        "operationId": "AdminTaskController_getTask",
+        "summary": "Get a task",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Tasks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "AdminTaskController_update",
+        "summary": "Update task",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Tasks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "AdminTaskController_delete",
+        "summary": "Delete task",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Tasks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/tasks/{id}/messages": {
+      "post": {
+        "operationId": "AdminTaskController_addMessage",
+        "summary": "Add message as staff",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Tasks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/support/create-ticket": {
       "post": {
         "operationId": "SupportController_createTicket",
@@ -4472,6 +4846,30 @@
         "operationId": "SupportController_getMyTickets",
         "summary": "Get all user tickets",
         "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Support - Ticket System"
+        ]
+      }
+    },
+    "/api/support/office-location/{officeLocationId}": {
+      "get": {
+        "operationId": "SupportController_listByOffice",
+        "summary": "List tickets by office location (admin/staff)",
+        "parameters": [
+          {
+            "name": "officeLocationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -6807,7 +7205,8 @@
                 "SHRED",
                 "SCAN",
                 "HOLD",
-                "JUNK"
+                "JUNK",
+                "CHECK_DEPOSIT"
               ],
               "type": "string"
             }
@@ -7037,6 +7436,197 @@
         ]
       }
     },
+    "/api/handler/tasks/office-location/{officeLocationId}": {
+      "get": {
+        "operationId": "MailHandlerController_listByOffice",
+        "summary": "List tasks by office location",
+        "parameters": [
+          {
+            "name": "officeLocationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/handler/tasks": {
+      "post": {
+        "operationId": "MailHandlerController_create",
+        "summary": "Create a task",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/handler/tasks/{id}": {
+      "patch": {
+        "operationId": "MailHandlerController_update",
+        "summary": "Update a task",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "MailHandlerController_delete",
+        "summary": "Delete a task",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "MailHandlerController_getTask",
+        "summary": "Get a task",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/handler/tasks/{id}/messages": {
+      "post": {
+        "operationId": "MailHandlerController_addMessage",
+        "summary": "Add a message to a task",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/actions/speeds/{locationId}": {
       "get": {
         "operationId": "MailActionsController_findSpeedOptions",
@@ -7133,6 +7723,132 @@
         },
         "tags": [
           "Mail Actions"
+        ]
+      }
+    },
+    "/api/tasks/{id}": {
+      "get": {
+        "operationId": "TaskController_get",
+        "summary": "Get task by id",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tasks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/tasks/office-location/{officeLocationId}": {
+      "get": {
+        "operationId": "TaskController_listByOffice",
+        "summary": "List tasks by office location",
+        "parameters": [
+          {
+            "name": "officeLocationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tasks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/tasks/mailbox/{mailboxId}": {
+      "get": {
+        "operationId": "TaskController_listByMailbox",
+        "summary": "List tasks by mailbox",
+        "parameters": [
+          {
+            "name": "mailboxId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tasks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/tasks/{id}/messages": {
+      "post": {
+        "operationId": "TaskController_addMessage",
+        "summary": "Add task message (user)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tasks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     }
@@ -7292,7 +8008,8 @@
               "SHRED",
               "SCAN",
               "HOLD",
-              "JUNK"
+              "JUNK",
+              "CHECK_DEPOSIT"
             ],
             "example": "SHRED"
           }
@@ -9363,7 +10080,198 @@
           }
         }
       },
+      "AssignHandlerDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "User ID to assign",
+            "example": "c0a8012e-1111-2222-3333-444455556666"
+          },
+          "officeLocationId": {
+            "type": "string",
+            "description": "Office location ID",
+            "example": "a0a8012e-aaaa-bbbb-cccc-444455556666"
+          }
+        },
+        "required": [
+          "userId",
+          "officeLocationId"
+        ]
+      },
+      "ToggleHandlerDto": {
+        "type": "object",
+        "properties": {
+          "isActive": {
+            "type": "boolean",
+            "description": "Set active flag"
+          }
+        }
+      },
       "FirstTicketMessageDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Message of the ticket",
+            "example": "I cannot login to my account"
+          },
+          "attachments": {
+            "description": "Message attachments",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MessageAttachment"
+            }
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "CreateTaskDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Title",
+            "example": "Task title",
+            "default": "Task title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description",
+            "example": "Task description",
+            "default": "Task description"
+          },
+          "Icon": {
+            "type": "string",
+            "description": "Icon",
+            "example": "system",
+            "default": "system"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ],
+            "example": "MEDIUM",
+            "default": "MEDIUM"
+          },
+          "dueDate": {
+            "type": "string",
+            "description": "Due date (ISO)",
+            "example": "2025-01-01",
+            "default": "2025-01-01"
+          },
+          "mailboxId": {
+            "type": "string",
+            "description": "Mailbox ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "default": "e7195890-483d-40c6-86e7-f51fa2d0a6e9"
+          },
+          "message": {
+            "example": {
+              "message": "Task message"
+            },
+            "default": {
+              "message": "Task message"
+            },
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FirstTicketMessageDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "mailboxId"
+        ]
+      },
+      "UpdateTaskDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Title",
+            "example": "Task title",
+            "default": "Task title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description",
+            "example": "Task description",
+            "default": "Task description"
+          },
+          "Icon": {
+            "type": "string",
+            "description": "Icon",
+            "example": "system",
+            "default": "system"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ],
+            "example": "MEDIUM",
+            "default": "MEDIUM"
+          },
+          "dueDate": {
+            "type": "string",
+            "description": "Due date (ISO)",
+            "example": "2025-01-01",
+            "default": "2025-01-01"
+          },
+          "id": {
+            "type": "string",
+            "description": "Task ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "default": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "RESOLVED",
+              "CLOSED",
+              "REOPENED",
+              "ON_HOLD",
+              "WAITING_FOR_CUSTOMER",
+              "WAITING_FOR_STAFF",
+              "WAITING_FOR_THIRD_PARTY",
+              "ESCALATED",
+              "CANCELLED",
+              "CLOSED_BY_CUSTOMER"
+            ],
+            "description": "Task status",
+            "example": "OPEN",
+            "default": "OPEN"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "AUTOMATIC",
+              "MANUAL",
+              "OTHER"
+            ],
+            "description": "Task type",
+            "example": "MANUAL",
+            "default": "MANUAL"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "type"
+        ]
+      },
+      "TaskMessageDto": {
         "type": "object",
         "properties": {
           "message": {
@@ -10681,7 +11589,8 @@
               "SHRED",
               "SCAN",
               "HOLD",
-              "JUNK"
+              "JUNK",
+              "CHECK_DEPOSIT"
             ],
             "example": "FORWARD"
           },

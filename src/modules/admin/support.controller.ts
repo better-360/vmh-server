@@ -18,6 +18,13 @@ export class AdminSupportController {
     return await this.supportService.getAllTickets();
   }
 
+  @ApiOperation({ summary: 'Office location bazlı biletleri getirir (ADMIN/STAFF)' })
+  @Roles('ADMIN')
+  @Get('support/office-location/:officeLocationId')
+  async getTicketsByOffice(@Param('officeLocationId') officeLocationId: string) {
+    return await this.supportService.getTicketsByOfficeLocation(officeLocationId);
+  }
+
   @ApiOperation({ summary: 'Belirtilen destek biletinin detaylarını getirir (Sadece ADMIN)' })
   @Roles('ADMIN')
   @Get('ticket/:id/details')

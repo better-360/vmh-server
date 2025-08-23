@@ -7,6 +7,8 @@ import { WorkspaceService } from '../workspace/workspace.service';
 import { MailboxService } from '../mailbox/mailbox.service';
 import { LocationService } from '../catalog/location.service';
 import { MailHandlerController } from './handler.controller';
+import { HandlerService } from './handler.service';
+import { TaskService } from '../task/task.service';
 
 @Module({
     imports: [
@@ -17,6 +19,8 @@ import { MailHandlerController } from './handler.controller';
         WorkspaceService,
         MailboxService,
         LocationService,
+        HandlerService,
+        TaskService,
 
     ],
     controllers: [
