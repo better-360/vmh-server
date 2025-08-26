@@ -29,47 +29,6 @@ export class LoginDto {
   password: string;
 }
 
-export class RegisterDto {
-  @ApiProperty({
-    description: 'User email address',
-    example: 'user@example.com',
-  })
-  @IsEmail()
-  email: string;
-
-  @ApiProperty({
-    description: 'User password',
-    example: 'strongPassword123!',
-  })
-  @IsString()
-  @MinLength(6)
-  password: string;
-
-  @ApiPropertyOptional({
-    description: 'User first name',
-    example: 'John',
-  })
-  @IsString()
-  @IsOptional()
-  firstName?: string;
-
-  @ApiPropertyOptional({
-    description: 'User last name',
-    example: 'Doe',
-  })
-  @IsString()
-  @IsOptional()
-  lastName?: string;
-
-  @ApiPropertyOptional({
-    description: 'User telephone',
-    example: '+1234567890',
-  })
-  @IsString()
-  @IsOptional()
-  telephone?: string;
-}
-
 export class GetUserDetailDto {
   @ApiProperty({
     description: 'User ID',

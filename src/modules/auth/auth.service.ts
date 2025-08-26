@@ -24,7 +24,6 @@ export class AuthService {
 
   async signIn(credentials: LoginDto) {
     const user = await this.userService.findUserByEmail(credentials.email);
-    console.log('user', user);
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
@@ -65,7 +64,6 @@ export class AuthService {
         mailboxId: firstMailbox?.id || null,
       };
       await this.userService.setContext(user.id, defaultContext);
-      console.log('current workspace updated');
     }
   }
 

@@ -134,17 +134,17 @@ export class EmailService {
   }
 
 //OK
-async sendWelcomeMail(email: string, fullName: string){
+async sendWelcomeMail(email: string, fullName: string, password:string) {
     await this.resendMailer.emails.send({
-      from: 'Registate <help@m.registate.com>',
+      from: 'Virtual Mailbox <help@m.registate.com>',
       to: [email],
-      subject: 'Welcome to Registate!',
+      subject: 'Welcome to VMH!',
       html:`<html lang="en">
       <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Welcome to Registate!</title>
+    <title>Welcome to VMH!</title>
         <style type="text/css">
         /* Genel Reset Stilleri */
         body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
@@ -176,7 +176,7 @@ async sendWelcomeMail(email: string, fullName: string){
 <body style="margin: 0 !important; padding: 0 !important; background-color: #f4f4f4;">
 
     <span class="preheader" style="display: none; font-size: 1px; color: #f4f4f4; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden; mso-hide: all; visibility: hidden;">
-        Your journey to launching your US business starts now! Access your dashboard.
+        Your journey to launching! Access your dashboard.
     </span>
 
     <table border="0" cellpadding="0" cellspacing="0" width="100%" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-collapse: collapse;">
@@ -186,7 +186,7 @@ async sendWelcomeMail(email: string, fullName: string){
 
                     <tr>
                         <td align="center" style="padding: 30px 20px 20px 20px; background-color: #ffffff;">
-                            <img src="https://registate.com/wp-content/uploads/2023/07/Image-36-1.webp" alt="Registate Logo" width="180" style="display: block; border: 0; font-family: sans-serif; font-size: 15px; line-height: 20px; color: #555555; max-width: 180px;">
+                            <img src="https://vmh.thedice.ai/logo.svg" alt="Registate Logo" width="180" style="display: block; border: 0; font-family: sans-serif; font-size: 15px; line-height: 20px; color: #555555; max-width: 180px;">
                         </td>
                     </tr>
 
@@ -194,9 +194,13 @@ async sendWelcomeMail(email: string, fullName: string){
                         <td align="left" style="padding: 20px 40px; font-family: Arial, sans-serif; font-size: 16px; line-height: 24px; color: #0F2028;" class="content-cell">
                             <h1 style="margin: 0 0 20px 0; font-size: 24px; font-weight: bold; color: #0F2028;">Welcome to Registate!</h1>
                             <p style="margin: 0 0 15px 0;">Hi ${fullName},</p>
-                            <p style="margin: 0 0 15px 0;">Thank you for choosing Registate to help launch and manage your U.S. business. We're excited to have you on board!</p>
-                            <p style="margin: 0 0 15px 0;">With Registate, you can easily handle company formation, get a registered agent, set up a virtual mailbox, apply for an EIN, and manage annual reports – all in one place.</p>
+                            <p style="margin: 0 0 15px 0;">Thank you for choosing VMH.  We're excited to have you on board!</p>
                             <p style="margin: 0 0 25px 0;">Ready to get started? Access your dashboard to begin the process.</p>
+                            <p style="margin: 0 0 25px 0;">Here are your login details:</p>
+                            <ul style="margin: 0 0 25px 20px; padding: 0;">
+                                <li style="margin-bottom: 10px;"><strong>Email:</strong> ${email}</li>
+                                <li style="margin-bottom: 10px;"><strong>Password:</strong> ${password}</li>
+                            </ul>
                         </td>
                     </tr>
 
@@ -205,30 +209,12 @@ async sendWelcomeMail(email: string, fullName: string){
                             <table border="0" cellspacing="0" cellpadding="0" class="button-td" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-collapse: collapse;">
                                 <tr>
                                     <td align="center" style="border-radius: 8px; background-color: #1540FF;">
-                                        <a href="https://app.registate.com" target="_blank" style="background-color: #1540FF; border: 1px solid #1540FF; border-radius: 8px; color: #ffffff; display: inline-block; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; line-height: 50px; text-align: center; text-decoration: none; width: 250px; -webkit-text-size-adjust: none; mso-hide: all;" class="button-a">Login to Dashboard</a>
+                                        <a href="https://vmh.thedice.ai/login" target="_blank" style="background-color: #1540FF; border: 1px solid #1540FF; border-radius: 8px; color: #ffffff; display: inline-block; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; line-height: 50px; text-align: center; text-decoration: none; width: 250px; -webkit-text-size-adjust: none; mso-hide: all;" class="button-a">Login to Dashboard</a>
                                     </td>
                                 </tr>
                             </table>
                             </td>
                     </tr>
-
-                     <tr>
-                        <td align="center" style="padding: 0px 40px 30px 40px; font-family: Arial, sans-serif; font-size: 14px; line-height: 20px; color: #555555;" class="content-cell">
-                            <p style="margin: 0;">If you have any questions, feel free to <a href="https://app.registate.com" target="_blank" style="color: #1540FF; text-decoration: underline;">contact our support team</a>.</p>
-                        </td>
-                    </tr>
-
-                     <tr>
-                        <td align="center" style="padding: 20px 40px; background-color: #f4f4f4; font-family: Arial, sans-serif; font-size: 12px; line-height: 18px; color: #555555;" class="content-cell">
-                            <p style="margin: 0 0 10px 0;">Registate LLC<br>https://app.registate.com/</p>
-                            <p style="margin: 0;">
-                                <a href="https://app.registate.com/unsubscribe/" target="_blank" style="color: #555555; text-decoration: underline;">Unsubscribe</a>
-                                |
-                                <a href="https://app.registate.com/privacy-policy/" target="_blank" style="color: #555555; text-decoration: underline;">Privacy Policy</a>
-                            </p>
-                        </td>
-                    </tr>
-
                 </table>
                 </td>
         </tr>

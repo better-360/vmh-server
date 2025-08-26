@@ -27,23 +27,6 @@ export class RegisterDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({
-    description: 'The password of the user, at least 6 characters long',
-    example: 'password123',
-  })
-  @IsString()
-  @MinLength(6)
-  password: string;
-
-  @ApiProperty({
-    description: 'The FCM ID for push notifications',
-    example: 'fcm_id_example_123',
-  })
-
-  @IsString()
-  @IsOptional()
-  fcmId: string;
-
 }
 
 // Login DTO

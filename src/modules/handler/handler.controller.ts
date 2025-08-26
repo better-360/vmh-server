@@ -41,11 +41,14 @@ import { MailboxResponseDto } from 'src/dtos/mailbox.dto';
 import { WorkspaceService } from '../workspace/workspace.service';
 import { UpdateActionStatusDto,CreateMailActionDto,CompleteForwardDto, CancelForwardDto,QueryMailActionsDto } from 'src/dtos/mail-actions.dto';
 import { MailActionsService } from '../actions/actions.service';
-import { CreateTaskDto, TaskMessageDto,UpdateTaskDto } from 'src/dtos/support.dto';
+import { CreateTaskDto, EditTicketStatusDto, TaskMessageDto,TicketMessageDto,UpdateTaskDto } from 'src/dtos/support.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { TaskService } from '../task/task.service';
+import { SupportService } from '../support/support.service';
+import { HandlerService } from './handler.service';
+import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
 
-  
+
   @ApiTags('Mail Handler Panel')
   @ApiBearerAuth()
   @Controller('handler')
@@ -54,53 +57,14 @@ import { TaskService } from '../task/task.service';
   export class MailHandlerController {
   constructor(
     private readonly mailService: MailService,
-    private readonly locationService: LocationService,
     private readonly mailboxService: MailboxService,
     private readonly workspaceService: WorkspaceService,
     private readonly actionService: MailActionsService,
     private readonly taskService: TaskService,
+    private readonly handlerService: HandlerService,
     ) {}
 
-  // 1. Office Location Selection
-  @Get('office-locations')
-  @ApiOperation({ 
-    summary: 'Get all active office locations for handler',
-    description: 'Handler selects which office location to work with'
-  })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
-    description: 'Active office locations retrieved successfully',
-    type: [OfficeLocationResponseDto]
-  })
-  async getOfficeLocations() {
-    return this.locationService.getActiveLocations();
-  }
 
-    @Get('workspaces')
-    @ApiOperation({ summary: 'Get all workspaces' })
-    @ApiResponse({
-        status: 200,
-        description: 'List of workspaces retrieved successfully',
-      })
-    getAllWorkspaces() {
-        return this.workspaceService.getAllWorkspaces();
-      }
-    
-
-  @Get('mailboxes/:officeLocationId')
-  @ApiOperation({ 
-    summary: 'Get mailboxes by office location',
-    description: 'Get mailboxes by office location'
-  })
-  @ApiParam({ name: 'officeLocationId', description: 'Office location ID', example: '123e4567-e89b-12d3-a456-426614174000' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
-    description: 'Mailboxes retrieved successfully',
-    type: [MailboxResponseDto]
-  })
-  async getMailboxesByOfficeLocation(@Param('officeLocationId') officeLocationId: string) {
-    return this.mailboxService.findByOfficeLocation(officeLocationId);
-  }
   // 2. STE Number Lookup for Mailboxes
   @Get('mailboxes/by-ste/:steNumber')
   @ApiOperation({ 
@@ -162,53 +126,6 @@ import { TaskService } from '../task/task.service';
     return this.mailService.update(id, updateMailDto);
   }
   
-
-  // 6. Query and Listing Operations
-  @Get('all')
-  @ApiOperation({ 
-    summary: 'Get all mail packages',
-    description: 'Retrieve a paginated list of all mail packages with filtering options'
-  })
-    @ApiQuery({ name: 'mailboxId', required: false, type: String, description: 'Filter by mailbox ID' })
-    @ApiQuery({ name: 'type', required: false, enum: MailType, description: 'Filter by package type' })
-    @ApiQuery({ name: 'status', required: false, enum: PackageStatus, description: 'Filter by package status' })
-    @ApiQuery({ name: 'senderName', required: false, type: String, description: 'Filter by sender name' })
-    @ApiQuery({ name: 'carrier', required: false, type: String, description: 'Filter by carrier' })
-    @ApiQuery({ name: 'isShereded', required: false, type: Boolean, description: 'Filter by shredded status' })
-    @ApiQuery({ name: 'isForwarded', required: false, type: Boolean, description: 'Filter by forwarded status' })
-    @ApiQuery({ name: 'receivedAtStart', required: false, type: String, description: 'Filter by received date start (YYYY-MM-DD)' })
-    @ApiQuery({ name: 'receivedAtEnd', required: false, type: String, description: 'Filter by received date end (YYYY-MM-DD)' })
-    @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number for pagination (default: 1)' })
-    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 10)' })
-    @ApiResponse({ 
-      status: HttpStatus.OK, 
-      description: 'Packages retrieved successfully',
-      schema: {
-        type: 'object',
-        properties: {
-          data: { 
-            type: 'array', 
-            items: { 
-              $ref: '#/components/schemas/PackageResponseDto'
-            }
-          },
-          meta: {
-            type: 'object',
-            properties: {
-              total: { type: 'number' },
-              page: { type: 'number' },
-              limit: { type: 'number' },
-              totalPages: { type: 'number' }
-            }
-          }
-        }
-      }
-    })
-    async getMails(@Query() query: MailQueryDto) {
-      // Internal handler endpoint - deprecated, use admin endpoints instead
-      throw new Error('This internal endpoint is deprecated. Use /admin/mails instead');
-    }
-  
   @Get(':id')
   @ApiOperation({ 
     summary: 'Get mail package by ID',
@@ -225,46 +142,7 @@ import { TaskService } from '../task/task.service';
       return this.mailService.findOne(id);
     }
   
-      @Get('mailbox/:mailboxId/mails')
-  @ApiOperation({ 
-    summary: 'Get mail packages by mailbox',
-    description: 'Retrieve all mail packages for a specific mailbox'
-  })
-  @ApiParam({ name: 'mailboxId', description: 'Mailbox ID', example: '123e4567-e89b-12d3-a456-426614174000' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number for pagination (default: 1)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 10)' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
-    description: 'Packages retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        data: { 
-          type: 'array', 
-          items: { 
-            $ref: '#/components/schemas/PackageResponseDto'
-          }
-        },
-        meta: {
-          type: 'object',
-          properties: {
-            total: { type: 'number' },
-            page: { type: 'number' },
-            limit: { type: 'number' },
-            totalPages: { type: 'number' }
-          }
-        }
-      }
-    }
-  })
-  async getPackagesByMailbox(
-    @Param('mailboxId') mailboxId: string,
-    @Query() query: MailQueryDto
-  ) {
-    // Internal handler endpoint - deprecated, use admin endpoints instead
-    throw new Error('This internal endpoint is deprecated. Use /admin/mails instead');
-  }
-  
+
   @Get(':officeLocationId/mails')
   @ApiOperation({ 
     summary: 'Get mail packages by office location',
@@ -388,3 +266,106 @@ import { TaskService } from '../task/task.service';
   }
   
   } 
+
+
+
+  @ApiBearerAuth()
+  @ApiTags('Mail Handler - Support Management')
+  @Controller('mail-handler')
+  export class HandlerSupportController {
+    constructor(private readonly supportService: SupportService) {}
+  
+    @ApiOperation({ summary: 'Tüm destek biletlerini getirir' })
+    @Get('tickets')
+    async getTickets(@CurrentUser('assignedLocationId') assignedLocationId: string) {
+      return await this.supportService.getTicketsByOfficeLocation(assignedLocationId);
+    }
+  
+    @ApiOperation({ summary: 'Belirtilen destek biletinin detaylarını getirir' })
+    @Get('tickets/:id')
+    async getTicket(@Param('id') ticketId: string) {
+      return await this.supportService.getTicketById(ticketId);
+    }
+  
+
+    @Get('tickets/:id/messages')
+    @ApiOperation({ summary: 'Get Ticket Messages' })
+    async getTicketCounts(@Param('id') ticketId: string) {
+      return await this.supportService.getTicketMessages(ticketId);
+    }
+
+    @ApiOperation({ summary: 'Bir destek biletinin durumunu günceller' })
+    @Patch('tickets/:ticketId')
+    async editTicket(
+      @Param('ticketId') ticketId: string,
+      @CurrentUser('id') userId: string,
+      @Body() data: EditTicketStatusDto,
+    ) {
+      return await this.supportService.editTicketStatus(userId, ticketId, data.status,data.priority);
+    }
+
+    @ApiOperation({ summary: 'Bir destek biletine yetkili tarafından mesaj ekler' })
+    @Post('tickets/add-message')
+    async addMessageToTicket(@Body() data: TicketMessageDto, @CurrentUser('id') userId: string) {
+      return await this.supportService.addMessageFromStaff(userId, data);
+    }
+
+  }
+
+  @ApiBearerAuth()
+  @ApiTags('Mail Handler - Customer Management')
+  @Controller('mail-handler')
+  export class HandlerCustomerController {
+    constructor(private readonly mailboxService: MailboxService,
+        private readonly handlerService: HandlerService,
+    ) {}
+  
+  @Get('customers')
+  @ApiOperation({ 
+    summary: 'Get mailboxes by office location',
+    description: 'Get mailboxes by office location'
+  })
+  @ApiResponse({ 
+    status: HttpStatus.OK, 
+    description: 'Mailboxes retrieved successfully',
+    type: [MailboxResponseDto]
+  })
+  async getMailboxesByOfficeLocation(@CurrentUser('assignedLocationId') assignedLocationId: string) {
+    return this.handlerService.getCustomers(assignedLocationId);
+  }
+
+  @ApiOperation({ summary: 'Belirtilen destek biletinin detaylarını getirir' })
+  @Get('customers/:mailboxId')
+  async getCustomerDetails(@Param('mailboxId') mailboxId:string){
+    return this.handlerService.getCustomerDetails(mailboxId)
+  }
+  }
+
+  @ApiBearerAuth()
+  @ApiTags('Mail Handler - Request Management')
+  @Controller('mail-handler')
+  export class HandlerActionRequestsController {
+  constructor(private readonly handlerService: HandlerService) {}
+
+  @Get('action-requests')
+  @ApiOperation({
+    summary: 'Action Request listesi',
+    description:
+      'officeLocationId zorunlu. type verilirse tek tipe göre sayfalı sonuç döner. type yoksa tüm tipleri gruplu döner.',
+  })
+  async list(@Query() query: ListActionRequestsQueryDto,@CurrentUser('assignedLocationId') assignedLocationId: string): Promise<any> {
+    return this.handlerService.listActionRequestsByType(assignedLocationId,query);
+  }
+
+
+  @Get('action-requests/:id')
+  @ApiOperation({
+    summary: 'Action Request listesi',
+    description:
+      'officeLocationId zorunlu. type verilirse tek tipe göre sayfalı sonuç döner. type yoksa tüm tipleri gruplu döner.',
+  })
+  async getActionRequestDetails(@Param('id') requestId:string){
+    return this.handlerService.getActionRequestDetails(requestId)
+
+  }
+}

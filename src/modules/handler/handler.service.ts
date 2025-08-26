@@ -1,14 +1,12 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
-import { PrismaService } from "src/prisma.service";
-import { RoleType } from "@prisma/client";
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
+import { PrismaService } from 'src/prisma.service';
+import { ActionStatus, MailActionType, RoleType } from '@prisma/client';
+import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
 
-interface Handler{
-    id:string;
-    name:string;
-    lastName:string;
-    email:string;
-    telephone:string;
-}
 
 @Injectable()
 export class HandlerService {
@@ -18,14 +16,20 @@ export class HandlerService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    const location = await this.prisma.officeLocation.findUnique({ where: { id: officeLocationId } });
+    const location = await this.prisma.officeLocation.findUnique({
+      where: { id: officeLocationId },
+    });
     if (!location) throw new NotFoundException('Office location not found');
 
     // Ensure user has STAFF or ADMIN role to handle mails
     const hasHandlerRole = await this.prisma.userRole.findFirst({
-      where: { userId, role: { in: [RoleType.STAFF, RoleType.ADMIN, RoleType.SUPERADMIN] } },
+      where: {
+        userId,
+        role: { in: [RoleType.STAFF, RoleType.ADMIN, RoleType.SUPERADMIN] },
+      },
     });
-    if (!hasHandlerRole) throw new BadRequestException('User is not STAFF/ADMIN');
+    if (!hasHandlerRole)
+      throw new BadRequestException('User is not STAFF/ADMIN');
 
     // Upsert unique per user
     const assignment = await this.prisma.mailHandlerAssignment.upsert({
@@ -34,18 +38,26 @@ export class HandlerService {
       create: { userId, officeLocationId },
       include: { officeLocation: true, user: true },
     });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { assignedLocationId: officeLocationId },
+    });
     return assignment;
   }
 
   async revokeUserFromOfficeLocation(userId: string) {
-    const existing = await this.prisma.mailHandlerAssignment.findUnique({ where: { userId } });
+    const existing = await this.prisma.mailHandlerAssignment.findUnique({
+      where: { userId },
+    });
     if (!existing) throw new NotFoundException('Assignment not found');
     await this.prisma.mailHandlerAssignment.delete({ where: { userId } });
     return { success: true };
   }
 
   async listHandlersByOfficeLocation(officeLocationId: string) {
-    const location = await this.prisma.officeLocation.findUnique({ where: { id: officeLocationId } });
+    const location = await this.prisma.officeLocation.findUnique({
+      where: { id: officeLocationId },
+    });
     if (!location) throw new NotFoundException('Office location not found');
     return this.prisma.mailHandlerAssignment.findMany({
       where: { officeLocationId, isActive: true },
@@ -63,8 +75,459 @@ export class HandlerService {
   }
 
   async setAssignmentActive(userId: string, isActive: boolean) {
-    const assignment = await this.prisma.mailHandlerAssignment.findUnique({ where: { userId } });
+    const assignment = await this.prisma.mailHandlerAssignment.findUnique({
+      where: { userId },
+    });
     if (!assignment) throw new NotFoundException('Assignment not found');
-    return this.prisma.mailHandlerAssignment.update({ where: { userId }, data: { isActive } });
+    return this.prisma.mailHandlerAssignment.update({
+      where: { userId },
+      data: { isActive },
+    });
   }
+
+  // service
+async getCustomers(officeLocationId: string) {
+  return this.prisma.mailbox.findMany({
+    where: {
+      isActive: true,
+      officeLocationId,
+    },
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      steNumber: true,
+      status: true,
+      billingCycle: true,
+      startDate: true,
+      // (isteğe bağlı) stripeSubscriptionId: true,
+      plan: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+      planPrice: {
+        select: {
+          id: true,
+          amount: true,
+          currency: true,
+          description: true,
+        },
+      },
+      officeLocation: {
+        select: {
+          id: true,
+          label: true,
+          city: true,
+          state: true,
+          zipCode: true,
+        },
+      },
+      // UI’de alıcı sayısını göstermek için count yeterli,
+      // ancak liste de istenirse minimal alanları seçiyoruz.
+      _count: {
+        select: { recipients: true },
+      },
+      recipients: {
+        select: {
+          id: true,
+          name: true,
+          lastName: true,
+          email: true,
+          isDefault: true,
+          isConfirmed: true,
+          isActive: true,
+        },
+      },
+      workspace: {
+        select: {
+          id: true,
+          name: true,
+          members: {
+            select: {
+              role: true,
+              isDefault: true,
+              joinedAt: true,
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  firstName: true,
+                  lastName: true,
+                  telephone: true,
+                  profileImage: true,
+                  notifications: true,
+                  emailConfirmed: true,
+                  stripeCustomerId: true,
+                  lastLogin: true,
+                  isActive: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+async getCustomerDetails(mailboxId:string) {
+  // 1) mailbox + özet bilgiler (tek sorgu)
+  const mailbox = await this.prisma.mailbox.findUnique({
+    where: { id: mailboxId },
+    select: {
+      id: true,
+      steNumber: true,
+      status: true,
+      billingCycle: true,
+      startDate: true,
+      endDate: true,
+      workspaceId: true,
+      officeLocation: { select: { id: true, label: true, city: true, state: true, zipCode: true } },
+      plan: { select: { id: true, name: true, slug: true } },
+      planPrice: { select: { id: true, amount: true, currency: true, description: true } },
+      _count: {
+        select: {
+          mails: true,
+          tickets: true,
+          recipients: true,
+        },
+      },
+    },
+  });
+
+  if (!mailbox) {
+    throw new NotFoundException('Mailbox not found');
+  }
+
+  // 2) paralel istekler
+  const [mails, tickets, members, actions] = await this.prisma.$transaction([
+    // 2a) mails (son aksiyonla birlikte)
+    this.prisma.mail.findMany({
+      where: { mailboxId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        receivedAt: true,
+        type: true,
+        status: true,
+        isScanned: true,
+        isForwarded: true,
+        isShereded: true,
+        trackingNumber: true,
+        trackingUrl: true,
+        senderName: true,
+        carrier: true,
+        photoUrls: true,
+        width: true,
+        height: true,
+        length: true,
+        weightKg: true,
+        // mailin en güncel action durumu
+        actions: {
+          take: 1,
+          orderBy: { updatedAt: 'desc' },
+          select: {
+            id: true,
+            type: true,
+            status: true,
+            requestedAt: true,
+            completedAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+    }),
+
+    // 2b) tickets (son 2 mesaj ile)
+    this.prisma.ticket.findMany({
+      where: { mailboxId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        subject: true,
+        status: true,
+        priority: true,
+        createdAt: true,
+        updatedAt: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            profileImage: true,
+          },
+        },
+        messages: {
+          take: 2,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            createdAt: true,
+            message:true,
+            attachments:true,
+            user:{select:{
+              id:true,
+              firstName:true,
+              lastName:true,
+              email:true,
+            }}
+          },
+        },
+      },
+    }),
+
+    // 2c) workspace members (Owner önce)
+    this.prisma.workspaceMember.findMany({
+      where: { workspaceId: mailbox.workspaceId },
+      select: {
+        role: true,
+        isDefault: true,
+        joinedAt: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            profileImage: true,
+            telephone: true,
+            isActive: true,
+            emailConfirmed: true,
+            notifications: true,
+            stripeCustomerId: true,
+            lastLogin: true,
+          },
+        },
+      },
+      orderBy: [
+        { role: 'asc' }, // Prisma enum sıralaması için OWNER < ADMIN < MEMBER beklenir
+        { isDefault: 'desc' },
+      ],
+    }),
+
+    // 2d) aksiyon istekleri (mail bazından bağımsız, en güncelden)
+    this.prisma.mailAction.findMany({
+      where: { mail: { mailboxId } },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        requestedAt: true,
+        completedAt: true,
+        updatedAt: true,
+        mailId: true,
+      },
+    }),
+  ]);
+
+  // 3) UI-friendly shape (tek yerde topla)
+  const result = {
+    mailbox: {
+      id: mailbox.id,
+      steNumber: mailbox.steNumber,
+      status: mailbox.status,
+      billingCycle: mailbox.billingCycle,
+      startedAt: mailbox.startDate,
+      endedAt: mailbox.endDate,
+      locationLabel: mailbox.officeLocation?.label,
+      location: mailbox.officeLocation,
+      plan: mailbox.plan,
+      planPrice: mailbox.planPrice,
+      counters: {
+        mails: mailbox._count.mails,
+        tickets: mailbox._count.tickets,
+        recipients: mailbox._count.recipients,
+      },
+    },
+
+    mails: mails.map((m) => ({
+      id: m.id,
+      receivedAt: m.receivedAt,
+      type: m.type,
+      status: m.status,
+      isScanned: m.isScanned,
+      isForwarded: m.isForwarded,
+      isShereded: m.isShereded,
+      trackingNumber: m.trackingNumber,
+      trackingUrl: m.trackingUrl,
+      senderName: m.senderName,
+      carrier: m.carrier,
+      photoUrls: m.photoUrls,
+      dims: { w: m.width, h: m.height, l: m.length, kg: m.weightKg },
+      lastAction: m.actions?.[0] || null,
+    })),
+
+    tickets: tickets.map((t) => ({
+      id: t.id,
+      subject: t.subject,
+      status: t.status,
+      priority: t.priority,
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+      user: {
+        id: t.user?.id,
+        name: [t.user?.firstName, t.user?.lastName].filter(Boolean).join(' ') || undefined,
+        email: t.user?.email,
+        profileImage: t.user?.profileImage ?? undefined,
+      },
+      lastMessages: t.messages, // son 2
+    })),
+
+    members: members.map((wm) => ({
+      role: wm.role,
+      isDefault: wm.isDefault,
+      joinedAt: wm.joinedAt,
+      user: {
+        id: wm.user.id,
+        name: [wm.user.firstName, wm.user.lastName].filter(Boolean).join(' ') || undefined,
+        email: wm.user.email,
+        profileImage: wm.user.profileImage ?? undefined,
+        telephone: wm.user.telephone ?? undefined,
+        isActive: wm.user.isActive,
+        emailConfirmed: wm.user.emailConfirmed,
+        notifications: wm.user.notifications,
+        stripeCustomerId: wm.user.stripeCustomerId ?? undefined,
+        lastLogin: wm.user.lastLogin ?? undefined,
+      },
+    })),
+
+    // Aksiyonlar: “Timeline” veya “inbox” görünümü için
+    actionRequests: actions,
+  };
+
+  return result;
+}
+
+
+async listActionRequestsByType(officeLocationId:string,input: ListActionRequestsQueryDto) {
+  const {
+    type,
+    status,
+  } = input;
+
+  // ortak where (officeLocation üzerinden join)
+  const baseWhere: any = {
+    mail: { mailbox: { officeLocationId } },
+  };
+  if (status) baseWhere.status = status;
+
+  // === MODE A: Tek tip + sayfalama
+  if (type) {
+    const where = { ...baseWhere, type };
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.mailAction.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          id: true,
+          type: true,
+          status: true,
+          requestedAt: true,
+          completedAt: true,
+          updatedAt: true,
+          meta: true,
+          mailId: true,
+          mail: {
+            select: {
+              id: true,
+              receivedAt: true,
+              type: true,
+              status: true,
+              isScanned: true,
+              isForwarded: true,
+              isShereded: true,
+              senderName: true,
+              trackingNumber: true,
+              mailbox: { select: { id: true, steNumber: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.mailAction.count({ where }),
+    ]);
+    return {
+      mode: 'single',
+      type,
+      total,
+      items,
+    };
+  }
+
+  // === MODE B: Tüm tipler ayrı ayrı (grouped)
+  // toplamlar (her tipe kaç adet düştüğü)
+  const grouped = await this.prisma.mailAction.groupBy({
+    by: ['type'],
+    _count: { _all: true },
+    where: baseWhere,
+  });
+
+  const totals: Record<string, number> = {};
+  for (const g of grouped) totals[g.type] = g._count._all;
+
+  // tüm enum tiplerini sırala; olmayanlara 0 koy
+  const allTypes: MailActionType[] = Object.values(MailActionType);
+
+  // her tip için son N kaydı paralel çek
+  const queries = allTypes.map((t) =>
+    this.prisma.mailAction.findMany({
+      where: { ...baseWhere, type: t },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        requestedAt: true,
+        completedAt: true,
+        updatedAt: true,
+        meta: true,
+        mailId: true,
+        mail: {
+          select: {
+            id: true,
+            receivedAt: true,
+            type: true,
+            status: true,
+            senderName: true,
+            trackingNumber: true,
+            photoUrls:true,
+            carrier:true,
+            senderAddress:true,
+            mailbox: { select: { id: true, steNumber: true } },
+          },
+        },
+      },
+    }),
+  );
+
+  const lists = await this.prisma.$transaction(queries);
+
+  const groups = allTypes.map((t, i) => ({
+    type: t,
+    total: totals[t] || 0,
+    items: lists[i],
+  }));
+
+  return {
+    mode: 'grouped',
+    officeLocationId,
+    totals,
+    groups,
+  };
+}
+
+async getActionRequestDetails(requestId:string){
+return await this.prisma.mailAction.findUnique({
+  where:{id:requestId},
+  include:{
+    mail:{
+    include:{recipient:true}
+    }
+  }
+ })
+}
+
 }

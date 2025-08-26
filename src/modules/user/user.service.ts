@@ -60,7 +60,7 @@ export class UserService {
       createdAt: user.createdAt,
       telephone: user.telephone || null,
       roles: user.roles.map((role) => role.role),
-      assigneedLocationId: user.handlerAssignments[0]?.officeLocationId || undefined,
+      assignedLocationId: user.assignedLocationId || null,
       workspaces: user.workspaces.map((member) => ({
         workspaceId: member.workspaceId,
         role: member.role,
@@ -154,7 +154,7 @@ export class UserService {
     // Add context information to user object for JWT payload
     formattedUser.currentWorkspaceId = user.currentWorkspaceId;
     formattedUser.currentMailboxId = user.currentMailboxId;
-    formattedUser.currentOfficeLocation = user.workspaces[0].workspace.mailboxes[0].officeLocation;
+    formattedUser.currentOfficeLocation = user.workspaces[0].workspace.mailboxes[0]?.officeLocation?? null;
     return formattedUser;
   }
 
@@ -242,6 +242,7 @@ export class UserService {
     this.eventEmitter.emit(Events.USER_REGISTERED, {
       email: newUser.email,
       name: `${newUser.firstName} ${newUser.lastName || ''}`.trim(),
+      password,
     });
     console.log(`New user created. Email: ${newUser.email},Pass: ${password}`);
     return await this.findUserByEmail(newUser.email);

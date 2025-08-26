@@ -26,7 +26,7 @@
     currentWorkspaceId?: string;
     currentMailboxId?: string;
     currentOfficeLocation?: any;
-    assigneedLocationId?: string;
+    assignedLocationId?: string;
     tasks?: Task[]| any[];
   }
 

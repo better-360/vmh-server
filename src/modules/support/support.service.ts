@@ -167,6 +167,15 @@ export class SupportService {
     userId: string,
     ticketMessage: TicketMessageDto,
   ): Promise<Ticket> {
+        // Ticket'ı bul
+    const ticket = await this.prismaService.ticket.findUnique({
+      where: { id: ticketMessage.ticketId },
+    });
+
+    if (!ticket) {
+      throw new HttpException('Ticket not found', HttpStatus.NOT_FOUND);
+    }
+
     // Kullanıcı ve Rolleri Al
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },
@@ -178,23 +187,16 @@ export class SupportService {
     }
 
     // Yetki Kontrolü
-    const isAdmin = user.roles.some((role) => role.role === 'ADMIN');
+    const isAuthorized = user.roles.some((role) => role.role === 'ADMIN'|| role.role === 'STAFF');
 
-    if (!isAdmin) {
+    if (!isAuthorized) {
       throw new HttpException(
         'You do not have permission to add a message as staff',
         HttpStatus.FORBIDDEN,
       );
     }
 
-    // Ticket'ı bul
-    const ticket = await this.prismaService.ticket.findUnique({
-      where: { id: ticketMessage.ticketId },
-    });
 
-    if (!ticket) {
-      throw new HttpException('Ticket not found', HttpStatus.NOT_FOUND);
-    }
 
     // Attachments varsa, bunları işlemden geçirelim:
     let attachmentsData = undefined;
@@ -280,8 +282,20 @@ export class SupportService {
   async getTicketsByOfficeLocation(officeLocationId: string) {
     return this.prismaService.ticket.findMany({
       where: { mailbox: { officeLocationId } },
-      include: { user: true, mailbox: true },
+      include: { user:{omit: {password: true}}, mailbox: {include:{plan:true,planPrice:true}},},
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+
+  async getTicketMessages(ticketId: string) {
+    return this.prismaService.ticketMessage.findMany({
+      where: { ticketId },
+      include: {
+        user: {omit: {password: true}},
+        attachments: true,
+      },
+      orderBy: { createdAt: 'asc' },
     });
   }
 }

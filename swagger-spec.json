@@ -784,6 +784,35 @@
         ]
       }
     },
+    "/api/admin/create-mailhandler": {
+      "post": {
+        "operationId": "AdminMainController_createMailHandler",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHandlerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/admin/support/tickets": {
       "get": {
         "operationId": "AdminSupportController_getTickets",
@@ -4434,11 +4463,6 @@
         },
         "tags": [
           "Admin - Mail Handlers"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       }
     },
@@ -4463,11 +4487,6 @@
         },
         "tags": [
           "Admin - Mail Handlers"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       },
       "patch": {
@@ -4500,11 +4519,6 @@
         },
         "tags": [
           "Admin - Mail Handlers"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       }
     },
@@ -4529,11 +4543,6 @@
         },
         "tags": [
           "Admin - Mail Handlers"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       }
     },
@@ -4558,11 +4567,6 @@
         },
         "tags": [
           "Admin - Mail Handlers"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       }
     },
@@ -6216,99 +6220,6 @@
         ]
       }
     },
-    "/api/handler/office-locations": {
-      "get": {
-        "operationId": "MailHandlerController_getOfficeLocations",
-        "summary": "Get all active office locations for handler",
-        "description": "Handler selects which office location to work with",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Active office locations retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/OfficeLocationResponseDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/handler/workspaces": {
-      "get": {
-        "operationId": "MailHandlerController_getAllWorkspaces",
-        "summary": "Get all workspaces",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "List of workspaces retrieved successfully"
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/handler/mailboxes/{officeLocationId}": {
-      "get": {
-        "operationId": "MailHandlerController_getMailboxesByOfficeLocation",
-        "summary": "Get mailboxes by office location",
-        "description": "Get mailboxes by office location",
-        "parameters": [
-          {
-            "name": "officeLocationId",
-            "required": true,
-            "in": "path",
-            "description": "Office location ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Mailboxes retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MailboxResponseDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
     "/api/handler/mailboxes/by-ste/{steNumber}": {
       "get": {
         "operationId": "MailHandlerController_getMailboxesBySteNumber",
@@ -6486,448 +6397,6 @@
           },
           "404": {
             "description": "Package not found"
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/handler/all": {
-      "get": {
-        "operationId": "MailHandlerController_getMails",
-        "summary": "Get all mail packages",
-        "description": "Retrieve a paginated list of all mail packages with filtering options",
-        "parameters": [
-          {
-            "name": "mailboxId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by mailbox ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "subscriptionId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by mailbox ID (subscription ID)",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "workspaceId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by workspace ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "officeLocationId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by office location ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "type",
-            "required": false,
-            "in": "query",
-            "description": "Filter by package type",
-            "schema": {
-              "enum": [
-                "BANK_CHECK",
-                "LEGAL_DOCUMENT",
-                "ENVELOPE",
-                "PACKAGE",
-                "OTHER"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "description": "Filter by package status",
-            "schema": {
-              "enum": [
-                "PENDING",
-                "FORWARDED",
-                "SHREDDED",
-                "COMPLETED",
-                "CANCELLED",
-                "IN_PROCESS"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "steNumber",
-            "required": false,
-            "in": "query",
-            "description": "Filter by STE number",
-            "schema": {
-              "example": "004712",
-              "type": "string"
-            }
-          },
-          {
-            "name": "senderName",
-            "required": false,
-            "in": "query",
-            "description": "Filter by sender name",
-            "schema": {
-              "example": "John Doe",
-              "type": "string"
-            }
-          },
-          {
-            "name": "carrier",
-            "required": false,
-            "in": "query",
-            "description": "Filter by carrier",
-            "schema": {
-              "example": "UPS",
-              "type": "string"
-            }
-          },
-          {
-            "name": "isShereded",
-            "required": false,
-            "in": "query",
-            "description": "Filter by shredded status",
-            "schema": {
-              "example": false,
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "isForwarded",
-            "required": false,
-            "in": "query",
-            "description": "Filter by forwarded status",
-            "schema": {
-              "example": false,
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "receivedAtStart",
-            "required": false,
-            "in": "query",
-            "description": "Filter by received date start (YYYY-MM-DD)",
-            "schema": {
-              "example": "2024-01-01",
-              "type": "string"
-            }
-          },
-          {
-            "name": "receivedAtEnd",
-            "required": false,
-            "in": "query",
-            "description": "Filter by received date end (YYYY-MM-DD)",
-            "schema": {
-              "example": "2024-12-31",
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "description": "Page number for pagination (default: 1)",
-            "schema": {
-              "minimum": 1,
-              "example": 1,
-              "type": "number"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Number of items per page (default: 10)",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "example": 10,
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Packages retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/PackageResponseDto"
-                      }
-                    },
-                    "meta": {
-                      "type": "object",
-                      "properties": {
-                        "total": {
-                          "type": "number"
-                        },
-                        "page": {
-                          "type": "number"
-                        },
-                        "limit": {
-                          "type": "number"
-                        },
-                        "totalPages": {
-                          "type": "number"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/handler/mailbox/{mailboxId}/mails": {
-      "get": {
-        "operationId": "MailHandlerController_getPackagesByMailbox",
-        "summary": "Get mail packages by mailbox",
-        "description": "Retrieve all mail packages for a specific mailbox",
-        "parameters": [
-          {
-            "name": "mailboxId",
-            "required": true,
-            "in": "path",
-            "description": "Mailbox ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "subscriptionId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by mailbox ID (subscription ID)",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "workspaceId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by workspace ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "officeLocationId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by office location ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "type",
-            "required": false,
-            "in": "query",
-            "description": "Filter by package type",
-            "schema": {
-              "example": "PACKAGE",
-              "enum": [
-                "BANK_CHECK",
-                "LEGAL_DOCUMENT",
-                "ENVELOPE",
-                "PACKAGE",
-                "OTHER"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "description": "Filter by package status",
-            "schema": {
-              "example": "PENDING",
-              "enum": [
-                "PENDING",
-                "FORWARDED",
-                "SHREDDED",
-                "COMPLETED",
-                "CANCELLED",
-                "IN_PROCESS"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "steNumber",
-            "required": false,
-            "in": "query",
-            "description": "Filter by STE number",
-            "schema": {
-              "example": "004712",
-              "type": "string"
-            }
-          },
-          {
-            "name": "senderName",
-            "required": false,
-            "in": "query",
-            "description": "Filter by sender name",
-            "schema": {
-              "example": "John Doe",
-              "type": "string"
-            }
-          },
-          {
-            "name": "carrier",
-            "required": false,
-            "in": "query",
-            "description": "Filter by carrier",
-            "schema": {
-              "example": "UPS",
-              "type": "string"
-            }
-          },
-          {
-            "name": "isShereded",
-            "required": false,
-            "in": "query",
-            "description": "Filter by shredded status",
-            "schema": {
-              "example": false,
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "isForwarded",
-            "required": false,
-            "in": "query",
-            "description": "Filter by forwarded status",
-            "schema": {
-              "example": false,
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "receivedAtStart",
-            "required": false,
-            "in": "query",
-            "description": "Filter by received date start",
-            "schema": {
-              "example": "2024-01-01",
-              "type": "string"
-            }
-          },
-          {
-            "name": "receivedAtEnd",
-            "required": false,
-            "in": "query",
-            "description": "Filter by received date end",
-            "schema": {
-              "example": "2024-12-31",
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "description": "Page number for pagination (default: 1)",
-            "schema": {
-              "minimum": 1,
-              "example": 1,
-              "type": "number"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Number of items per page (default: 10)",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "example": 10,
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Packages retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/PackageResponseDto"
-                      }
-                    },
-                    "meta": {
-                      "type": "object",
-                      "properties": {
-                        "total": {
-                          "type": "number"
-                        },
-                        "page": {
-                          "type": "number"
-                        },
-                        "limit": {
-                          "type": "number"
-                        },
-                        "totalPages": {
-                          "type": "number"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
           }
         },
         "tags": [
@@ -7627,6 +7096,297 @@
         ]
       }
     },
+    "/api/mail-handler/tickets": {
+      "get": {
+        "operationId": "HandlerSupportController_getTickets",
+        "summary": "Tüm destek biletlerini getirir",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler - Support Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mail-handler/tickets/{id}": {
+      "get": {
+        "operationId": "HandlerSupportController_getTicket",
+        "summary": "Belirtilen destek biletinin detaylarını getirir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler - Support Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mail-handler/tickets/{id}/messages": {
+      "get": {
+        "operationId": "HandlerSupportController_getTicketCounts",
+        "summary": "Get Ticket Messages",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler - Support Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mail-handler/tickets/{ticketId}": {
+      "patch": {
+        "operationId": "HandlerSupportController_editTicket",
+        "summary": "Bir destek biletinin durumunu günceller",
+        "parameters": [
+          {
+            "name": "ticketId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditTicketStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler - Support Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mail-handler/tickets/add-message": {
+      "post": {
+        "operationId": "HandlerSupportController_addMessageToTicket",
+        "summary": "Bir destek biletine yetkili tarafından mesaj ekler",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler - Support Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mail-handler/customers": {
+      "get": {
+        "operationId": "HandlerCustomerController_getMailboxesByOfficeLocation",
+        "summary": "Get mailboxes by office location",
+        "description": "Get mailboxes by office location",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Mailboxes retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MailboxResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Mail Handler - Customer Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mail-handler/customers/{mailboxId}": {
+      "get": {
+        "operationId": "HandlerCustomerController_getCustomerDetails",
+        "summary": "Belirtilen destek biletinin detaylarını getirir",
+        "parameters": [
+          {
+            "name": "mailboxId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler - Customer Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mail-handler/action-requests": {
+      "get": {
+        "operationId": "HandlerActionRequestsController_list",
+        "summary": "Action Request listesi",
+        "description": "officeLocationId zorunlu. type verilirse tek tipe göre sayfalı sonuç döner. type yoksa tüm tipleri gruplu döner.",
+        "parameters": [
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "description": "Tek tipe filtre (opsiyonel)",
+            "schema": {
+              "enum": [
+                "FORWARD",
+                "SHRED",
+                "SCAN",
+                "HOLD",
+                "JUNK",
+                "CHECK_DEPOSIT"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Aksiyon durum filtresi (opsiyonel)",
+            "schema": {
+              "enum": [
+                "PENDING",
+                "IN_PROGRESS",
+                "DONE",
+                "FAILED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler - Request Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mail-handler/action-requests/{id}": {
+      "get": {
+        "operationId": "HandlerActionRequestsController_getActionRequestDetails",
+        "summary": "Action Request listesi",
+        "description": "officeLocationId zorunlu. type verilirse tek tipe göre sayfalı sonuç döner. type yoksa tüm tipleri gruplu döner.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler - Request Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/actions/speeds/{locationId}": {
       "get": {
         "operationId": "MailActionsController_findSpeedOptions",
@@ -8136,6 +7896,37 @@
           "officeLocationId",
           "planPriceId",
           "addons"
+        ]
+      },
+      "CreateHandlerDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "description": "The name of the user",
+            "example": "John"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "The lastname of the user",
+            "example": "Doe"
+          },
+          "email": {
+            "type": "string",
+            "description": "The email of the user",
+            "example": "johndoe@example.com"
+          },
+          "officeLocationId": {
+            "type": "string",
+            "description": "The office location ID to assign the handler to",
+            "example": "a0a8012e-aaaa-bbbb-cccc-444455556666"
+          }
+        },
+        "required": [
+          "firstName",
+          "lastName",
+          "email",
+          "officeLocationId"
         ]
       },
       "MessageAttachment": {

@@ -3,10 +3,14 @@ import { CreateInitialSubscriptionOrderDto } from 'src/dtos/checkout.dto';
 import { PrismaService } from 'src/prisma.service';
 import { WorkspaceService } from '../workspace/workspace.service';
 import { UserService } from '../user/user.service';
+import { RoleType } from '@prisma/client';
+import { RegisterDto } from 'src/dtos/auth.dto';
+import { HandlerService } from '../handler/handler.service';
+import { CreateHandlerDto } from 'src/dtos/handler.dto';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prismaService: PrismaService,private readonly workspaceService:WorkspaceService,private readonly userService:UserService) {}
+  constructor(private readonly prismaService: PrismaService,private readonly workspaceService:WorkspaceService,private readonly userService:UserService,private readonly handlerService:HandlerService) {}
 
   async getSystemStats() {
     try {
@@ -68,6 +72,23 @@ export class AdminService {
   }
 
 
+  async createMailHandler(data: CreateHandlerDto) {
+    const { firstName, lastName, email } = data;
+    const user = await this.userService.createUser(
+      email,
+      firstName,
+      lastName,
+      'fakeStripeCustomerId', // Placeholder, replace with actual Stripe customer ID 
+    );
+    await this.prismaService.userRole.create({
+      data: {
+        userId: user.id,
+        role: RoleType.STAFF
+      },
+    });
+  await this.handlerService.assignUserToOfficeLocation(user.id,data.officeLocationId)
+  }
+
 
 async generateSteNumber(): Promise<string> {
     const steNumber = Math.random().toString(36).substring(2, 2 + 6);
@@ -76,7 +97,6 @@ async generateSteNumber(): Promise<string> {
 
 async createWorkspaceAndMailbox(createOrderDto: CreateInitialSubscriptionOrderDto){
 const { officeLocationId, planPriceId, addons,email,firstName,lastName } = createOrderDto;
-
 
 const user= await this.userService.createUser(
   email,

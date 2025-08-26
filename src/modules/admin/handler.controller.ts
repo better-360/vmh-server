@@ -5,11 +5,10 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from 'src/common/enums/role.enum';
 import { AssignHandlerDto, ToggleHandlerDto } from 'src/dtos/handler.dto';
 import { HandlerService } from '../handler/handler.service';
+import { Public } from 'src/common/decorators';
 
 @ApiTags('Admin - Mail Handlers')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
-@Roles(Role.ADMIN, Role.SUPERADMIN)
+@Public()
 @Controller('admin/handlers')
 export class AdminHandlerController {
   constructor(private readonly handlerService: HandlerService) {}

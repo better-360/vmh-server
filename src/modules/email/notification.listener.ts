@@ -16,8 +16,8 @@ export class NotificationListener implements OnModuleInit {
   }
 
    @OnEvent(Events.USER_REGISTERED)
-   async sendWelcomeMail(payload: { email: string; name: string }) {
-    this.emailService.sendWelcomeMail(payload.email, payload.name);
+   async sendWelcomeMail(payload: { email: string; name: string, password:string }) {
+    this.emailService.sendWelcomeMail(payload.email, payload.name,payload.password);
    }
 
   

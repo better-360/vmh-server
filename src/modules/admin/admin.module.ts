@@ -58,6 +58,7 @@ import { TaskService } from '../task/task.service';
     CaslAbilityFactory,
     HandlerService,
     TaskService,
+    HandlerService
   ],
 
   exports: [AdminService],
