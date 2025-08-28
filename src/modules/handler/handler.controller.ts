@@ -16,7 +16,6 @@ import {
     ApiOperation, 
     ApiResponse, 
     ApiParam, 
-    ApiQuery, 
     ApiBody,
     ApiBearerAuth,
     ApiNotFoundResponse,
@@ -27,19 +26,13 @@ import {
 import {
   CreateMailDto,
   UpdateMailDto,
-  MailQueryDto,
-  PackageResponseDto,
-  MailType,
-  PackageStatus,
+  PackageResponseDto
 } from 'src/dtos/mail.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { MailService } from '../mail/mail.service';
-import { LocationService } from '../catalog/location.service';
 import { MailboxService } from '../mailbox/mailbox.service';
-import { OfficeLocationResponseDto } from 'src/dtos/location.dto';
 import { MailboxResponseDto } from 'src/dtos/mailbox.dto';
-import { WorkspaceService } from '../workspace/workspace.service';
-import { UpdateActionStatusDto,CreateMailActionDto,CompleteForwardDto, CancelForwardDto,QueryMailActionsDto } from 'src/dtos/mail-actions.dto';
+import { UpdateActionStatusDto,CompleteForwardDto, CancelForwardDto,QueryMailActionsDto } from 'src/dtos/mail-actions.dto';
 import { MailActionsService } from '../actions/actions.service';
 import { CreateTaskDto, EditTicketStatusDto, TaskMessageDto,TicketMessageDto,UpdateTaskDto } from 'src/dtos/support.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
@@ -144,41 +137,6 @@ import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
       return this.mailService.findOne(id);
     }
   
-
-  @Get(':officeLocationId/mails')
-  @ApiOperation({ 
-    summary: 'Get mail packages by office location',
-    description: 'Retrieve all mail packages for a specific office location'
-  })
-    @ApiParam({ name: 'officeLocationId', description: 'Office location ID', example: '123e4567-e89b-12d3-a456-426614174000' })
-    @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number for pagination (default: 1)' })
-    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 10)' })
-    @ApiResponse({ 
-      status: HttpStatus.OK, 
-      description: 'Packages retrieved successfully',
-      schema: {
-        type: 'object',
-        properties: {
-          data: { 
-            type: 'array', 
-            items: { 
-              $ref: '#/components/schemas/PackageResponseDto'
-            }
-          },
-          meta: {
-            type: 'object',
-            properties: {
-              total: { type: 'number' },
-              page: { type: 'number' },
-              limit: { type: 'number' },
-              totalPages: { type: 'number' }
-            }
-          }
-        }
-      }
-    })
-  
-        // Detay
   @Get('mail-actions/:id')
   async get(@Param('id') id: string) {
     return this.actionService.getActionById(id);

@@ -788,7 +788,7 @@ model Task {
   title           String?
   description     String?
   Icon            String?
-  status          TaskStatus
+  status          TaskStatus @default(IN_PROGRESS)
   priority        TaskPriority
   type            TaskType        @default(MANUAL)
 
@@ -930,19 +930,9 @@ model Attachment {
   }
 
   enum TaskStatus {
-    OPEN
     IN_PROGRESS
     COMPLETED
-    RESOLVED
-    CLOSED
-    REOPENED
-    ON_HOLD
     WAITING_FOR_CUSTOMER
-    WAITING_FOR_STAFF
-    WAITING_FOR_THIRD_PARTY
-    ESCALATED
-    CANCELLED
-    CLOSED_BY_CUSTOMER
   }
 
   enum PriceType {

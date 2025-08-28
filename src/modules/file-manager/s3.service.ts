@@ -30,19 +30,17 @@ export class S3Service {
     originalName: string,
     contentType: string,
     folder: string,
-    applicationNumber: string
+    mailboxId: string
   ): Promise<{ presignedUrl: string; fileKey: string }> {
     const fileExtension = this.getFileExtension(originalName);
     const uniqueFileName = `${uuidv4()}.${fileExtension}`;
-    const fileKey = `applicatorfiles/${folder}/${applicationNumber}/${uniqueFileName}`;
+    const fileKey = `images/${folder}/${mailboxId}/${uniqueFileName}`;
 
     const command = new PutObjectCommand({
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: fileKey,
       ContentType: contentType,
     });
-
-    // expiresIn saniye cinsinden (ör: 600 = 10 dakika)
     const presignedUrl = await getSignedUrl(this.s3Client, command, { expiresIn: 600 });
     return { presignedUrl, fileKey };
   }

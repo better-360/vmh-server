@@ -743,7 +743,12 @@
           "201": {
             "description": ""
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
       }
     },
     "/api/file-manager/admin-presigned-url": {
@@ -754,7 +759,12 @@
           "201": {
             "description": ""
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
       }
     },
     "/api/admin/stats": {
@@ -6451,11 +6461,9 @@
         ]
       }
     },
-    "/api/mail-handler/{officeLocationId}/mails": {
+    "/api/mail-handler/mail-actions/{id}": {
       "get": {
         "operationId": "MailHandlerController_get",
-        "summary": "Get mail packages by office location",
-        "description": "Retrieve all mail packages for a specific office location",
         "parameters": [
           {
             "name": "id",
@@ -6464,70 +6472,11 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Number of items per page (default: 10)",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "description": "Page number for pagination (default: 1)",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "officeLocationId",
-            "required": true,
-            "in": "path",
-            "description": "Office location ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Packages retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/PackageResponseDto"
-                      }
-                    },
-                    "meta": {
-                      "type": "object",
-                      "properties": {
-                        "total": {
-                          "type": "number"
-                        },
-                        "page": {
-                          "type": "number"
-                        },
-                        "limit": {
-                          "type": "number"
-                        },
-                        "totalPages": {
-                          "type": "number"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
+            "description": ""
           }
         },
         "tags": [
@@ -9891,19 +9840,9 @@
           "status": {
             "type": "string",
             "enum": [
-              "OPEN",
               "IN_PROGRESS",
               "COMPLETED",
-              "RESOLVED",
-              "CLOSED",
-              "REOPENED",
-              "ON_HOLD",
-              "WAITING_FOR_CUSTOMER",
-              "WAITING_FOR_STAFF",
-              "WAITING_FOR_THIRD_PARTY",
-              "ESCALATED",
-              "CANCELLED",
-              "CLOSED_BY_CUSTOMER"
+              "WAITING_FOR_CUSTOMER"
             ],
             "description": "Task status",
             "example": "OPEN",

@@ -26,7 +26,7 @@ export class TaskService {
                 description: data.description,
                 Icon: data.Icon,
                 priority: data.priority,
-                status: TaskStatus.OPEN,
+                status: TaskStatus.IN_PROGRESS,
                 type: TaskType.MANUAL,
                 dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
                 messages: firstMessage
@@ -75,7 +75,7 @@ export class TaskService {
                 description: data.description,
                 Icon: data.Icon,
                 priority: data.priority,
-                status: TaskStatus.OPEN,
+                status: TaskStatus.IN_PROGRESS,
                 type: TaskType.MANUAL,
                 dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
                 messages: firstMessage
@@ -131,7 +131,7 @@ export class TaskService {
                 description: params?.description,
                 Icon: 'system',
                 priority: params?.priority ?? TaskPriority.MEDIUM,
-                status: TaskStatus.OPEN,
+                status: TaskStatus.IN_PROGRESS,
                 type: TaskType.AUTOMATIC,
                 dueDate: params?.dueDate ? new Date(params.dueDate) : undefined,
                 messages: {
