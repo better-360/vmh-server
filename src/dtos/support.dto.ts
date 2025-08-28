@@ -172,22 +172,21 @@ export class CreateTaskDto extends PartialType(TaskDto) {
   message?: FirstTicketMessageDto;
 }
 
-export class UpdateTaskDto extends PartialType(TaskDto) {
-  @ApiProperty({ description: 'Task ID' ,example:'123e4567-e89b-12d3-a456-426614174000',default:'123e4567-e89b-12d3-a456-426614174000'})
-  @IsUUID()
-  id: string;
-
+export class UpdateTaskDto extends PartialType(CreateTaskDto) {
   @ApiPropertyOptional({ description: 'Due date (ISO)' ,example:'2025-01-01',default:'2025-01-01'})
   @IsDateString()
   @IsOptional()
   dueDate?: string;
 
-  @ApiProperty({ enum: TaskStatus ,description:'Task status',example:'OPEN',default:'OPEN'})
+  @ApiPropertyOptional({ enum: TaskStatus ,description:'Task status',example:'OPEN',default:'OPEN'})
   @IsEnum(TaskStatus)
+  @IsOptional()
   status: TaskStatus;
 
-  @ApiProperty({ enum: TaskType ,description:'Task type',example:'MANUAL',default:'MANUAL'})
+
+  @ApiPropertyOptional({ enum: TaskType ,description:'Task type',example:'MANUAL',default:'MANUAL'})
   @IsEnum(TaskType)
+  @IsOptional()
   type: TaskType;
 
 }

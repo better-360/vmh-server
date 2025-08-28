@@ -1,34 +1,31 @@
-import { Body, Controller, Get, Param, Patch, Post, Delete, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
 import { TaskService } from "./task.service";
 import { TaskMessageDto } from "src/dtos/support.dto";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { CurrentUser } from "src/common/decorators/current-user.decorator";
+import { ContextDto } from "src/dtos/user.dto";
+import { Context } from "src/common/decorators/context.decorator";
+import { CaslAbilityFactory } from "src/authorization/casl/ability.factory";
+import { IUser } from "src/common/interfaces/user.interface";
 
 @ApiTags('Tasks')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('tasks')
 export class TaskController {
-    constructor(private readonly taskService: TaskService) {}
+    constructor(private readonly taskService: TaskService, private readonly caslAbilityFactory: CaslAbilityFactory) {}
 
-
+    @ApiOperation({ summary: 'Get tasks' })
+    @Get()
+    async getTasks(@Context() context: ContextDto) {
+      return this.taskService.getTasks(context.mailboxId);
+    }
+    
     @Get(':id')
     @ApiOperation({ summary: 'Get task by id' })
-    get(@Param('id') id: string) {
+    async getTask(@Param('id') id: string, @CurrentUser() user: IUser) {
         return this.taskService.getTaskById(id);
-    }
-
-    @Get('office-location/:officeLocationId')
-    @ApiOperation({ summary: 'List tasks by office location' })
-    listByOffice(@Param('officeLocationId') officeLocationId: string) {
-        return this.taskService.listTasksByOfficeLocation(officeLocationId);
-    }
-
-    @Get('mailbox/:mailboxId')
-    @ApiOperation({ summary: 'List tasks by mailbox' })
-    listByMailbox(@Param('mailboxId') mailboxId: string) {
-        return this.taskService.listTasksByMailbox(mailboxId);
     }
 
     @Post(':id/messages')
@@ -36,4 +33,5 @@ export class TaskController {
     addMessage(@Param('id') id: string, @Body() dto: TaskMessageDto, @CurrentUser('id') userId: string) {
         return this.taskService.addMessage(id, userId, dto);
     }
+
 }

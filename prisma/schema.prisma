@@ -43,6 +43,7 @@ generator dbml {
     workspaces         WorkspaceMember[]
     handlerAssignments MailHandlerAssignment[]
     tasks              Task[] @relation("CreatedTasks")
+    taskMessage TaskMessage[] 
 }
 
   model Workspace {
@@ -183,8 +184,10 @@ generator dbml {
   model Product {
     id              String           @id @default(uuid()) @db.Uuid
     name            String
-    description     String?
+    description     Json?
+    bestFor         Json?
     stripeProductId String?
+    category        String?
     type            ProductType
     imageUrl        String?
     createdAt       DateTime         @default(now())
@@ -545,6 +548,7 @@ generator dbml {
     id          String            @id @default(uuid()) @db.Uuid
     mailId   String            @db.Uuid
     officeLocationId   String?            @db.Uuid
+    priority   MailActionPriority @default(STANDARD)
     type        MailActionType
     status      ActionStatus // örn: PENDING, IN_PROGRESS, DONE, FAILED
     requestedAt DateTime          @default(now())
@@ -573,6 +577,8 @@ generator dbml {
 
     status        ForwardRequestStatus @default(PENDING) // Talep durumu
     paymentStatus PaymentStatus        @default(PENDING)
+    priority   MailActionPriority @default(STANDARD)
+
 
     createdAt   DateTime  @default(now())
     updatedAt   DateTime  @updatedAt
@@ -784,7 +790,7 @@ model Task {
   Icon            String?
   status          TaskStatus
   priority        TaskPriority
-  type            TaskType
+  type            TaskType        @default(MANUAL)
 
   dueDate         DateTime?
   createdAt       DateTime      @default(now())
@@ -808,10 +814,12 @@ model Task {
 model TaskMessage {
   id          String       @id @default(uuid()) @db.Uuid
   taskId      String       @db.Uuid
+  userId      String?       @db.Uuid
   message     String
   fromStaff   Boolean      @default(false)
   createdAt   DateTime     @default(now())
   task        Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user        User?          @relation(fields: [userId],references: [id],onDelete: Cascade)
   attachments Attachment[] @relation("AttachmentToTaskMessage")
 }
 
@@ -1123,6 +1131,7 @@ model Attachment {
     PLAN
     ADDON
     PRODUCT
+    OTHER
   }
 
   enum SubscriptionStatus {
@@ -1154,4 +1163,11 @@ model Attachment {
     week
     month
     year
+  }
+
+
+  enum MailActionPriority {
+    STANDARD
+    HIGH
+    URGENT
   }

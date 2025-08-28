@@ -6,7 +6,7 @@ import { MailService } from '../mail/mail.service';
 import { WorkspaceService } from '../workspace/workspace.service';
 import { MailboxService } from '../mailbox/mailbox.service';
 import { LocationService } from '../catalog/location.service';
-import { HandlerActionRequestsController, HandlerCustomerController, HandlerSupportController, MailHandlerController } from './handler.controller';
+import { HandlerActionRequestsController, HandlerCustomerController, HandlerSupportController, HandlerTaskController, MailHandlerController } from './handler.controller';
 import { HandlerService } from './handler.service';
 import { TaskService } from '../task/task.service';
 
@@ -23,6 +23,6 @@ import { TaskService } from '../task/task.service';
         TaskService,
 
     ],
-    controllers: [MailHandlerController, HandlerSupportController,HandlerCustomerController,HandlerActionRequestsController],
+    controllers: [MailHandlerController, HandlerSupportController,HandlerCustomerController,HandlerActionRequestsController,HandlerTaskController],
 })
 export class HandlerModule { }

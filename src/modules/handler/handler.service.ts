@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { ActionStatus, MailActionType, RoleType } from '@prisma/client';
+import { ActionStatus, MailActionType, RoleType, TaskStatus } from '@prisma/client';
 import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
 
 
@@ -318,6 +318,7 @@ async getCustomerDetails(mailboxId:string) {
         requestedAt: true,
         completedAt: true,
         updatedAt: true,
+        meta: true,
         mailId: true,
       },
     }),
@@ -530,4 +531,97 @@ return await this.prisma.mailAction.findUnique({
  })
 }
 
+async dashboardStats(officeLocationId:string){
+  const [recentTickets, ticketsGrouped, recentRequests, pendingRequestsGrouped, tasksGrouped] = await this.prisma.$transaction([
+    this.prisma.ticket.findMany({
+      where: { officeLocationId },
+      include: {
+        user: true,
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            message: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                profileImage: true,
+              }
+            },
+            attachments: {
+              select: { id: true, name: true, url: true }
+            }
+          }
+        },
+        _count: { select: { messages: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    }),
+
+    (this.prisma.ticket as any).groupBy({
+      by: ['status'],
+      _count: { _all: true },
+      where: { officeLocationId } as any,
+    }),
+
+    this.prisma.forwardingRequest.findMany({
+      where: { officeLocationId },
+      orderBy: { updatedAt: 'desc' },
+      take: 5,
+      include: {
+        mail: {
+          select: {
+            id: true,
+            mailboxId: true,
+            trackingNumber: true,
+            type: true,
+            status: true,
+            createdAt: true,
+          }
+        },
+        deliveryAddress: true,
+        deliverySpeedOption: true,
+        packagingTypeOption: true,
+        carrier: true,
+      }
+    }),
+
+    (this.prisma.forwardingRequest as any).groupBy({
+      by: ['priority'],
+      _count: { _all: true },
+      where: {
+        officeLocationId,
+        status: { in: ['PENDING', 'IN_PROGRESS'] as any },
+      } as any,
+    }),
+
+    (this.prisma.task as any).groupBy({
+      by: ['status'],
+      _count: { _all: true },
+      where: { officeLocationId } as any,
+    }),
+  ]);
+
+  const ticketsByStatus: Record<string, number> = {};
+  for (const g of ticketsGrouped) ticketsByStatus[g.status] = g._count._all;
+
+  const pendingRequestsByPriority: Record<string, number> = {};
+  for (const g of pendingRequestsGrouped) pendingRequestsByPriority[g.priority] = g._count._all;
+
+  const tasksByStatus: Record<string, number> = {};
+  for (const g of tasksGrouped) tasksByStatus[g.status] = g._count._all;
+
+  return {
+    recentTickets,
+    ticketsByStatus,
+    recentRequests,
+    pendingRequestsByPriority,
+    tasksByStatus,
+  };
+}
 }

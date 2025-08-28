@@ -3,9 +3,6 @@ import {
   Get,
   Post,
   Body,
-  Patch,
-  Param,
-  Delete,
   Query,
   UseGuards,
   HttpStatus,
@@ -17,14 +14,11 @@ import { MailService } from '../mail/mail.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { Context } from 'src/common/decorators/context.decorator';
 import { ContextDto } from 'src/dtos/user.dto';
-import { PoliciesGuard } from 'src/authorization/guards/policies.guard';
-import { CheckPolicies } from 'src/authorization/decorators/check-policies.decorator';
-import { PermissionAction } from '@prisma/client';
-import { MailEntity } from 'src/common/entities/mail.entity';
 import { CaslAbilityFactory } from 'src/authorization/casl/ability.factory';
 import { IUser } from 'src/common/interfaces/user.interface';
 import { CreateMailActionRequestDto } from 'src/dtos/mail-actions.dto';
 import { MailActionsService } from '../actions/actions.service';
+import { TaskService } from '../task/task.service';
 
 @ApiTags('Customer Operations')
 @ApiBearerAuth()
@@ -35,6 +29,7 @@ export class CustomerController {
     private readonly mailService: MailService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
     private readonly mailActionsService: MailActionsService,
+    private readonly taskService: TaskService,
   ) {}
 
    @Get('mails')

@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "src/prisma.service";
 import { CreateTaskDto, TaskMessageDto } from "src/dtos/support.dto";
-import { TaskStatus, TaskType, TaskPriority, TaskMessage } from "@prisma/client";
+import { TaskStatus, TaskType, TaskPriority, TaskMessage, Task } from "@prisma/client";
+import { Action } from "src/authorization/casl/action.enum";
 
 @Injectable()
 export class TaskService {
@@ -33,6 +34,7 @@ export class TaskService {
                         create: [{
                             message: firstMessage,
                             fromStaff: true,
+                             user:{connect:{id:userId}},
                             attachments: data.message?.attachments?.length
                                 ? {
                                     create: data.message.attachments.map(a => ({
@@ -81,6 +83,7 @@ export class TaskService {
                         create: [{
                             message: firstMessage,
                             fromStaff: false,
+                            user:{connect:{id:userId}},
                             attachments: data.message?.attachments?.length
                                 ? {
                                     create: data.message.attachments.map(a => ({
@@ -146,7 +149,8 @@ export class TaskService {
     async updateTask(id: string, data: any) {
         const existing = await this.prisma.task.findUnique({ where: { id } });
         if (!existing) throw new NotFoundException('Task not found');
-        return this.prisma.task.update({ where: { id }, data });
+        const updated = await this.prisma.task.update({ where: { id }, data});
+        return this.getTaskById(updated.id);
     }
 
     async deleteTask(id: string): Promise<{ success: true }> {
@@ -156,11 +160,19 @@ export class TaskService {
         return { success: true };
     }
 
-    async getTaskById(id: string) {
+    async getTaskById(id: string, ability?: any) {
         const task = await this.prisma.task.findUnique({
             where: { id }, include: {
                 messages: {
                     orderBy: { createdAt: 'asc' }, include: {
+                user:{select:{
+                    id:true,
+                    firstName:true,
+                    lastName:true,
+                    telephone:true,
+                    email:true,
+                    profileImage:true,
+                }} ,
                         attachments: true,
                     }
                 }, 
@@ -175,6 +187,10 @@ export class TaskService {
             }
         });
         if (!task) throw new NotFoundException('Task not found');
+        if(ability){
+            const canRead = await ability.can(Action.READ, task);
+            if(!canRead) throw new ForbiddenException('You are not allowed to read this task');
+        }
         return {
             ...task,
             messages: await this.formatMessages(task.messages),
@@ -216,6 +232,8 @@ export class TaskService {
         if (!task) throw new NotFoundException('Task not found');
         const user = await this.prisma.user.findUnique({ where: { id: userId }, include: { roles: true } });
         const isStaff = user?.roles.some(r => ['ADMIN', 'STAFF', 'SUPERADMIN'].includes(r.role as any)) ?? false;
+        console.log('isStaff', isStaff);
+        console.log('data', user.roles);
         const updatedTask = await this.prisma.task.update({
             where: { id: taskId },
             data: {
@@ -223,6 +241,7 @@ export class TaskService {
                     create: {
                         message: data.message,
                         fromStaff: isStaff,
+                        user:{connect:{id:userId}},
                         attachments: data.attachments?.length
                             ? {
                                 create: data.attachments.map(a => ({
@@ -236,7 +255,11 @@ export class TaskService {
                     }
                 }
             },
-            include: { messages: { orderBy: { createdAt: 'asc' }, include: { attachments: true } } },
+            include: { messages: { orderBy: { createdAt: 'asc' }, include: { attachments: true, user: {select:{
+                id:true,
+                firstName:true,
+                lastName:true,
+            }} } } },
         });
         return {
             ...updatedTask,
@@ -245,12 +268,21 @@ export class TaskService {
     }
 
 
+async getTasks(mailboxId: string) {
+    const tasks = await this.prisma.task.findMany({
+        where: { mailboxId },
+        orderBy: { createdAt: 'desc' },
+    });
+    return tasks;
+}
+
     private async formatMessages(messages: any[]) {
         return messages.map(message => {
             return {
                 message: message.message,
                 fromStaff: message.fromStaff,
                 createdAt: message.createdAt,
+                user: message.user,
                 attachments: message.attachments?.map(a => ({
                     name: a.name,
                     url: a.url,

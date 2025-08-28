@@ -262,7 +262,7 @@ export class MailboxService {
   }
 
   async generateSteNumber(): Promise<string> {
-    const steNumber = Math.random().toString(36).substring(2, 2 + 6);
+    const steNumber = Math.random().toString(36).substring(2, 2 + 4).toUpperCase();
     return steNumber;
   }
 

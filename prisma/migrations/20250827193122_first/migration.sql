@@ -11,7 +11,7 @@ CREATE TYPE "public"."InvitationStatus" AS ENUM ('WAITING', 'APPROVED', 'CANCELL
 CREATE TYPE "public"."DeliveryAddressType" AS ENUM ('DELIVERY', 'BILLING', 'PICKUP');
 
 -- CreateEnum
-CREATE TYPE "public"."PackageStatus" AS ENUM ('PENDING', 'FORWARDED', 'SHREDDED', 'COMPLETED', 'CANCELLED', 'IN_PROCESS');
+CREATE TYPE "public"."MailStatus" AS ENUM ('PENDING', 'FORWARDED', 'SHREDDED', 'COMPLETED', 'CANCELLED', 'IN_PROCESS');
 
 -- CreateEnum
 CREATE TYPE "public"."TicketStatus" AS ENUM ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REOPENED', 'ON_HOLD', 'WAITING_FOR_CUSTOMER', 'WAITING_FOR_STAFF', 'WAITING_FOR_THIRD_PARTY', 'ESCALATED', 'CANCELLED', 'CLOSED_BY_CUSTOMER');
@@ -38,7 +38,7 @@ CREATE TYPE "public"."PriceType" AS ENUM ('one_time', 'recurring');
 CREATE TYPE "public"."TaskPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH');
 
 -- CreateEnum
-CREATE TYPE "public"."TaskType" AS ENUM ('GENERAL', 'LEGAL', 'ACCOUNTING', 'TAX', 'HR', 'OTHER');
+CREATE TYPE "public"."TaskType" AS ENUM ('AUTOMATIC', 'MANUAL', 'OTHER');
 
 -- CreateEnum
 CREATE TYPE "public"."PermissionAction" AS ENUM ('CREATE', 'READ', 'UPDATE', 'DELETE', 'MANAGE');
@@ -59,7 +59,7 @@ CREATE TYPE "public"."ResetCycle" AS ENUM ('MONTHLY', 'YEARLY', 'WEEKLY', 'QUART
 CREATE TYPE "public"."TokenType" AS ENUM ('EMAIL_VERIFICATION', 'PASSWORD_RESET', 'INVITATION', 'OTHER');
 
 -- CreateEnum
-CREATE TYPE "public"."PackageActionType" AS ENUM ('FORWARD', 'SHRED', 'SCAN', 'HOLD', 'JUNK');
+CREATE TYPE "public"."MailActionType" AS ENUM ('FORWARD', 'SHRED', 'SCAN', 'HOLD', 'JUNK', 'CHECK_DEPOSIT');
 
 -- CreateEnum
 CREATE TYPE "public"."ActionStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'DONE', 'FAILED');
@@ -109,6 +109,9 @@ CREATE TABLE "public"."User" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "deletedAt" TIMESTAMP(3),
     "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "currentWorkspaceId" TEXT,
+    "currentMailboxId" TEXT,
+    "assignedLocationId" UUID,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -129,6 +132,7 @@ CREATE TABLE "public"."Workspace" (
 -- CreateTable
 CREATE TABLE "public"."Mailbox" (
     "id" UUID NOT NULL,
+    "steNumber" TEXT NOT NULL,
     "workspaceId" UUID NOT NULL,
     "officeLocationId" UUID NOT NULL,
     "planId" UUID NOT NULL,
@@ -145,6 +149,24 @@ CREATE TABLE "public"."Mailbox" (
     "recipientLimit" INTEGER NOT NULL DEFAULT 1,
 
     CONSTRAINT "Mailbox_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."Recipient" (
+    "id" UUID NOT NULL,
+    "mailboxId" UUID NOT NULL,
+    "name" TEXT NOT NULL,
+    "lastName" TEXT,
+    "email" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "isDeleted" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "isDefault" BOOLEAN NOT NULL DEFAULT false,
+    "isConfirmed" BOOLEAN NOT NULL DEFAULT false,
+
+    CONSTRAINT "Recipient_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -204,7 +226,8 @@ CREATE TABLE "public"."PlanAddon" (
 CREATE TABLE "public"."Product" (
     "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
-    "description" TEXT,
+    "description" JSONB,
+    "bestFo" JSONB,
     "stripeProductId" TEXT,
     "type" "public"."ProductType" NOT NULL,
     "imageUrl" TEXT,
@@ -212,6 +235,8 @@ CREATE TABLE "public"."Product" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "deletedAt" TIMESTAMP(3),
     "isDeleted" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "defaultPriceId" UUID,
 
     CONSTRAINT "Product_pkey" PRIMARY KEY ("id")
 );
@@ -289,7 +314,7 @@ CREATE TABLE "public"."Price" (
 CREATE TABLE "public"."Recurring" (
     "id" UUID NOT NULL,
     "interval" "public"."RecurringInterval" NOT NULL,
-    "intervalCount" INTEGER NOT NULL,
+    "interval_count" INTEGER NOT NULL,
 
     CONSTRAINT "Recurring_pkey" PRIMARY KEY ("id")
 );
@@ -332,8 +357,6 @@ CREATE TABLE "public"."SubscriptionItem" (
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "itemName" TEXT NOT NULL,
-    "itemDescription" TEXT,
 
     CONSTRAINT "SubscriptionItem_pkey" PRIMARY KEY ("id")
 );
@@ -489,13 +512,15 @@ CREATE TABLE "public"."PlanTemplateFeature" (
 -- CreateTable
 CREATE TABLE "public"."Mail" (
     "id" UUID NOT NULL,
-    "steNumber" TEXT NOT NULL,
-    "subscriptionId" UUID NOT NULL,
+    "mailboxId" UUID NOT NULL,
     "receivedAt" TIMESTAMP(3) NOT NULL,
+    "trackingNumber" TEXT,
+    "trackingUrl" TEXT,
     "isShereded" BOOLEAN NOT NULL DEFAULT false,
     "isForwarded" BOOLEAN NOT NULL DEFAULT false,
-    "currentStatus" "public"."PackageStatus" NOT NULL DEFAULT 'PENDING',
+    "isScanned" BOOLEAN NOT NULL DEFAULT false,
     "type" "public"."MailType" NOT NULL,
+    "status" "public"."MailStatus" NOT NULL DEFAULT 'PENDING',
     "senderName" TEXT,
     "senderAddress" TEXT,
     "carrier" TEXT,
@@ -504,33 +529,50 @@ CREATE TABLE "public"."Mail" (
     "length" DOUBLE PRECISION,
     "weightKg" DOUBLE PRECISION,
     "volumeDesi" DOUBLE PRECISION,
+    "volumeCm3" DOUBLE PRECISION,
     "photoUrls" TEXT[],
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "status" "public"."PackageStatus" NOT NULL DEFAULT 'PENDING',
+    "recipientId" UUID,
 
     CONSTRAINT "Mail_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "public"."PackageAction" (
+CREATE TABLE "public"."CheckDeposit" (
     "id" UUID NOT NULL,
-    "packageId" UUID NOT NULL,
-    "type" "public"."PackageActionType" NOT NULL,
+    "mailId" UUID NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "depositedAt" TIMESTAMP(3),
+    "status" "public"."ActionStatus" NOT NULL DEFAULT 'PENDING',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "completedAt" TIMESTAMP(3),
+
+    CONSTRAINT "CheckDeposit_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."MailAction" (
+    "id" UUID NOT NULL,
+    "mailId" UUID NOT NULL,
+    "officeLocationId" UUID,
+    "type" "public"."MailActionType" NOT NULL,
     "status" "public"."ActionStatus" NOT NULL,
     "requestedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "completedAt" TIMESTAMP(3),
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "meta" JSONB,
 
-    CONSTRAINT "PackageAction_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "MailAction_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "public"."ForwardingRequest" (
     "id" UUID NOT NULL,
     "mailId" UUID NOT NULL,
-    "workspaceId" UUID NOT NULL,
+    "mailboxId" UUID NOT NULL,
     "officeLocationId" UUID NOT NULL,
     "deliveryAddressId" UUID NOT NULL,
     "deliverySpeedOptionId" UUID NOT NULL,
@@ -636,6 +678,18 @@ CREATE TABLE "public"."PackagingTypePlanMapping" (
 );
 
 -- CreateTable
+CREATE TABLE "public"."MailHandlerAssignment" (
+    "id" UUID NOT NULL,
+    "userId" UUID NOT NULL,
+    "officeLocationId" UUID NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "MailHandlerAssignment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "public"."Forms" (
     "id" UUID NOT NULL,
     "userId" UUID NOT NULL,
@@ -684,6 +738,7 @@ CREATE TABLE "public"."Invitation" (
 -- CreateTable
 CREATE TABLE "public"."Ticket" (
     "id" UUID NOT NULL,
+    "officeLocationId" UUID,
     "ticketNo" SERIAL NOT NULL,
     "userId" UUID NOT NULL,
     "subject" TEXT NOT NULL,
@@ -694,6 +749,7 @@ CREATE TABLE "public"."Ticket" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "workspaceId" UUID,
+    "mailboxId" UUID,
 
     CONSTRAINT "Ticket_pkey" PRIMARY KEY ("id")
 );
@@ -708,6 +764,39 @@ CREATE TABLE "public"."TicketMessage" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "TicketMessage_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."Task" (
+    "id" UUID NOT NULL,
+    "mailboxId" UUID NOT NULL,
+    "creatorId" UUID,
+    "officeLocationId" UUID,
+    "title" TEXT,
+    "description" TEXT,
+    "Icon" TEXT,
+    "status" "public"."TaskStatus" NOT NULL,
+    "priority" "public"."TaskPriority" NOT NULL,
+    "type" "public"."TaskType" NOT NULL DEFAULT 'MANUAL',
+    "dueDate" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "completedAt" TIMESTAMP(3),
+    "deletedAt" TIMESTAMP(3),
+
+    CONSTRAINT "Task_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."TaskMessage" (
+    "id" UUID NOT NULL,
+    "taskId" UUID NOT NULL,
+    "userId" UUID NOT NULL,
+    "message" TEXT NOT NULL,
+    "fromStaff" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TaskMessage_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -796,8 +885,27 @@ CREATE TABLE "public"."_AttachmentToTicketMessage" (
     CONSTRAINT "_AttachmentToTicketMessage_AB_pkey" PRIMARY KEY ("A","B")
 );
 
+-- CreateTable
+CREATE TABLE "public"."_AttachmentToTask" (
+    "A" UUID NOT NULL,
+    "B" UUID NOT NULL,
+
+    CONSTRAINT "_AttachmentToTask_AB_pkey" PRIMARY KEY ("A","B")
+);
+
+-- CreateTable
+CREATE TABLE "public"."_AttachmentToTaskMessage" (
+    "A" UUID NOT NULL,
+    "B" UUID NOT NULL,
+
+    CONSTRAINT "_AttachmentToTaskMessage_AB_pkey" PRIMARY KEY ("A","B")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Mailbox_steNumber_key" ON "public"."Mailbox"("steNumber");
 
 -- CreateIndex
 CREATE INDEX "Mailbox_workspaceId_isActive_idx" ON "public"."Mailbox"("workspaceId", "isActive");
@@ -893,10 +1001,13 @@ CREATE INDEX "PlanTemplateFeature_featureId_idx" ON "public"."PlanTemplateFeatur
 CREATE UNIQUE INDEX "PlanTemplateFeature_planTemplateId_featureId_key" ON "public"."PlanTemplateFeature"("planTemplateId", "featureId");
 
 -- CreateIndex
-CREATE INDEX "Mail_subscriptionId_idx" ON "public"."Mail"("subscriptionId");
+CREATE INDEX "Mail_mailboxId_idx" ON "public"."Mail"("mailboxId");
 
 -- CreateIndex
-CREATE INDEX "Mail_steNumber_idx" ON "public"."Mail"("steNumber");
+CREATE INDEX "CheckDeposit_mailId_idx" ON "public"."CheckDeposit"("mailId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "MailAction_mailId_type_key" ON "public"."MailAction"("mailId", "type");
 
 -- CreateIndex
 CREATE INDEX "CarrierAvailability_officeLocationId_idx" ON "public"."CarrierAvailability"("officeLocationId");
@@ -917,7 +1028,34 @@ CREATE UNIQUE INDEX "DeliverySpeedPlanMapping_deliverySpeedId_officeLocationId_k
 CREATE UNIQUE INDEX "PackagingTypePlanMapping_packagingTypeId_officeLocationId_key" ON "public"."PackagingTypePlanMapping"("packagingTypeId", "officeLocationId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "MailHandlerAssignment_userId_key" ON "public"."MailHandlerAssignment"("userId");
+
+-- CreateIndex
+CREATE INDEX "MailHandlerAssignment_officeLocationId_idx" ON "public"."MailHandlerAssignment"("officeLocationId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Invitation_userId_key" ON "public"."Invitation"("userId");
+
+-- CreateIndex
+CREATE INDEX "Task_mailboxId_idx" ON "public"."Task"("mailboxId");
+
+-- CreateIndex
+CREATE INDEX "Task_creatorId_idx" ON "public"."Task"("creatorId");
+
+-- CreateIndex
+CREATE INDEX "Task_status_idx" ON "public"."Task"("status");
+
+-- CreateIndex
+CREATE INDEX "Task_priority_idx" ON "public"."Task"("priority");
+
+-- CreateIndex
+CREATE INDEX "Task_type_idx" ON "public"."Task"("type");
+
+-- CreateIndex
+CREATE INDEX "Task_dueDate_idx" ON "public"."Task"("dueDate");
+
+-- CreateIndex
+CREATE INDEX "Task_createdAt_idx" ON "public"."Task"("createdAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "permissions_companyUserId_action_subject_key" ON "public"."permissions"("companyUserId", "action", "subject");
@@ -940,8 +1078,14 @@ CREATE INDEX "_AttachmentToTicket_B_index" ON "public"."_AttachmentToTicket"("B"
 -- CreateIndex
 CREATE INDEX "_AttachmentToTicketMessage_B_index" ON "public"."_AttachmentToTicketMessage"("B");
 
+-- CreateIndex
+CREATE INDEX "_AttachmentToTask_B_index" ON "public"."_AttachmentToTask"("B");
+
+-- CreateIndex
+CREATE INDEX "_AttachmentToTaskMessage_B_index" ON "public"."_AttachmentToTaskMessage"("B");
+
 -- AddForeignKey
-ALTER TABLE "public"."Mailbox" ADD CONSTRAINT "Mailbox_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "public"."Workspace"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."Mailbox" ADD CONSTRAINT "Mailbox_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "public"."Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."Mailbox" ADD CONSTRAINT "Mailbox_officeLocationId_fkey" FOREIGN KEY ("officeLocationId") REFERENCES "public"."OfficeLocation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -951,6 +1095,9 @@ ALTER TABLE "public"."Mailbox" ADD CONSTRAINT "Mailbox_planId_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "public"."Mailbox" ADD CONSTRAINT "Mailbox_planPriceId_fkey" FOREIGN KEY ("planPriceId") REFERENCES "public"."PlanPrice"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Recipient" ADD CONSTRAINT "Recipient_mailboxId_fkey" FOREIGN KEY ("mailboxId") REFERENCES "public"."Mailbox"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."Plan" ADD CONSTRAINT "Plan_officeLocationId_fkey" FOREIGN KEY ("officeLocationId") REFERENCES "public"."OfficeLocation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -992,13 +1139,16 @@ ALTER TABLE "public"."DeliveryAddress" ADD CONSTRAINT "DeliveryAddress_mailBoxId
 ALTER TABLE "public"."SubscriptionItem" ADD CONSTRAINT "SubscriptionItem_mailboxId_fkey" FOREIGN KEY ("mailboxId") REFERENCES "public"."Mailbox"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "public"."SubscriptionItem" ADD CONSTRAINT "SubscriptionItem_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "public"."Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."Order" ADD CONSTRAINT "Order_mailboxId_fkey" FOREIGN KEY ("mailboxId") REFERENCES "public"."Mailbox"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."WorkspaceMember" ADD CONSTRAINT "WorkspaceMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."WorkspaceMember" ADD CONSTRAINT "WorkspaceMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."WorkspaceMember" ADD CONSTRAINT "WorkspaceMember_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "public"."Workspace"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."WorkspaceMember" ADD CONSTRAINT "WorkspaceMember_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "public"."Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."WorkspaceBalance" ADD CONSTRAINT "WorkspaceBalance_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "public"."Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1022,16 +1172,22 @@ ALTER TABLE "public"."PlanTemplateFeature" ADD CONSTRAINT "PlanTemplateFeature_p
 ALTER TABLE "public"."PlanTemplateFeature" ADD CONSTRAINT "PlanTemplateFeature_featureId_fkey" FOREIGN KEY ("featureId") REFERENCES "public"."Feature"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Mail" ADD CONSTRAINT "Mail_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "public"."Mailbox"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."Mail" ADD CONSTRAINT "Mail_mailboxId_fkey" FOREIGN KEY ("mailboxId") REFERENCES "public"."Mailbox"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."PackageAction" ADD CONSTRAINT "PackageAction_packageId_fkey" FOREIGN KEY ("packageId") REFERENCES "public"."Mail"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."Mail" ADD CONSTRAINT "Mail_recipientId_fkey" FOREIGN KEY ("recipientId") REFERENCES "public"."Recipient"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."CheckDeposit" ADD CONSTRAINT "CheckDeposit_mailId_fkey" FOREIGN KEY ("mailId") REFERENCES "public"."Mail"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."MailAction" ADD CONSTRAINT "MailAction_mailId_fkey" FOREIGN KEY ("mailId") REFERENCES "public"."Mail"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."ForwardingRequest" ADD CONSTRAINT "ForwardingRequest_mailId_fkey" FOREIGN KEY ("mailId") REFERENCES "public"."Mail"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."ForwardingRequest" ADD CONSTRAINT "ForwardingRequest_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "public"."Mailbox"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."ForwardingRequest" ADD CONSTRAINT "ForwardingRequest_mailboxId_fkey" FOREIGN KEY ("mailboxId") REFERENCES "public"."Mailbox"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."ForwardingRequest" ADD CONSTRAINT "ForwardingRequest_officeLocationId_fkey" FOREIGN KEY ("officeLocationId") REFERENCES "public"."OfficeLocation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1067,6 +1223,12 @@ ALTER TABLE "public"."PackagingTypePlanMapping" ADD CONSTRAINT "PackagingTypePla
 ALTER TABLE "public"."PackagingTypePlanMapping" ADD CONSTRAINT "PackagingTypePlanMapping_officeLocationId_fkey" FOREIGN KEY ("officeLocationId") REFERENCES "public"."OfficeLocation"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "public"."MailHandlerAssignment" ADD CONSTRAINT "MailHandlerAssignment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."MailHandlerAssignment" ADD CONSTRAINT "MailHandlerAssignment_officeLocationId_fkey" FOREIGN KEY ("officeLocationId") REFERENCES "public"."OfficeLocation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."Forms" ADD CONSTRAINT "Forms_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -1085,13 +1247,25 @@ ALTER TABLE "public"."Invitation" ADD CONSTRAINT "Invitation_workspaceId_fkey" F
 ALTER TABLE "public"."Ticket" ADD CONSTRAINT "Ticket_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Ticket" ADD CONSTRAINT "Ticket_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "public"."Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."Ticket" ADD CONSTRAINT "Ticket_mailboxId_fkey" FOREIGN KEY ("mailboxId") REFERENCES "public"."Mailbox"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."TicketMessage" ADD CONSTRAINT "TicketMessage_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "public"."Ticket"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."TicketMessage" ADD CONSTRAINT "TicketMessage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Task" ADD CONSTRAINT "Task_mailboxId_fkey" FOREIGN KEY ("mailboxId") REFERENCES "public"."Mailbox"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Task" ADD CONSTRAINT "Task_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "public"."User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."TaskMessage" ADD CONSTRAINT "TaskMessage_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "public"."Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."TaskMessage" ADD CONSTRAINT "TaskMessage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."Attachment" ADD CONSTRAINT "Attachment_uploadedById_fkey" FOREIGN KEY ("uploadedById") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1113,3 +1287,15 @@ ALTER TABLE "public"."_AttachmentToTicketMessage" ADD CONSTRAINT "_AttachmentToT
 
 -- AddForeignKey
 ALTER TABLE "public"."_AttachmentToTicketMessage" ADD CONSTRAINT "_AttachmentToTicketMessage_B_fkey" FOREIGN KEY ("B") REFERENCES "public"."TicketMessage"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."_AttachmentToTask" ADD CONSTRAINT "_AttachmentToTask_A_fkey" FOREIGN KEY ("A") REFERENCES "public"."Attachment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."_AttachmentToTask" ADD CONSTRAINT "_AttachmentToTask_B_fkey" FOREIGN KEY ("B") REFERENCES "public"."Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."_AttachmentToTaskMessage" ADD CONSTRAINT "_AttachmentToTaskMessage_A_fkey" FOREIGN KEY ("A") REFERENCES "public"."Attachment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."_AttachmentToTaskMessage" ADD CONSTRAINT "_AttachmentToTaskMessage_B_fkey" FOREIGN KEY ("B") REFERENCES "public"."TaskMessage"("id") ON DELETE CASCADE ON UPDATE CASCADE;

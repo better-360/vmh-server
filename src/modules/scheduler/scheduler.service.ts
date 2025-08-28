@@ -15,7 +15,7 @@ export class SchedulerService {
   ) {}
 
  
-   @Cron(CronExpression.EVERY_HOUR)
+   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async cronJobTest() {
     this.logger.log('Cron job started:', new Date().toISOString());
   }

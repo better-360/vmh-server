@@ -12,6 +12,7 @@ import {
   Min,
   IsEnum,
   IsInt,
+  IsJSON,
 } from 'class-validator';
 import { PriceType, ProductType, RecurringInterval, ResetCycle } from '@prisma/client';
 
@@ -272,11 +273,27 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     description: 'Product description',
-    example: 'Additional recipient for mail forwarding',
+    example: '{"en": "Additional recipient for mail forwarding", "tr": "Ek yazıcı için ekstra yazıcı"}',
+  })
+  @IsOptional()
+  @IsJSON()
+  description?: any;
+
+  @ApiPropertyOptional({
+    description: 'Product category',
+    example: 'ADDON',
   })
   @IsString()
   @IsOptional()
-  description?: string;
+  category?: string;
+
+  @ApiPropertyOptional({
+    description: 'Product best for',
+    example: '{"type": "ADDON", "description": "Additional recipient for mail forwarding"}',
+  })
+  @IsJSON()
+  @IsOptional()
+  bestFor?: any;
 
   @ApiPropertyOptional({
     description: 'Stripe product ID if product is created in stripe and not in local database',
@@ -354,7 +371,7 @@ export class ProductResponseDto {
     description: 'Product description',
     example: 'Additional recipient for mail forwarding',
   })
-  description?: string;
+  description?: any;
 
   @ApiPropertyOptional({
     description: 'Stripe product ID',

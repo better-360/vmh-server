@@ -51,21 +51,23 @@ import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
 
   @ApiTags('Mail Handler Panel')
   @ApiBearerAuth()
-  @Controller('handler')
+  @Controller('mail-handler')
   @UseGuards(JwtAuthGuard)
   @Public()
   export class MailHandlerController {
   constructor(
     private readonly mailService: MailService,
     private readonly mailboxService: MailboxService,
-    private readonly workspaceService: WorkspaceService,
     private readonly actionService: MailActionsService,
-    private readonly taskService: TaskService,
     private readonly handlerService: HandlerService,
     ) {}
 
+  @ApiOperation({ summary: 'Get dashboard stats' })
+  @Get('dashboard')
+  async dashboard(@CurrentUser('assignedLocationId') assignedLocationId: string) {
+    return this.handlerService.dashboardStats(assignedLocationId);
+  }
 
-  // 2. STE Number Lookup for Mailboxes
   @Get('mailboxes/by-ste/:steNumber')
   @ApiOperation({ 
     summary: 'Find mailboxes by STE number',
@@ -83,7 +85,7 @@ import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
   }
 
   // 4. Create Mail Package
-  @Post('mails/new')
+  @Post('mails')
   @ApiOperation({ 
     summary: 'Create a new mail package',
     description: 'Register a new mail package in the system after selecting office location, mailbox and recipient'
@@ -105,7 +107,7 @@ import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
     }
   
   // 5. Update Mail
-  @Put(':id')
+  @Put('mails/:id')
   @ApiOperation({ 
     summary: 'Update mail',
     description: 'Update an existing mail by ID'
@@ -126,7 +128,7 @@ import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
     return this.mailService.update(id, updateMailDto);
   }
   
-  @Get(':id')
+  @Get('mails/:id')
   @ApiOperation({ 
     summary: 'Get mail package by ID',
     description: 'Retrieve a specific mail package with all its items and related information'
@@ -175,16 +177,7 @@ import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
         }
       }
     })
-
-    async getMailsByOfficeLocation(
-      @Param('officeLocationId') officeLocationId: string,
-      @Query() query: MailQueryDto
-    ) {
-      // Internal handler endpoint - deprecated, use admin endpoints instead
-      throw new Error('This internal endpoint is deprecated. Use /admin/mails instead');
-    }
   
-
         // Detay
   @Get('mail-actions/:id')
   async get(@Param('id') id: string) {
@@ -217,54 +210,7 @@ import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
   async cancelForward(@Param('id') id: string, @Body() body: CancelForwardDto) {
     return this.actionService.cancelForward(id, body);
   }
-    
-
-
-
-
-
-  // TASK
-
-
-  @Get('tasks/office-location/:officeLocationId')
-  @ApiOperation({ summary: 'List tasks by office location' })
-  @ApiParam({ name: 'officeLocationId' })
-  listByOffice(@Param('officeLocationId') officeLocationId: string, @CurrentUser('id') userId: string) {
-    return this.taskService.listTasksByOfficeLocation(officeLocationId);
-  }
-
-  @Post('tasks')
-  @ApiOperation({ summary: 'Create a task' })
-  create(@Body() dto: CreateTaskDto, @CurrentUser('id') userId: string) {
-      return this.taskService.createTaskByUser(userId, dto);
-  }
-
-  @Patch('tasks/:id')
-  @ApiOperation({ summary: 'Update a task' })
-  update(@Param('id') id: string, @Body() dto: UpdateTaskDto) {
-      return this.taskService.updateTask(id, dto as any);
-  }
-
-  @Delete('tasks/:id')
-  @ApiOperation({ summary: 'Delete a task' })
-  delete(@Param('id') id: string) {
-      return this.taskService.deleteTask(id);
-  }
-    
-
-  @Get('tasks/:id')
-  @ApiOperation({ summary: 'Get a task' })
-  getTask(@Param('id') id: string, @CurrentUser('id') userId: string) {
-      return this.taskService.getTaskById(id);
-  }
-
-
-  @Post('tasks/:id/messages')
-  @ApiOperation({ summary: 'Add a message to a task' })
-  addMessage(@Param('id') id: string, @Body() dto: TaskMessageDto, @CurrentUser('id') userId: string) {
-      return this.taskService.addMessage(id, userId, dto);
-  }
-  
+      
   } 
 
 
@@ -369,3 +315,52 @@ import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
 
   }
 }
+
+
+  @ApiBearerAuth()
+  @ApiTags('Mail Handler - Task Management')
+  @Controller('mail-handler')
+  export class HandlerTaskController {
+    constructor(private readonly taskService:TaskService
+    ) {}
+  
+  
+  @Get('tasks')
+  @ApiOperation({ summary: 'List tasks' })
+  listByOffice(@CurrentUser('assignedLocationId') assignedLocationId: string) {
+    return this.taskService.listTasksByOfficeLocation(assignedLocationId);
+  }
+
+  @Post('tasks')
+  @ApiOperation({ summary: 'Create a task' })
+  create(@Body() dto: CreateTaskDto, @CurrentUser('id') userId: string) {
+      return this.taskService.createTaskByUser(userId, dto);
+  }
+
+  @Patch('tasks/:id')
+  @ApiOperation({ summary: 'Update a task' })
+  update(@Param('id') id: string, @Body() dto: UpdateTaskDto) {
+      return this.taskService.updateTask(id, dto as any);
+  }
+
+  @Delete('tasks/:id')
+  @ApiOperation({ summary: 'Delete a task' })
+  delete(@Param('id') id: string) {
+      return this.taskService.deleteTask(id);
+  }
+    
+
+  @Get('tasks/:id')
+  @ApiOperation({ summary: 'Get a task' })
+  getTask(@Param('id') id: string, @CurrentUser('id') userId: string) {
+      return this.taskService.getTaskById(id);
+  }
+
+
+  @Post('tasks/:id/messages')
+  @ApiOperation({ summary: 'Add a message to a task' })
+  addMessage(@Param('id') id: string, @Body() dto: TaskMessageDto, @CurrentUser('id') userId: string) {
+      return this.taskService.addMessage(id, userId, dto);
+  }
+
+  }

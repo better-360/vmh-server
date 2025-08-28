@@ -4,12 +4,11 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
-  HttpException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { StripeService } from '../stripe/stripe.service';
-import { PriceType, Prisma, Product, ProductType, RecurringInterval } from '@prisma/client';
-import { UpdateProductDto, CreatePriceDto,CreateProductDto, ProductResponseDto, PriceResponseDto } from 'src/dtos/items.dto';
+import { PriceType, Prisma, RecurringInterval } from '@prisma/client';
+import { CreatePriceDto, PriceResponseDto } from 'src/dtos/items.dto';
 
 @Injectable()
 export class PriceService {

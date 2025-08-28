@@ -110,10 +110,15 @@ export class SupportService {
   console.log('message', message);
   console.log('ticketData', ticketData);
   console.log('context', context);
+  const mailbox = await this.prismaService.mailbox.findUnique({
+    where:{id:context.mailboxId},
+    include:{officeLocation:true}
+  })
     const ticket = await this.prismaService.ticket.create({
       data: {
         ...ticketData,
         workspaceId: context.workspaceId,
+        officeLocationId: mailbox.officeLocationId,
         messages: {
           create: {
             message: message.message,

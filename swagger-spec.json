@@ -735,6 +735,28 @@
         ]
       }
     },
+    "/api/file-manager/presigned-url": {
+      "post": {
+        "operationId": "FileManagerController_getPresignedUrl",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/file-manager/admin-presigned-url": {
+      "post": {
+        "operationId": "FileManagerController_getAdminPresignedUrl",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/stats": {
       "get": {
         "operationId": "AdminMainController_getAdminStats",
@@ -6220,7 +6242,27 @@
         ]
       }
     },
-    "/api/handler/mailboxes/by-ste/{steNumber}": {
+    "/api/mail-handler/dashboard": {
+      "get": {
+        "operationId": "MailHandlerController_dashboard",
+        "summary": "Get dashboard stats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler Panel"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mail-handler/mailboxes/by-ste/{steNumber}": {
       "get": {
         "operationId": "MailHandlerController_getMailboxesBySteNumber",
         "summary": "Find mailboxes by STE number",
@@ -6265,7 +6307,7 @@
         ]
       }
     },
-    "/api/handler/mails/new": {
+    "/api/mail-handler/mails": {
       "post": {
         "operationId": "MailHandlerController_createMail",
         "summary": "Create a new mail package",
@@ -6313,7 +6355,7 @@
         ]
       }
     },
-    "/api/handler/{id}": {
+    "/api/mail-handler/mails/{id}": {
       "put": {
         "operationId": "MailHandlerController_updateMail",
         "summary": "Update mail",
@@ -6409,166 +6451,18 @@
         ]
       }
     },
-    "/api/handler/{officeLocationId}/mails": {
+    "/api/mail-handler/{officeLocationId}/mails": {
       "get": {
-        "operationId": "MailHandlerController_getMailsByOfficeLocation",
+        "operationId": "MailHandlerController_get",
         "summary": "Get mail packages by office location",
         "description": "Retrieve all mail packages for a specific office location",
         "parameters": [
           {
-            "name": "officeLocationId",
+            "name": "id",
             "required": true,
             "in": "path",
-            "description": "Office location ID",
             "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
               "type": "string"
-            }
-          },
-          {
-            "name": "mailboxId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by mailbox ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "subscriptionId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by mailbox ID (subscription ID)",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "workspaceId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by workspace ID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "type",
-            "required": false,
-            "in": "query",
-            "description": "Filter by package type",
-            "schema": {
-              "example": "PACKAGE",
-              "enum": [
-                "BANK_CHECK",
-                "LEGAL_DOCUMENT",
-                "ENVELOPE",
-                "PACKAGE",
-                "OTHER"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "description": "Filter by package status",
-            "schema": {
-              "example": "PENDING",
-              "enum": [
-                "PENDING",
-                "FORWARDED",
-                "SHREDDED",
-                "COMPLETED",
-                "CANCELLED",
-                "IN_PROCESS"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "steNumber",
-            "required": false,
-            "in": "query",
-            "description": "Filter by STE number",
-            "schema": {
-              "example": "004712",
-              "type": "string"
-            }
-          },
-          {
-            "name": "senderName",
-            "required": false,
-            "in": "query",
-            "description": "Filter by sender name",
-            "schema": {
-              "example": "John Doe",
-              "type": "string"
-            }
-          },
-          {
-            "name": "carrier",
-            "required": false,
-            "in": "query",
-            "description": "Filter by carrier",
-            "schema": {
-              "example": "UPS",
-              "type": "string"
-            }
-          },
-          {
-            "name": "isShereded",
-            "required": false,
-            "in": "query",
-            "description": "Filter by shredded status",
-            "schema": {
-              "example": false,
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "isForwarded",
-            "required": false,
-            "in": "query",
-            "description": "Filter by forwarded status",
-            "schema": {
-              "example": false,
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "receivedAtStart",
-            "required": false,
-            "in": "query",
-            "description": "Filter by received date start",
-            "schema": {
-              "example": "2024-01-01",
-              "type": "string"
-            }
-          },
-          {
-            "name": "receivedAtEnd",
-            "required": false,
-            "in": "query",
-            "description": "Filter by received date end",
-            "schema": {
-              "example": "2024-12-31",
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "description": "Page number for pagination (default: 1)",
-            "schema": {
-              "minimum": 1,
-              "example": 1,
-              "type": "number"
             }
           },
           {
@@ -6577,10 +6471,25 @@
             "in": "query",
             "description": "Number of items per page (default: 10)",
             "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "example": 10,
               "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number for pagination (default: 1)",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "officeLocationId",
+            "required": true,
+            "in": "path",
+            "description": "Office location ID",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000"
             }
           }
         ],
@@ -6631,35 +6540,7 @@
         ]
       }
     },
-    "/api/handler/mail-actions/{id}": {
-      "get": {
-        "operationId": "MailHandlerController_get",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/handler/mail-actions/search": {
+    "/api/mail-handler/mail-actions/search": {
       "get": {
         "operationId": "MailHandlerController_list",
         "parameters": [
@@ -6791,7 +6672,7 @@
         ]
       }
     },
-    "/api/handler/mail-actions/{id}/status": {
+    "/api/mail-handler/mail-actions/{id}/status": {
       "patch": {
         "operationId": "MailHandlerController_updateStatus",
         "parameters": [
@@ -6829,7 +6710,7 @@
         ]
       }
     },
-    "/api/handler/mail-actions/{id}/forward/complete": {
+    "/api/mail-handler/mail-actions/{id}/forward/complete": {
       "patch": {
         "operationId": "MailHandlerController_completeForward",
         "parameters": [
@@ -6867,7 +6748,7 @@
         ]
       }
     },
-    "/api/handler/mail-actions/{id}/forward/cancel": {
+    "/api/mail-handler/mail-actions/{id}/forward/cancel": {
       "patch": {
         "operationId": "MailHandlerController_cancelForward",
         "parameters": [
@@ -6892,197 +6773,6 @@
         },
         "responses": {
           "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/handler/tasks/office-location/{officeLocationId}": {
-      "get": {
-        "operationId": "MailHandlerController_listByOffice",
-        "summary": "List tasks by office location",
-        "parameters": [
-          {
-            "name": "officeLocationId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/handler/tasks": {
-      "post": {
-        "operationId": "MailHandlerController_create",
-        "summary": "Create a task",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateTaskDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/handler/tasks/{id}": {
-      "patch": {
-        "operationId": "MailHandlerController_update",
-        "summary": "Update a task",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTaskDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "delete": {
-        "operationId": "MailHandlerController_delete",
-        "summary": "Delete a task",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "get": {
-        "operationId": "MailHandlerController_getTask",
-        "summary": "Get a task",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/handler/tasks/{id}/messages": {
-      "post": {
-        "operationId": "MailHandlerController_addMessage",
-        "summary": "Add a message to a task",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TaskMessageDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
             "description": ""
           }
         },
@@ -7387,6 +7077,186 @@
         ]
       }
     },
+    "/api/mail-handler/tasks": {
+      "get": {
+        "operationId": "HandlerTaskController_listByOffice",
+        "summary": "List tasks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler - Task Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "HandlerTaskController_create",
+        "summary": "Create a task",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler - Task Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mail-handler/tasks/{id}": {
+      "patch": {
+        "operationId": "HandlerTaskController_update",
+        "summary": "Update a task",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler - Task Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "HandlerTaskController_delete",
+        "summary": "Delete a task",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler - Task Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "HandlerTaskController_getTask",
+        "summary": "Get a task",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler - Task Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mail-handler/tasks/{id}/messages": {
+      "post": {
+        "operationId": "HandlerTaskController_addMessage",
+        "summary": "Add a message to a task",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Mail Handler - Task Management"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/actions/speeds/{locationId}": {
       "get": {
         "operationId": "MailActionsController_findSpeedOptions",
@@ -7486,71 +7356,33 @@
         ]
       }
     },
+    "/api/tasks": {
+      "get": {
+        "operationId": "TaskController_getTasks",
+        "summary": "Get tasks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tasks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/tasks/{id}": {
       "get": {
-        "operationId": "TaskController_get",
+        "operationId": "TaskController_getTask",
         "summary": "Get task by id",
         "parameters": [
           {
             "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Tasks"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/tasks/office-location/{officeLocationId}": {
-      "get": {
-        "operationId": "TaskController_listByOffice",
-        "summary": "List tasks by office location",
-        "parameters": [
-          {
-            "name": "officeLocationId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Tasks"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/tasks/mailbox/{mailboxId}": {
-      "get": {
-        "operationId": "TaskController_listByMailbox",
-        "summary": "List tasks by mailbox",
-        "parameters": [
-          {
-            "name": "mailboxId",
             "required": true,
             "in": "path",
             "schema": {
@@ -8994,9 +8826,19 @@
             "example": "Extra Recipient"
           },
           "description": {
-            "type": "string",
+            "type": "object",
             "description": "Product description",
-            "example": "Additional recipient for mail forwarding"
+            "example": "{\"en\": \"Additional recipient for mail forwarding\", \"tr\": \"Ek yazıcı için ekstra yazıcı\"}"
+          },
+          "category": {
+            "type": "string",
+            "description": "Product category",
+            "example": "ADDON"
+          },
+          "bestFor": {
+            "type": "object",
+            "description": "Product best for",
+            "example": "{\"type\": \"ADDON\", \"description\": \"Additional recipient for mail forwarding\"}"
           },
           "stripeProductId": {
             "type": "string",
@@ -9058,7 +8900,7 @@
             "example": "Extra Recipient"
           },
           "description": {
-            "type": "string",
+            "type": "object",
             "description": "Product description",
             "example": "Additional recipient for mail forwarding"
           },
@@ -9156,9 +8998,19 @@
             "example": "Extra Recipient"
           },
           "description": {
-            "type": "string",
+            "type": "object",
             "description": "Product description",
-            "example": "Additional recipient for mail forwarding"
+            "example": "{\"en\": \"Additional recipient for mail forwarding\", \"tr\": \"Ek yazıcı için ekstra yazıcı\"}"
+          },
+          "category": {
+            "type": "string",
+            "description": "Product category",
+            "example": "ADDON"
+          },
+          "bestFor": {
+            "type": "object",
+            "description": "Product best for",
+            "example": "{\"type\": \"ADDON\", \"description\": \"Additional recipient for mail forwarding\"}"
           },
           "stripeProductId": {
             "type": "string",
@@ -10017,11 +9869,24 @@
             "example": "2025-01-01",
             "default": "2025-01-01"
           },
-          "id": {
+          "mailboxId": {
             "type": "string",
-            "description": "Task ID",
+            "description": "Mailbox ID",
             "example": "123e4567-e89b-12d3-a456-426614174000",
-            "default": "123e4567-e89b-12d3-a456-426614174000"
+            "default": "e7195890-483d-40c6-86e7-f51fa2d0a6e9"
+          },
+          "message": {
+            "example": {
+              "message": "Task message"
+            },
+            "default": {
+              "message": "Task message"
+            },
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FirstTicketMessageDto"
+              }
+            ]
           },
           "status": {
             "type": "string",
@@ -10055,12 +9920,7 @@
             "example": "MANUAL",
             "default": "MANUAL"
           }
-        },
-        "required": [
-          "id",
-          "status",
-          "type"
-        ]
+        }
       },
       "TaskMessageDto": {
         "type": "object",
@@ -11020,7 +10880,8 @@
             "enum": [
               "PLAN",
               "ADDON",
-              "PRODUCT"
+              "PRODUCT",
+              "OTHER"
             ],
             "example": "PLAN"
           },
