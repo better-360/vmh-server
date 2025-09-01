@@ -26,7 +26,7 @@ import {
 import {
   CreateMailDto,
   UpdateMailDto,
-  PackageResponseDto
+  MailResponseDto
 } from 'src/dtos/mail.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { MailService } from '../mail/mail.service';
@@ -90,7 +90,7 @@ import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
     @ApiResponse({ 
       status: HttpStatus.CREATED, 
       description: 'Package created successfully',
-      type: PackageResponseDto
+      type: MailResponseDto
     })
     @ApiBadRequestResponse({ description: 'Invalid input data' })
     @ApiNotFoundResponse({ description: 'Workspace address or office location not found' })
@@ -113,7 +113,7 @@ import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
   @ApiResponse({ 
     status: HttpStatus.OK, 
     description: 'Mail updated successfully',
-    type: PackageResponseDto
+    type: MailResponseDto
   })
   @ApiNotFoundResponse({ description: 'Mail not found' })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
@@ -129,8 +129,8 @@ import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
     @ApiParam({ name: 'id', description: 'Package ID', example: '123e4567-e89b-12d3-a456-426614174000' })
     @ApiResponse({ 
       status: HttpStatus.OK, 
-      description: 'Package found',
-      type: PackageResponseDto
+      description: 'Mail found',
+      type: MailResponseDto
     })
     @ApiNotFoundResponse({ description: 'Package not found' })
     async getPackageById(@Param('id') id: string) {

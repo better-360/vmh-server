@@ -108,7 +108,7 @@ export class CreateMailActionDto {
   @ApiProperty({
     description: 'Type of action',
     enum: MailActionType,
-    example: MailActionType.FORWARD,
+    example: MailActionType.JUNK,
   })
   @IsEnum(MailActionType)
   type!: MailActionType;

@@ -120,93 +120,23 @@ async createActionRequest(dto: CreateMailActionRequestDto, userId: string, abili
       data: {
         mailId: dto.mailId,
         type: dto.type,
-        status: ActionStatus.PENDING,
+        officeLocationId:mail.mailbox.officeLocationId,
+        status: ActionStatus.IN_PROGRESS,
       },
     });
-
+     await this.prisma.mail.update({
+      where:{id:mail.id},
+      data:{
+        status:MailStatus.IN_PROCESS
+      }
+    })
+  
     return { action: created };
   });
 
   this.eventEmitter.emit(Events.MAIL_ACTION_CREATED, { mail, type: dto.type, action });
   return { action };
 }
-
-  async createAction(dto: CreateMailActionDto) {
-    const mail = await this.prisma.mail.findUnique({ where: { id: dto.mailId } });
-    if (!mail) throw new NotFoundException('Mail not found');
-
-    const isForward = dto.type === MailActionType.FORWARD;
-
-    if (isForward) {
-      if (!dto.meta?.forward) {
-        throw new BadRequestException('FORWARD requires meta.forward payload');
-      }
-      const fwd = dto.meta.forward as ForwarMeta;
-      if(!fwd.mailboxId || !fwd.officeLocationId || !fwd.deliveryAddressId || !fwd.deliverySpeedOptionId || !fwd.packagingTypeOptionId) {
-        throw new BadRequestException('FORWARD meta requires mailboxId, officeLocationId, deliveryAddressId, deliverySpeedOptionId, and packagingTypeOptionId');
-      }
-
-
-      return await this.prisma.$transaction(async (tx) => {
-        // 1) ForwardingRequest oluştur
-        const forwarding = await tx.forwardingRequest.create({
-          data: {
-            mailId: dto.mailId,
-            mailboxId: fwd.mailboxId,
-            officeLocationId: fwd.officeLocationId,
-            deliveryAddressId: fwd.deliveryAddressId,
-            deliverySpeedOptionId: fwd.deliverySpeedOptionId,
-            packagingTypeOptionId: fwd.packagingTypeOptionId,
-            carrierId: fwd.carrierId ?? null,
-            shippingCost: 0,
-            packagingCost: 0,
-            totalCost: 0,
-          },
-        });
-
-        // 2) Action kaydı
-        const action = await tx.mailAction.create({
-          data: {
-            mailId: dto.mailId,
-            type: MailActionType.FORWARD,
-            status: ActionStatus.PENDING,
-            meta: { forwardingRequestId: forwarding.id, ...dto.meta },
-          },
-        });
-
-        // 3) (opsiyonel) Mail.status’i güncelle (örn. “IN_PROGRESS” gibi)
-        await tx.mail.update({
-          where: { id: dto.mailId },
-          data: { status: 'IN_PROGRESS' as any },
-        });
-
-        return { action, forwarding };
-      });
-    }
-
-    // Diğer aksiyonlar için tek kayıt
-    const action = await this.prisma.mailAction.create({
-      data: {
-      mailId: dto.mailId,
-        type: dto.type,
-        status: ActionStatus.PENDING,
-        meta: dto.meta ?? {},
-      },
-    });
-
-    // İsteğe göre flag’leri pratikçe güncelle
-    const patch: Prisma.MailUpdateInput = {};
-    if (dto.markShredded) patch.isShereded = true;
-    if (dto.markJunk) patch.status = MailStatus.FORWARDED;
-    if (dto.markHold) patch.status = 'HOLD' as any;
-    if (dto.markScanned) patch.status = 'SCANNED' as any;
-
-    if (Object.keys(patch).length) {
-      await this.prisma.mail.update({ where: { id: dto.mailId }, data: patch });
-    }
-
-    return { action };
-  }
 
   async updateActionStatus(id: string, dto: UpdateActionStatusDto) {
     const action = await this.prisma.mailAction.findUnique({

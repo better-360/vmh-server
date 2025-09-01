@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { MailStatus,MailType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { 
   IsString, 
@@ -14,28 +15,7 @@ import {
   IsDateString
 } from 'class-validator';
 
-// =====================
-// ENUMS
-// =====================
-
-export enum MailType {
-  BANK_CHECK = 'BANK_CHECK',
-  LEGAL_DOCUMENT = 'LEGAL_DOCUMENT',
-  ENVELOPE = 'ENVELOPE',
-  PACKAGE = 'PACKAGE',
-  OTHER = 'OTHER',
-}
-
-export enum PackageStatus {
-  PENDING = 'PENDING',
-  FORWARDED = 'FORWARDED',
-  SHREDDED = 'SHREDDED',
-  COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
-  IN_PROCESS = 'IN_PROCESS',
-}
-
-// =====================
+//====================
 // PACKAGE ITEM DTOs
 // =====================
 
@@ -506,14 +486,13 @@ export class CreatePackageDto {
   photoUrls?: string[];
 
   @ApiPropertyOptional({
-    description: 'Package status',
-    enum: PackageStatus,
-    example: PackageStatus.PENDING,
-    default: PackageStatus.PENDING,
+    description: 'Mail status',
+    enum: MailStatus,
+    example: MailStatus.PENDING,
   })
-  @IsEnum(PackageStatus)
+  @IsEnum(MailStatus)
   @IsOptional()
-  status?: PackageStatus;
+  status?: MailStatus;
 
   @ApiPropertyOptional({
     description: 'Is package shredded',
@@ -535,161 +514,6 @@ export class CreatePackageDto {
 }
 
 export class UpdatePackageDto extends PartialType(CreatePackageDto) {}
-
-export class PackageResponseDto {
-  @ApiProperty({
-    description: 'Package ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  id: string;
-
-  @ApiProperty({
-    description: 'STE number on the package',
-    example: '004712',
-  })
-  steNumber: string;
-
-  @ApiProperty({
-    description: 'Workspace address ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  workspaceAddressId: string;
-
-  @ApiProperty({
-    description: 'Office location ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  officeLocationId: string;
-
-  @ApiProperty({
-    description: 'Package type',
-    enum: MailType,
-    example: MailType.PACKAGE,
-  })
-  type: MailType;
-
-  @ApiProperty({
-    description: 'Date when package was received',
-    example: '2024-01-01T10:00:00.000Z',
-  })
-  receivedAt: Date;
-
-  @ApiPropertyOptional({
-    description: 'Sender name',
-    example: 'John Doe Company',
-  })
-  senderName?: string;
-
-  @ApiPropertyOptional({
-    description: 'Sender address',
-    example: '123 Main St, New York, NY 10001',
-  })
-  senderAddress?: string;
-
-  @ApiPropertyOptional({
-    description: 'Carrier company',
-    example: 'UPS',
-  })
-  carrier?: string;
-
-  @ApiPropertyOptional({
-    description: 'Width in centimeters',
-    example: 30.0,
-  })
-  width?: number;
-
-  @ApiPropertyOptional({
-    description: 'Height in centimeters',
-    example: 20.0,
-  })
-  height?: number;
-
-  @ApiPropertyOptional({
-    description: 'Length in centimeters',
-    example: 15.0,
-  })
-  length?: number;
-
-  @ApiPropertyOptional({
-    description: 'Weight in kilograms',
-    example: 2.5,
-  })
-  weightKg?: number;
-
-  @ApiPropertyOptional({
-    description: 'Volume in desi',
-    example: 9.0,
-  })
-  volumeDesi?: number;
-
-  @ApiPropertyOptional({
-    description: 'Photo URLs',
-    example: ['https://s3.amazonaws.com/bucket/package1.jpg'],
-    type: [String],
-  })
-  photoUrls?: string[];
-
-  @ApiProperty({
-    description: 'Package status',
-    enum: PackageStatus,
-    example: PackageStatus.PENDING,
-  })
-  status: PackageStatus;
-
-  @ApiProperty({
-    description: 'Is package shredded',
-    example: false,
-  })
-  isShereded: boolean;
-
-  @ApiProperty({
-    description: 'Is package forwarded',
-    example: false,
-  })
-  isForwarded: boolean;
-
-  @ApiProperty({
-    description: 'Creation date',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  createdAt: Date;
-
-  @ApiProperty({
-    description: 'Last update date',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  updatedAt: Date;
-
-  @ApiPropertyOptional({
-    description: 'Package items',
-    type: [PackageItemResponseDto],
-  })
-  items?: PackageItemResponseDto[];
-
-  @ApiPropertyOptional({
-    description: 'Workspace address details',
-    type: Object,
-  })
-  workspaceAddress?: any;
-
-  @ApiPropertyOptional({
-    description: 'Office location details',
-    type: Object,
-  })
-  officeLocation?: any;
-
-  @ApiPropertyOptional({
-    description: 'Package actions',
-    type: [Object],
-  })
-  actions?: any[];
-
-  @ApiPropertyOptional({
-    description: 'Forward requests',
-    type: [Object],
-  })
-  forwardRequests?: any[];
-}
 
 // =====================
 // QUERY DTOs
@@ -739,12 +563,12 @@ export class MailQueryDto {
 
   @ApiPropertyOptional({
     description: 'Filter by package status',
-    enum: PackageStatus,
-    example: PackageStatus.PENDING,
+    enum: MailStatus,
+    example: MailStatus.PENDING,
   })
-  @IsEnum(PackageStatus)
+  @IsEnum(MailStatus)
   @IsOptional()
-  status?: PackageStatus;
+  status?: MailStatus;
 
   @ApiPropertyOptional({
     description: 'Filter by STE number',
@@ -1063,13 +887,13 @@ export class CreateMailDto {
 
   @ApiPropertyOptional({
     description: 'Mail status',
-    enum: PackageStatus,
-    example: PackageStatus.PENDING,
-    default: PackageStatus.PENDING,
+    enum: MailStatus,
+    example: MailStatus.PENDING,
+    default: MailStatus.PENDING,
   })
-  @IsEnum(PackageStatus)
+  @IsEnum(MailStatus)
   @IsOptional()
-  status?: PackageStatus;
+  status?: MailStatus;
 
   @ApiPropertyOptional({
     description: 'Is mail shredded',
@@ -1098,12 +922,6 @@ export class MailResponseDto {
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   id: string;
-
-  @ApiProperty({
-    description: 'STE number on the mail/package',
-    example: '004712',
-  })
-  steNumber: string;
 
   @ApiProperty({
     description: 'Mailbox ID',
@@ -1193,10 +1011,10 @@ export class MailResponseDto {
 
   @ApiProperty({
     description: 'Mail status',
-    enum: PackageStatus,
-    example: PackageStatus.PENDING,
+    enum: MailStatus,
+    example: MailStatus.PENDING,
   })
-  status: PackageStatus;
+  status: MailStatus;
 
   @ApiProperty({
     description: 'Created at',

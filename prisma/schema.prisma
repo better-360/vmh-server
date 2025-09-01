@@ -873,8 +873,8 @@ model Attachment {
     PENDING // Yeni geldi, işlenmeyi bekliyor
     FORWARDED // Paket yönlendirildi
     SHREDDED // Paket imha edildi
-    COMPLETED // Aksiyonlar tamamlandı
-    CANCELLED // İptal edildi / yanlış eşleştirme
+    JUNKED // Çöte Atıldı.
+    HOLDING_FOR_PICKUP // Kullanıcıy bekliyor.
     IN_PROCESS // Aksiyon bekliyor (forward, shred, vs.)
   }
 

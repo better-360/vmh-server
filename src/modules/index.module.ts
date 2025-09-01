@@ -24,7 +24,6 @@ import { ProductModule } from './product/product.module';
 import { HandlerModule } from './handler/handler.module';
 import { EntitlementsModule } from './entitlements/entitlements.module';
 import { MailActionsModule } from './actions/actions.module';
-import { CustomerModule } from './customer/customer.module';
 import { TaskModule } from './task/task.module';
 
 @Module({
@@ -35,7 +34,6 @@ import { TaskModule } from './task/task.module';
     PrismaModule,
     AuthModule,
     UserModule,
-    CustomerModule,
     WorkspaceModule,
     FileManagerModule,
     EmailModule,
@@ -62,7 +60,6 @@ import { TaskModule } from './task/task.module';
     AuthModule,
     UserModule,
     WorkspaceModule,
-    CustomerModule,
     FileManagerModule,
     EmailModule,
     AdminModule,

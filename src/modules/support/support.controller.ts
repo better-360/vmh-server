@@ -9,12 +9,13 @@ import {
 } from '@nestjs/common';
 import { SupportService } from './support.service';
 import { CreateTicketDto, EditTicketStatusDto, TicketMessageDto } from 'src/dtos/support.dto';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Context } from 'src/common/decorators/context.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { ContextDto } from 'src/dtos/user.dto';
 
+@ApiBearerAuth()
 @ApiTags('Support - Ticket System')
 @Controller('support')
 export class SupportController {
@@ -55,16 +56,15 @@ export class SupportController {
     return await this.supportService.getUserTickets(userId);
   }
 
-  @ApiOperation({ summary: 'List tickets by office location (admin/staff)' })
-  @Get('office-location/:officeLocationId')
-  async listByOffice(@Param('officeLocationId') officeLocationId: string) {
-    return await this.supportService.getTicketsByOfficeLocation(officeLocationId);
-  }
-
-  @Public()
   @ApiOperation({ summary: 'Get ticket details by ID' })
   @Get('ticket/:id')
   async getTicket(@Param('id') ticketId: string) {
-    return await this.supportService.getTicketById(ticketId);
+   return await this.supportService.getTicketById(ticketId);
+  }
+
+  @ApiOperation({ summary: 'Get ticket details by ID' })
+  @Get('ticket/:id/messages')
+  async getTicketMessages(@Param('id') ticketId: string) {
+    return await this.supportService.getTicketMessages(ticketId);
   }
 }

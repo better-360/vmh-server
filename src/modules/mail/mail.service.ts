@@ -4,29 +4,15 @@ import {
   CreateMailDto, 
   UpdateMailDto, 
   MailResponseDto,
-  PackageStatus as MailDtoPackageStatus
 } from 'src/dtos/mail.dto';
 import { Prisma } from '@prisma/client';
 import { ContextDto } from 'src/dtos/user.dto';
-import { isMemberOfMailbox } from 'src/utils/validate';
-import { MailEntity } from 'src/common/entities/mail.entity';
+
 
 @Injectable()
 export class MailService {
   constructor(private prisma: PrismaService) {}
 
-  // Helper method to map Prisma PackageStatus to DTO PackageStatus
-  private mapPackageStatus(prismaStatus: any): MailDtoPackageStatus {
-    return prismaStatus as MailDtoPackageStatus;
-  }
-
-  // Helper method to map Prisma mail data to DTO
-  private mapMailToDto(mail: any): MailResponseDto {
-    return {
-      ...mail,
-      status: this.mapPackageStatus(mail.status),
-    } as MailResponseDto;
-  }
 
   async create(createMailDto: CreateMailDto): Promise<MailResponseDto> {
     try {
@@ -81,8 +67,7 @@ export class MailService {
           actions: true,
         },
       });
-
-      return this.mapMailToDto(mail);
+      return mail;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -147,7 +132,7 @@ export class MailService {
       skip: filters.offset || 0,
     });
 
-    return mails.map(mail => this.mapMailToDto(mail));
+    return mails;
   }
 
   async findOne(id: string): Promise<MailResponseDto> {
@@ -179,7 +164,7 @@ export class MailService {
       throw new NotFoundException(`Mail with ID ${id} not found`);
     }
 
-    return this.mapMailToDto(mail);
+    return mail;
   }
 
   async update(id: string, updateMailDto: UpdateMailDto): Promise<MailResponseDto> {
@@ -215,7 +200,7 @@ export class MailService {
         },
       });
 
-      return this.mapMailToDto(mail);
+      return mail;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {

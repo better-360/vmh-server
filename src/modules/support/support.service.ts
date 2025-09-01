@@ -18,7 +18,14 @@ export class SupportService {
   async getAllTickets(): Promise<Ticket[]> {
     return this.prismaService.ticket.findMany({
       include: {
-        user: true,
+        user:{select:{
+                    id:true,
+                    firstName:true,
+                    lastName:true,
+                    telephone:true,
+                    email:true,
+                    profileImage:true,
+                }} ,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -104,12 +111,7 @@ export class SupportService {
   }
 
   async createTicket(userId: string, context:ContextDto, data: CreateTicketDto): Promise<Ticket> {
-    // gelen değer bir nesne veya nesneler dizisi olabilir.
-    const { message, ...ticketData } = data;
-    // Eğer message bir dizi değilse, diziye çeviriyoruz
-  console.log('message', message);
-  console.log('ticketData', ticketData);
-  console.log('context', context);
+  const { message, ...ticketData } = data;
   const mailbox = await this.prismaService.mailbox.findUnique({
     where:{id:context.mailboxId},
     include:{officeLocation:true}
@@ -147,25 +149,43 @@ export class SupportService {
     return ticket;
   }
 
-  async getTicketById(ticketId: string): Promise<Ticket> {
+  async getTicketById(ticketId: string) {
     const ticket = await this.prismaService.ticket.findUnique({
       where: { id: ticketId },
       include: {
         messages: {
           include: {
-            user: true,
+            user:{select:{
+                    id:true,
+                    firstName:true,
+                    lastName:true,
+                    telephone:true,
+                    email:true,
+                    profileImage:true,
+                }},
             attachments: true,
           },
           orderBy: { createdAt: 'asc' },
         },
-        user: true,
+       user:{select:{
+                    id:true,
+                    firstName:true,
+                    lastName:true,
+                    telephone:true,
+                    email:true,
+                    profileImage:true,
+                }},
         mailbox: true,
       },
     });
     if (!ticket) {
       throw new HttpException('Ticket not found', HttpStatus.NOT_FOUND);
     }
-    return ticket;
+    console.log('ticket',ticket)
+    return {
+            ...ticket,
+            messages: await this.formatMessages(ticket.messages),
+        };
   }
 
   async addMessageFromStaff(
@@ -303,4 +323,20 @@ export class SupportService {
       orderBy: { createdAt: 'asc' },
     });
   }
+
+  private async formatMessages(messages: any[]) {
+        return messages.map(message => {
+            return {
+                message: message.message,
+                fromStaff: message.fromStaff,
+                createdAt: message.createdAt,
+                user: message.user,
+                attachments: message.attachments?.map(a => ({
+                    name: a.name,
+                    url: a.url,
+                    type: a.type,
+                })),
+            }
+        });
+    }
 }

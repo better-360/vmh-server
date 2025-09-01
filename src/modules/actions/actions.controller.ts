@@ -44,9 +44,4 @@ export class MailActionsController {
   findAllCarriers(@Param('locationId') locationId: string) {
     return this.carrierService.findAssigned(locationId);
   }
-    
-  @Post('mail-actions/create')
-    async create(@Body() dto: CreateMailActionDto) {
-      return this.actionsService.createAction(dto);
-    }
 }
