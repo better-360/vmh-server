@@ -45,7 +45,7 @@ export class S3Service {
     return { presignedUrl, fileKey };
   }
 
-  async getAdminPresignedUrl(fileKey: string): Promise<string> {
+  async viewPresignedUrl(fileKey: string): Promise<string> {
     const command = new GetObjectCommand({
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: fileKey,

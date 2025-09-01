@@ -4,6 +4,8 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { writeFileSync } from 'fs';
+import { RequestLoggerInterceptor } from './common/interceptors/request-logger.interceptor';
+import { AuthExceptionFilter } from './common/filters/auth-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -18,6 +20,8 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
+  app.useGlobalInterceptors(new RequestLoggerInterceptor());
+  app.useGlobalFilters(new AuthExceptionFilter());
   app.enableCors();
 
   const config = new DocumentBuilder()

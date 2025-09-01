@@ -1,15 +1,18 @@
 import {
   Injectable,
   ExecutionContext,
-  HttpException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../../../common/decorators/public.decorator';
 import { ROLES_KEY } from '../../../common/decorators/roles.decorator';
 import { Observable } from 'rxjs';
-import { Role } from '../../../common/enums/role.enum';
+import { RoleType } from '@prisma/client';
+import { 
+  TokenMissingException, 
+  TokenInvalidException, 
+  InsufficientPermissionsException 
+} from '../../../common/exceptions/auth.exceptions';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -30,16 +33,24 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return this.handleOptionalToken(context);
     }
 
+    // Token varlığını önce kontrol et
+    const request = context.switchToHttp().getRequest();
+    const authHeader = request.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new TokenMissingException();
+    }
+
     const result = super.canActivate(context);
     const resultAsPromise =
       result instanceof Promise ? result : Promise.resolve(result);
 
     return resultAsPromise.then((authorized) => {
       if (!authorized) {
-        return false;
+        throw new TokenInvalidException();
       }
 
-      const requiredRoles = this.reflector.getAllAndOverride<Role[]>(
+      const requiredRoles = this.reflector.getAllAndOverride<RoleType[]>(
         ROLES_KEY,
         [context.getHandler(), context.getClass()],
       );
@@ -48,7 +59,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         return true;
       }
 
-      const request = context.switchToHttp().getRequest();
       const user = request.user;
 
       if (
@@ -56,10 +66,20 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         !user.roles ||
         !requiredRoles.some((role) => user.roles.includes(role))
       ) {
-        throw new HttpException('Insufficient role this', 403);
+        throw new InsufficientPermissionsException(requiredRoles);
       }
 
       return true;
+    }).catch((error) => {
+      // JWT Strategy'den gelen hataları yakala ve uygun exception'a dönüştür
+      if (error instanceof TokenMissingException || 
+          error instanceof TokenInvalidException || 
+          error instanceof InsufficientPermissionsException) {
+        throw error;
+      }
+      
+      // Passport JWT hatalarını token invalid olarak ele al
+      throw new TokenInvalidException('Token validation failed');
     });
   }
 
@@ -85,19 +105,26 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   handleRequest(err, user, info, context) {
-    if (err || !user) {
-      const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-        context.getHandler(),
-        context.getClass(),
-      ]);
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
-      if (isPublic) {
-        // Public endpoint ise, user null olabilir ama hata atmamalıyız
-        return null;
-      }
-
-      throw err || new ForbiddenException('Forbidden: Invalid or missing token');
+    if (isPublic) {
+      // Public endpoint ise, user null olabilir ama hata atmamalıyız
+      return user || null;
     }
+
+    if (err) {
+      // Strategy'den gelen hataları olduğu gibi fırlat
+      throw err;
+    }
+
+    if (!user) {
+      // Bu durumda token var ama geçersiz (strategy validate'den geçememiş)
+      throw new TokenInvalidException();
+    }
+
     return user;
   }
 }

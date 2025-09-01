@@ -3,7 +3,7 @@ import { S3Service } from "./s3.service";
 import { Context } from "src/common/decorators";
 import { ContextDto } from "src/dtos/user.dto";
 import { ApiBearerAuth } from "@nestjs/swagger";
-import { GeneratePresignedUrlDto, GeneratePresignedUrlFromStuffDto } from "src/dtos/file-manager.dto";
+import { GeneratePresignedUrlDto, GeneratePresignedUrlFromStuffDto, ViewPresignedUrlDto } from "src/dtos/file-manager.dto";
 
 @ApiBearerAuth()
 @Controller('file-manager')
@@ -12,19 +12,19 @@ export class FileManagerController {
 
   @Post('presigned-url')
   async getPresignedUrl(@Body() body: GeneratePresignedUrlDto,@Context()context:ContextDto) {
-    console.log("asda")
     return this.s3Service.generatePresignedUrl(body.originalName, body.contentType, body.folder, context.mailboxId);
   }
 
   @Post('create-url')
   async createPresignedUrl(@Body() body: GeneratePresignedUrlFromStuffDto) {
-    console.log("asda")
     return this.s3Service.generatePresignedUrl(body.originalName, body.contentType, body.folder, body.mailboxId);
   }
 
   
-  @Post('admin-presigned-url')
-  async getAdminPresignedUrl(@Body() body: any) {
-    return this.s3Service.getAdminPresignedUrl(body);
+  @Post('view-file')
+  async viewPresignedUrl(@Body() body: ViewPresignedUrlDto) {
+    return this.s3Service.viewPresignedUrl(body.fileKey);
   }
+
+
 }

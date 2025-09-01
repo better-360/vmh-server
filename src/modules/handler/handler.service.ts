@@ -6,6 +6,7 @@ import {
 import { PrismaService } from 'src/prisma.service';
 import { ActionStatus, MailActionType, RoleType, TaskStatus } from '@prisma/client';
 import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
+import { isValidUUID } from 'src/utils/validate';
 
 
 @Injectable()
@@ -532,6 +533,8 @@ return await this.prisma.mailAction.findUnique({
 }
 
 async dashboardStats(officeLocationId:string){
+  if(!officeLocationId) throw new BadRequestException('Office location id is required');
+  if(!isValidUUID(officeLocationId)) throw new BadRequestException('Invalid office location id');
   const [recentTickets, ticketsGrouped, recentRequests, pendingRequestsGrouped, tasksGrouped] = await this.prisma.$transaction([
     this.prisma.ticket.findMany({
       where: { officeLocationId },

@@ -62,3 +62,10 @@ export class GeneratePresignedUrlFromStuffDto{
   mailboxId:string
 
 }
+
+export class ViewPresignedUrlDto{
+  @ApiProperty({example:'uuid-131231-1231-1231-13-',description:'File Key'})
+  @IsString()
+  @IsNotEmpty()
+  fileKey:string
+}

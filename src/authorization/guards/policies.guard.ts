@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { CaslAbilityFactory } from '../casl/ability.factory';
 import { CHECK_POLICIES_KEY } from '../decorators/check-policies.decorator';
 import { PolicyHandler } from '../policies/policy-handler.interface';
+import { ResourceAccessDeniedException } from '../../common/exceptions/auth.exceptions';
 
 @Injectable()
 export class PoliciesGuard implements CanActivate {
@@ -19,20 +20,31 @@ export class PoliciesGuard implements CanActivate {
       ) || [];
 
     const { user } = context.switchToHttp().getRequest();
-    // If no user or no policy handlers, deny access
-    if (!user || policyHandlers.length === 0) {
-      return false;
+    
+    // If no policy handlers, allow access
+    if (policyHandlers.length === 0) {
+      return true;
+    }
+    
+    // If no user, this should be caught by JWT guard first
+    if (!user) {
+      throw new ResourceAccessDeniedException('policy validation');
     }
 
     // Create ability for user
     const ability = await this.caslAbilityFactory.createForUser(user);
 
     // Check if user satisfies all policy handlers
-    
-  return policyHandlers.every((handler) => {
-    const result = this.execPolicyHandler(handler, ability);
-    return result;
-  });
+    const hasAccess = policyHandlers.every((handler) => {
+      const result = this.execPolicyHandler(handler, ability);
+      return result;
+    });
+
+    if (!hasAccess) {
+      throw new ResourceAccessDeniedException('policy requirements');
+    }
+
+    return true;
   }
 
   private execPolicyHandler(handler: PolicyHandler, ability: any) {

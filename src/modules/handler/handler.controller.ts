@@ -46,7 +46,6 @@ import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
   @ApiBearerAuth()
   @Controller('mail-handler')
   @UseGuards(JwtAuthGuard)
-  @Public()
   export class MailHandlerController {
   constructor(
     private readonly mailService: MailService,

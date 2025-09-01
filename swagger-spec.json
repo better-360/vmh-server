@@ -653,10 +653,20 @@
         ]
       }
     },
-    "/api/file-manager/admin-presigned-url": {
+    "/api/file-manager/view-file": {
       "post": {
-        "operationId": "FileManagerController_getAdminPresignedUrl",
+        "operationId": "FileManagerController_viewPresignedUrl",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ViewPresignedUrlDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -7668,6 +7678,19 @@
           "contentType",
           "folder",
           "mailboxId"
+        ]
+      },
+      "ViewPresignedUrlDto": {
+        "type": "object",
+        "properties": {
+          "fileKey": {
+            "type": "string",
+            "example": "uuid-131231-1231-1231-13-",
+            "description": "File Key"
+          }
+        },
+        "required": [
+          "fileKey"
         ]
       },
       "CreateInitialSubscriptionOrderDto": {

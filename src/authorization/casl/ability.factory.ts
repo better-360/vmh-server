@@ -94,7 +94,6 @@ export class CaslAbilityFactory {
     }
 
     const ability = build({
-      // Nesne tipini algılama
       detectSubjectType: (item) => {
 
         return item.constructor as ExtractSubjectType<Subjects>;
@@ -112,9 +111,6 @@ export class CaslAbilityFactory {
       },
       conditionsMatcher: mongoQueryMatcher,
     });
-
-
-    console.log('CASL - Built ability rules:', ability.rules);
     return ability;
   }
 }
