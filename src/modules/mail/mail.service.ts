@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma.service';
 import { 
   CreateMailDto, 
   UpdateMailDto, 
-  MailResponseDto,
+  FormattedMailResponseDto,
 } from 'src/dtos/mail.dto';
 import { Prisma } from '@prisma/client';
 import { ContextDto } from 'src/dtos/user.dto';
@@ -14,7 +14,7 @@ export class MailService {
   constructor(private prisma: PrismaService) {}
 
 
-  async create(createMailDto: CreateMailDto): Promise<MailResponseDto> {
+  async create(createMailDto: CreateMailDto): Promise<FormattedMailResponseDto> {
     try {
 
       const mailbox=await  this.prisma.mailbox.findUnique({
@@ -46,7 +46,7 @@ export class MailService {
           width: createMailDto.width,
           height: createMailDto.height,
           length: createMailDto.length,
-          weightKg: createMailDto.weightKg,
+          weight: createMailDto.weight,
           volumeDesi: createMailDto.volumeDesi,
           isShereded: createMailDto.isShereded || false,
           isForwarded: createMailDto.isForwarded || false,
@@ -67,7 +67,7 @@ export class MailService {
           actions: true,
         },
       });
-      return mail;
+      return this.formatMailForApiResponse(mail);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -81,7 +81,7 @@ export class MailService {
     }
   }
 
-    async findAll(filters: any = {}, userId: string, context: ContextDto, ability?: any): Promise<MailResponseDto[]> {
+    async findAll(filters: any = {}, userId: string, context: ContextDto, ability?: any): Promise<FormattedMailResponseDto[]> {
     const where: Prisma.MailWhereInput = {};
 
     // Basit authorization kontrolü - CASL kompleksliğini bypass et
@@ -111,10 +111,12 @@ export class MailService {
     if (filters.status) where.status = filters.status;
     if (filters.type) where.type = filters.type;
 
+    where.parentMailId = null;
     const mails = await this.prisma.mail.findMany({
       where,
       include: {
         mailbox: true,
+        containedMails: true,
         actions: {
           orderBy: { requestedAt: 'desc' },
         },
@@ -132,10 +134,10 @@ export class MailService {
       skip: filters.offset || 0,
     });
 
-    return mails;
+    return mails.map(mail => this.formatMailForApiResponse(mail));
   }
 
-  async findOne(id: string): Promise<MailResponseDto> {
+  async findOne(id: string): Promise<FormattedMailResponseDto> {
     const mail = await this.prisma.mail.findUnique({
       where: { id },
       include: {
@@ -164,10 +166,10 @@ export class MailService {
       throw new NotFoundException(`Mail with ID ${id} not found`);
     }
 
-    return mail;
+    return this.formatMailForApiResponse(mail);
   }
 
-  async update(id: string, updateMailDto: UpdateMailDto): Promise<MailResponseDto> {
+  async update(id: string, updateMailDto: UpdateMailDto): Promise<FormattedMailResponseDto> {
     try {
       const mail = await this.prisma.mail.update({
         where: { id },
@@ -180,7 +182,7 @@ export class MailService {
           ...(updateMailDto.width !== undefined && { width: updateMailDto.width }),
           ...(updateMailDto.height !== undefined && { height: updateMailDto.height }),
           ...(updateMailDto.length !== undefined && { length: updateMailDto.length }),
-          ...(updateMailDto.weightKg !== undefined && { weightKg: updateMailDto.weightKg }),
+          ...(updateMailDto.weight !== undefined && { weight: updateMailDto.weight }),
           ...(updateMailDto.volumeDesi !== undefined && { volumeDesi: updateMailDto.volumeDesi }),
           ...(updateMailDto.photoUrls !== undefined && { photoUrls: updateMailDto.photoUrls }),
           ...(updateMailDto.isShereded !== undefined && { isShereded: updateMailDto.isShereded }),
@@ -200,7 +202,7 @@ export class MailService {
         },
       });
 
-      return mail;
+      return this.formatMailForApiResponse(mail);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
@@ -224,5 +226,53 @@ export class MailService {
       }
       throw error;
     }
+  }
+
+  private formatMailForApiResponse(mail: any): FormattedMailResponseDto {
+    // Bir öğenin "grup" olup olmadığını belirleyen tek kriter, tipinin CONSOLIDATED olmasıdır.
+    const isConsolidatedPackage = mail.type === 'CONSOLIDATED';
+
+    const response: FormattedMailResponseDto = {
+      id: mail.id,
+      // Directly sending the mail's type to the frontend.
+      itemType: mail.type, 
+      mailboxId: mail.mailboxId,
+      isShereded: mail.isShereded,
+      type: mail.type,
+      createdAt: mail.createdAt,
+      updatedAt: mail.updatedAt,
+      // Title is determined based on the new logic.
+      title: isConsolidatedPackage
+        ? `Consolidated Package (${mail.containedMails?.length || 0} Item)`
+        : mail.senderName || 'Unknown Sender',
+      carrier: mail.carrier,
+      receivedAt: mail.receivedAt,
+      status: mail.status,
+      thumbnailUrl: mail.photoUrls?.[0] || null,
+      isForwarded: mail.isForwarded,
+      isScanned: mail.isScanned,
+      // Content count is determined.
+      itemCount: isConsolidatedPackage ? mail.containedMails?.length || 0 : 1,
+      
+      // If it's a consolidated package, we create a summary of the items inside.
+      containedItemsSummary: isConsolidatedPackage
+        ? mail.containedMails.map((item: any) => ({
+            id: item.id,
+            senderName: item.senderName,
+            type: item.type,
+            receivedAt: item.receivedAt,
+          }))
+        : [],
+        
+      pendingActionCount: mail.actions?.length || 0,
+      dimensions: {
+        width: mail.width,
+        height: mail.height,
+        length: mail.length,
+        weight: mail.weight,
+      },
+    };
+
+    return response;
   }
 }

@@ -4316,7 +4316,10 @@
                 "SHREDDED",
                 "JUNKED",
                 "HOLDING_FOR_PICKUP",
-                "IN_PROCESS"
+                "IN_PROCESS",
+                "CONSOLIDATED",
+                "SCANNED",
+                "COMPLETED"
               ],
               "type": "string"
             }
@@ -4332,7 +4335,8 @@
                 "LEGAL_DOCUMENT",
                 "ENVELOPE",
                 "PACKAGE",
-                "OTHER"
+                "OTHER",
+                "CONSOLIDATED"
               ],
               "type": "string"
             }
@@ -6068,7 +6072,10 @@
                 "SHREDDED",
                 "JUNKED",
                 "HOLDING_FOR_PICKUP",
-                "IN_PROCESS"
+                "IN_PROCESS",
+                "CONSOLIDATED",
+                "SCANNED",
+                "COMPLETED"
               ],
               "type": "string"
             }
@@ -6084,7 +6091,8 @@
                 "LEGAL_DOCUMENT",
                 "ENVELOPE",
                 "PACKAGE",
-                "OTHER"
+                "OTHER",
+                "CONSOLIDATED"
               ],
               "type": "string"
             }
@@ -7323,6 +7331,263 @@
         },
         "tags": [
           "Mail Actions"
+        ]
+      }
+    },
+    "/api/actions/consolidation/request": {
+      "post": {
+        "operationId": "MailActionsController_createConsolidationRequest",
+        "summary": "Create a consolidation request",
+        "description": "Create a request to consolidate multiple mails into a single package. All mails must be of the same type and from the same office location.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConsolidationRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Consolidation request created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsolidationRequestResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation failed"
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions"
+          },
+          "404": {
+            "description": "One or more mails not found"
+          }
+        },
+        "tags": [
+          "Mail Actions"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/actions/consolidation/requests": {
+      "get": {
+        "operationId": "MailActionsController_getConsolidationRequests",
+        "summary": "List consolidation requests",
+        "description": "Get list of consolidation requests. Staff can see all requests, users can see only their requests.",
+        "parameters": [
+          {
+            "name": "officeLocationId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by office location ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by request status",
+            "schema": {
+              "enum": [
+                "PENDING",
+                "IN_PROGRESS",
+                "DONE",
+                "FAILED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of consolidation requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConsolidationRequestResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Mail Actions"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/actions/consolidation/requests/{id}": {
+      "get": {
+        "operationId": "MailActionsController_getConsolidationRequestById",
+        "summary": "Get consolidation request by ID",
+        "description": "Get detailed information about a specific consolidation request.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Consolidation request ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Consolidation request details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsolidationRequestResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Consolidation request not found"
+          }
+        },
+        "tags": [
+          "Mail Actions"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/actions/consolidation/requests/{id}/complete": {
+      "put": {
+        "operationId": "MailActionsController_completeConsolidationRequest",
+        "summary": "Complete a consolidation request",
+        "description": "Complete a consolidation request by providing the consolidated package details. This creates a new consolidated mail and moves original mails into it. Only staff members can perform this action.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Consolidation request ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsolidateMailItemsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Consolidation completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "consolidationRequest": {
+                      "$ref": "#/components/schemas/ConsolidationRequestResponseDto"
+                    },
+                    "packageMail": {
+                      "type": "object",
+                      "description": "The newly created consolidated package mail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - consolidation cannot be completed"
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions"
+          },
+          "404": {
+            "description": "Consolidation request not found"
+          }
+        },
+        "tags": [
+          "Mail Actions"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/actions/consolidation/requests/{id}/cancel": {
+      "put": {
+        "operationId": "MailActionsController_cancelConsolidationRequest",
+        "summary": "Cancel a consolidation request",
+        "description": "Cancel a consolidation request and reset mail statuses. Only staff members can perform this action.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Consolidation request ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Consolidation request cancelled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsolidationRequestResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - consolidation cannot be cancelled"
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions"
+          },
+          "404": {
+            "description": "Consolidation request not found"
+          }
+        },
+        "tags": [
+          "Mail Actions"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -10474,7 +10739,8 @@
               "LEGAL_DOCUMENT",
               "ENVELOPE",
               "PACKAGE",
-              "OTHER"
+              "OTHER",
+              "CONSOLIDATED"
             ],
             "example": "PACKAGE"
           },
@@ -10508,7 +10774,7 @@
             "description": "Length in centimeters",
             "example": 15
           },
-          "weightKg": {
+          "weight": {
             "type": "number",
             "description": "Weight in kilograms",
             "example": 2.5
@@ -10537,7 +10803,10 @@
               "SHREDDED",
               "JUNKED",
               "HOLDING_FOR_PICKUP",
-              "IN_PROCESS"
+              "IN_PROCESS",
+              "CONSOLIDATED",
+              "SCANNED",
+              "COMPLETED"
             ],
             "example": "PENDING"
           },
@@ -10689,7 +10958,8 @@
               "LEGAL_DOCUMENT",
               "ENVELOPE",
               "PACKAGE",
-              "OTHER"
+              "OTHER",
+              "CONSOLIDATED"
             ],
             "example": "PACKAGE"
           },
@@ -10726,7 +10996,7 @@
             "example": 15,
             "minimum": 0
           },
-          "weightKg": {
+          "weight": {
             "type": "number",
             "description": "Weight in kilograms",
             "example": 2.5,
@@ -10757,7 +11027,10 @@
               "SHREDDED",
               "JUNKED",
               "HOLDING_FOR_PICKUP",
-              "IN_PROCESS"
+              "IN_PROCESS",
+              "CONSOLIDATED",
+              "SCANNED",
+              "COMPLETED"
             ],
             "example": "PENDING",
             "default": "PENDING"
@@ -10808,7 +11081,8 @@
               "LEGAL_DOCUMENT",
               "ENVELOPE",
               "PACKAGE",
-              "OTHER"
+              "OTHER",
+              "CONSOLIDATED"
             ],
             "example": "PACKAGE"
           },
@@ -10845,7 +11119,7 @@
             "example": 15,
             "minimum": 0
           },
-          "weightKg": {
+          "weight": {
             "type": "number",
             "description": "Weight in kilograms",
             "example": 2.5,
@@ -10876,7 +11150,10 @@
               "SHREDDED",
               "JUNKED",
               "HOLDING_FOR_PICKUP",
-              "IN_PROCESS"
+              "IN_PROCESS",
+              "CONSOLIDATED",
+              "SCANNED",
+              "COMPLETED"
             ],
             "example": "PENDING",
             "default": "PENDING"
@@ -10963,6 +11240,145 @@
         },
         "required": [
           "reason"
+        ]
+      },
+      "CreateConsolidationRequestDto": {
+        "type": "object",
+        "properties": {
+          "mailIds": {
+            "description": "Array of mail IDs to consolidate",
+            "example": [
+              "123e4567-e89b-12d3-a456-426614174000",
+              "987fcdeb-51a2-43d7-8f9e-123456789abc"
+            ],
+            "minItems": 2,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "instructions": {
+            "type": "string",
+            "description": "Special instructions for consolidation",
+            "example": "Please handle documents carefully"
+          }
+        },
+        "required": [
+          "mailIds"
+        ]
+      },
+      "ConsolidationRequestResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Consolidation request ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "officeLocationId": {
+            "type": "string",
+            "description": "Office location ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "status": {
+            "type": "string",
+            "description": "Request status",
+            "example": "IN_PROGRESS"
+          },
+          "requestedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Request date",
+            "example": "2024-01-01T10:00:00.000Z"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Completion date",
+            "example": "2024-01-01T12:00:00.000Z"
+          },
+          "mails": {
+            "description": "Mails to be consolidated",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "createdPackageMail": {
+            "type": "object",
+            "description": "Created consolidated package mail"
+          }
+        },
+        "required": [
+          "id",
+          "officeLocationId",
+          "status",
+          "requestedAt",
+          "mails"
+        ]
+      },
+      "ConsolidateMailItemsDto": {
+        "type": "object",
+        "properties": {
+          "senderName": {
+            "type": "string",
+            "description": "Sender name for consolidated package",
+            "example": "Multiple Senders - Consolidated"
+          },
+          "weight": {
+            "type": "number",
+            "description": "Weight in pounds (lb)",
+            "example": 2.5,
+            "minimum": 0
+          },
+          "width": {
+            "type": "number",
+            "description": "Width in centimeters",
+            "example": 30,
+            "minimum": 0
+          },
+          "height": {
+            "type": "number",
+            "description": "Height in centimeters",
+            "example": 20,
+            "minimum": 0
+          },
+          "length": {
+            "type": "number",
+            "description": "Length in centimeters",
+            "example": 25,
+            "minimum": 0
+          },
+          "volumeDesi": {
+            "type": "number",
+            "description": "Volume in desi",
+            "example": 15,
+            "minimum": 0
+          },
+          "volumeCm3": {
+            "type": "number",
+            "description": "Volume in cubic centimeters",
+            "example": 15000,
+            "minimum": 0
+          },
+          "photoUrls": {
+            "description": "Photo URLs of consolidated package",
+            "example": [
+              "https://s3.amazonaws.com/bucket/consolidated-package.jpg"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": "string",
+            "description": "Notes about the consolidation process",
+            "example": "All items carefully packed together"
+          }
+        },
+        "required": [
+          "senderName"
         ]
       }
     }

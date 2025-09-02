@@ -291,7 +291,7 @@ import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
   @Post('tasks')
   @ApiOperation({ summary: 'Create a task' })
   create(@Body() dto: CreateTaskDto, @CurrentUser('id') userId: string) {
-      return this.taskService.createTaskByUser(userId, dto);
+      return this.taskService.createTask(userId, dto);
   }
 
   @Patch('tasks/:id')

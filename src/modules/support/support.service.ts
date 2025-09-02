@@ -64,7 +64,7 @@ export class SupportService {
     }
 
     // Yetki Kontrolü
-    const isAdmin = user.roles.some((role) => role.role === 'ADMIN');
+    const isAdmin = user.roles.some((role) => role.role === 'ADMIN' || role.role ==="STAFF" || role.role ==="SUPERADMIN");
     const isOwner = ticket.userId === userId;
 
     if (!isAdmin && !isOwner) {

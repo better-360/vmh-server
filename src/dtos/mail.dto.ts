@@ -63,7 +63,7 @@ export class CreatePackageItemDto {
   @IsNumber()
   @Min(0)
   @IsOptional()
-  weightKg?: number;
+  weight?: number;
 
   @ApiPropertyOptional({
     description: 'Width in centimeters',
@@ -170,7 +170,7 @@ export class CreatePackageItemForPackageDto {
   @IsNumber()
   @Min(0)
   @IsOptional()
-  weightKg?: number;
+  weight?: number;
 
   @ApiPropertyOptional({
     description: 'Width in centimeters',
@@ -287,7 +287,7 @@ export class PackageItemResponseDto {
     description: 'Weight in kilograms',
     example: 0.5,
   })
-  weightKg?: number;
+  weight?: number;
 
   @ApiPropertyOptional({
     description: 'Width in centimeters',
@@ -463,7 +463,7 @@ export class CreatePackageDto {
   @IsNumber()
   @Min(0)
   @IsOptional()
-  weightKg?: number;
+  weight?: number;
 
   @ApiPropertyOptional({
     description: 'Volume in desi',
@@ -755,7 +755,7 @@ export class BulkUpdatePackageItemsDto {
     name?: string;
     description?: string;
     quantity?: number;
-    weightKg?: number;
+    weight?: number;
     width?: number;
     height?: number;
     length?: number;
@@ -863,7 +863,7 @@ export class CreateMailDto {
   @IsNumber()
   @Min(0)
   @IsOptional()
-  weightKg?: number;
+  weight?: number;
 
   @ApiPropertyOptional({
     description: 'Volume in desi',
@@ -994,7 +994,7 @@ export class MailResponseDto {
     description: 'Weight in kilograms',
     example: 2.5,
   })
-  weightKg?: number;
+  weight?: number;
 
   @ApiPropertyOptional({
     description: 'Volume in desi',
@@ -1045,4 +1045,197 @@ export class MailResponseDto {
     type: [Object],
   })
   forwardRequests?: any[];
+}
+
+
+
+// =====================
+// CONSOLIDATION DTOs
+// =====================
+
+export class CreateConsolidationRequestDto {
+  @ApiProperty({
+    description: 'Array of mail IDs to consolidate',
+    example: ['123e4567-e89b-12d3-a456-426614174000', '987fcdeb-51a2-43d7-8f9e-123456789abc'],
+    type: [String],
+    minItems: 2,
+  })
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsNotEmpty()
+  mailIds: string[];
+
+  @ApiPropertyOptional({
+    description: 'Special instructions for consolidation',
+    example: 'Please handle documents carefully',
+  })
+  @IsString()
+  @IsOptional()
+  instructions?: string;
+}
+
+export class ConsolidateMailItemsDto {
+  @ApiProperty({
+    description: 'Sender name for consolidated package',
+    example: 'Multiple Senders - Consolidated',
+  })
+  @IsString()
+  @IsNotEmpty()
+  senderName: string;
+
+  @ApiPropertyOptional({
+    description: 'Weight in pounds (lb)',
+    example: 2.5,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  weight?: number;
+
+  @ApiPropertyOptional({
+    description: 'Width in centimeters',
+    example: 30.0,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  width?: number;
+
+  @ApiPropertyOptional({
+    description: 'Height in centimeters',
+    example: 20.0,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  height?: number;
+
+  @ApiPropertyOptional({
+    description: 'Length in centimeters',
+    example: 25.0,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  length?: number;
+
+  @ApiPropertyOptional({
+    description: 'Volume in desi',
+    example: 15.0,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  volumeDesi?: number;
+
+  @ApiPropertyOptional({
+    description: 'Volume in cubic centimeters',
+    example: 15000,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  volumeCm3?: number;
+
+  @ApiPropertyOptional({
+    description: 'Photo URLs of consolidated package',
+    example: ['https://s3.amazonaws.com/bucket/consolidated-package.jpg'],
+    type: [String],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  photoUrls?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Notes about the consolidation process',
+    example: 'All items carefully packed together',
+  })
+  @IsString()
+  @IsOptional()
+  notes?: string;
+}
+
+export class ConsolidationRequestResponseDto {
+  @ApiProperty({
+    description: 'Consolidation request ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'Office location ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  officeLocationId: string;
+
+  @ApiProperty({
+    description: 'Request status',
+    example: 'IN_PROGRESS',
+  })
+  status: string;
+
+  @ApiProperty({
+    description: 'Request date',
+    example: '2024-01-01T10:00:00.000Z',
+  })
+  requestedAt: Date;
+
+  @ApiPropertyOptional({
+    description: 'Completion date',
+    example: '2024-01-01T12:00:00.000Z',
+  })
+  completedAt?: Date;
+
+  @ApiProperty({
+    description: 'Mails to be consolidated',
+    type: [Object],
+  })
+  mails: any[];
+
+  @ApiPropertyOptional({
+    description: 'Created consolidated package mail',
+    type: Object,
+  })
+  createdPackageMail?: any;
+}
+
+
+
+export interface FormattedMailResponseDto {
+  id: string;
+  mailboxId: string;
+  isShereded: boolean;
+  type: MailType;
+  createdAt: Date;
+  updatedAt: Date;
+  itemType: MailType; 
+  title: string;
+  carrier: string;
+  
+  receivedAt: Date;
+  status: MailStatus; 
+  thumbnailUrl: string | null;
+  itemCount: number;
+  containedItemsSummary: {
+    id: string;
+    senderName: string;
+    type: MailType;
+    receivedAt: Date;
+  }[];
+  pendingActionCount: number;
+  isScanned: boolean;
+  isForwarded: boolean;
+  dimensions?: {
+    width: number;
+    height: number;
+    length: number;
+    weight: number;
+  };
 }

@@ -4,14 +4,18 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { ActionStatus, MailActionType, RoleType, TaskStatus } from '@prisma/client';
+import {  MailActionType, Prisma, RoleType, TaskStatus } from '@prisma/client';
 import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
 import { isValidUUID } from 'src/utils/validate';
 
 
+
 @Injectable()
 export class HandlerService {
-  constructor(private prisma: PrismaService) {}
+    private readonly RECENT_LIMIT = 5;
+
+  constructor(private prisma: PrismaService) {
+  }
 
   async assignUserToOfficeLocation(userId: string, officeLocationId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -172,6 +176,7 @@ async getCustomers(officeLocationId: string) {
     },
   });
 }
+
 async getCustomerDetails(mailboxId:string) {
   // 1) mailbox + özet bilgiler (tek sorgu)
   const mailbox = await this.prisma.mailbox.findUnique({
@@ -223,8 +228,7 @@ async getCustomerDetails(mailboxId:string) {
         width: true,
         height: true,
         length: true,
-        weightKg: true,
-        // mailin en güncel action durumu
+        weight: true,
         actions: {
           take: 1,
           orderBy: { updatedAt: 'desc' },
@@ -358,7 +362,7 @@ async getCustomerDetails(mailboxId:string) {
       senderName: m.senderName,
       carrier: m.carrier,
       photoUrls: m.photoUrls,
-      dims: { w: m.width, h: m.height, l: m.length, kg: m.weightKg },
+      dims: { w: m.width, h: m.height, l: m.length, kg: m.weight },
       lastAction: m.actions?.[0] || null,
     })),
 
@@ -532,7 +536,7 @@ return await this.prisma.mailAction.findUnique({
  })
 }
 
-async dashboardStats(officeLocationId:string){
+async getdashboardStats(officeLocationId:string){
   if(!officeLocationId) throw new BadRequestException('Office location id is required');
   if(!isValidUUID(officeLocationId)) throw new BadRequestException('Invalid office location id');
   const [recentTickets, ticketsGrouped, recentRequests, pendingRequestsGrouped, tasksGrouped] = await this.prisma.$transaction([
@@ -627,4 +631,161 @@ async dashboardStats(officeLocationId:string){
     tasksByStatus,
   };
 }
+
+async dashboardStats(officeLocationId: string) {
+  if (!officeLocationId) throw new BadRequestException('Office location id is required');
+  if (!isValidUUID(officeLocationId)) throw new BadRequestException('Invalid office location id');
+
+  const RECENT_LIMIT = 5;
+
+  const [
+    recentTickets,
+    ticketsGrouped,
+    tasksGrouped,
+    forwardingRecent,
+    mailActionsRecent,
+    frPendingGrouped,
+    maPendingGrouped,
+  ] = await this.prisma.$transaction([
+    this.prisma.ticket.findMany({
+      where: { officeLocationId },
+      orderBy: { createdAt: 'desc' },
+      take: RECENT_LIMIT,
+      select: {
+        id: true,
+        subject: true,
+        priority: true,
+        status: true,
+        createdAt: true,
+        user: { select: { firstName: true, lastName: true, profileImage: true } },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { id: true, createdAt: true },
+        },
+        _count: { select: { messages: true } },
+      },
+    }),
+
+    (this.prisma.ticket as any).groupBy({
+      by: ['status'],
+      _count: { _all: true },
+      where: { officeLocationId } as any,
+    }),
+
+    (this.prisma.task as any).groupBy({
+      by: ['status'],
+      _count: { _all: true },
+      where: { officeLocationId } as any,
+    }),
+
+    this.prisma.forwardingRequest.findMany({
+      where: { officeLocationId },
+      orderBy: { updatedAt: 'desc' },
+      take: RECENT_LIMIT,
+      select: {
+        id: true,
+        status: true,
+        priority: true,
+        updatedAt: true,
+        mail: { select: { recipient: { select: { name: true, lastName: true } } } },
+      },
+    }),
+
+    this.prisma.mailAction.findMany({
+      where: { mail: { mailbox: { officeLocationId } } },
+      orderBy: { updatedAt: 'desc' },
+      take: RECENT_LIMIT,
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        priority: true,
+        updatedAt: true,
+        requestedAt: true,
+        meta: true,
+        mail: { select: { recipient: { select: { name: true, lastName: true } } } },
+      },
+    }),
+
+    (this.prisma.forwardingRequest as any).groupBy({
+      by: ['priority'],
+      _count: { _all: true },
+      where: {
+        officeLocationId,
+        status: { in: ['PENDING', 'IN_PROGRESS'] as any },
+      } as any,
+    }),
+
+    (this.prisma.mailAction as any).groupBy({
+      by: ['priority'],
+      _count: { _all: true },
+      where: {
+        mail: { mailbox: { officeLocationId } },
+        status: { in: ['PENDING', 'IN_PROGRESS'] as any },
+      } as any,
+    }),
+  ]);
+
+  const ticketsByStatus: Record<string, number> = {};
+  for (const g of ticketsGrouped) ticketsByStatus[g.status] = g._count._all;
+
+  const tasksByStatus: Record<string, number> = {};
+  for (const g of tasksGrouped) tasksByStatus[g.status] = g._count._all;
+
+  const pendingRequestsByPriority: Record<string, number> = {};
+  [...frPendingGrouped, ...maPendingGrouped].forEach((g) => {
+    if (g.priority) {
+      pendingRequestsByPriority[g.priority] =
+        (pendingRequestsByPriority[g.priority] ?? 0) + g._count._all;
+    }
+  });
+
+  const forwardItems = forwardingRecent.map((x) => ({
+    id: x.id,
+    type: 'FORWARD' as const,
+    status: x.status,
+    priority: x.priority,
+    updatedAt: x.updatedAt.toISOString(),
+    userName: [x.mail?.recipient?.name, x.mail?.recipient?.lastName].filter(Boolean).join(' ') || null,
+    meta: null,
+  }));
+
+  const actionItems = mailActionsRecent
+    .filter((x) => x.type !== 'CHECK_DEPOSIT')
+    .map((x) => ({
+      id: x.id,
+      type: x.type,
+      status: x.status,
+      priority: x.priority,
+      updatedAt: (x.updatedAt ?? x.requestedAt)?.toISOString(),
+      userName: [x.mail?.recipient?.name, x.mail?.recipient?.lastName].filter(Boolean).join(' ') || null,
+      meta: x.meta,
+    }));
+
+  const recentRequests = [...forwardItems, ...actionItems]
+    .filter((r) => !!r.updatedAt)
+    .sort((a, b) => (a.updatedAt! > b.updatedAt! ? -1 : 1))
+    .slice(0, RECENT_LIMIT);
+
+  const mappedTickets = recentTickets.map((t) => ({
+    id: t.id,
+    subject: t.subject,
+    priority: t.priority,
+    status: t.status,
+    createdAt: t.createdAt,
+    user: t.user,
+    lastMessage: t.messages[0] ?? null,
+    messagesCount: t._count.messages,
+  }));
+
+  return {
+    recentTickets: mappedTickets,
+    ticketsByStatus,
+    recentRequests,
+    pendingRequestsByPriority,
+    tasksByStatus,
+  };
+}
+
 }

@@ -493,39 +493,50 @@ generator dbml {
     @@index([featureId])
   }
 
-  model Mail {
-    id             String        @id @default(uuid()) @db.Uuid
-    mailboxId String        @db.Uuid
-    receivedAt     DateTime
-    trackingNumber String?
-    trackingUrl    String?
-    isShereded     Boolean       @default(false)
-    isForwarded    Boolean       @default(false)
-    isScanned     Boolean       @default(false)
-    type           MailType
-    status          MailStatus       @default(PENDING)
-    senderName    String?
-    senderAddress String?
-    carrier       String?
+model Mail {
+  id             String   @id @default(uuid()) @db.Uuid
+  mailboxId      String   @db.Uuid
+  receivedAt     DateTime
+  trackingNumber String?
+  trackingUrl    String?
+  isShereded     Boolean  @default(false)
+  isForwarded    Boolean  @default(false)
+  isScanned      Boolean  @default(false)
+  isJunked       Boolean  @default(false)
+  type           MailType // Bu alan artık 'PACKAGE' da olabilir.
+  status         MailStatus @default(PENDING)
+  senderName     String?
+  senderAddress  String?
+  carrier        String?
 
-    width      Float? // cm
-    height     Float? // cm
-    length     Float? // cm
-    weightKg   Float? // kg
-    volumeDesi Float?
-    volumeCm3   Float?
+  width      Float? // cm
+  height     Float? // cm
+  length     Float? // cm
+  weight     Float? // lb
+  volumeDesi Float?
+  volumeCm3  Float?
 
-    photoUrls String[]
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  photoUrls String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    actions         MailAction[] 
-    mailbox         Mailbox             @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
-    forwardRequests ForwardingRequest[]
-    checkDeposit CheckDeposit[]
-    recipient      Recipient? @relation(fields: [recipientId], references: [id], onDelete: Cascade)
-    recipientId    String?    @db.Uuid
-    @@index([mailboxId])
+  parentMailId String? @db.Uuid
+  parentMail   Mail?   @relation("ContainedMails", fields: [parentMailId], references: [id], onDelete: SetNull)
+  containedMails Mail[] @relation("ContainedMails")
+
+  consulidationRequests ConsolidationAction[]
+  creationAction      ConsolidationAction?  @relation("ConsuldatCreationAction")
+
+  actions         MailAction[]
+  mailbox         Mailbox             @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
+  forwardRequests ForwardingRequest[]
+
+  checkDeposit CheckDeposit[]
+  recipient       Recipient?          @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId     String?             @db.Uuid
+
+  @@index([mailboxId])
+  @@index([parentMailId]) // Sorgu performansı için eklendi
 }
 
   model CheckDeposit {
@@ -559,6 +570,19 @@ generator dbml {
 
     @@unique([mailId, type], name: "OneActionPerTypeAndMail")
   }
+
+model ConsolidationAction {
+  id               String   @id @default(uuid()) @db.Uuid
+  officeLocationId String?  @db.Uuid
+  status           ActionStatus // PENDING, IN_PROGRESS, DONE, FAILED
+  requestedAt      DateTime @default(now())
+  completedAt      DateTime?
+  updatedAt        DateTime @updatedAt
+
+  mails            Mail[]
+  createdPackageMailId String?  @unique @db.Uuid
+  createdPackageMail   Mail?    @relation("ConsuldatCreationAction", fields: [createdPackageMailId], references: [id])
+}
 
   model ForwardingRequest {
     id                    String  @id @default(uuid()) @db.Uuid
@@ -852,6 +876,7 @@ model Attachment {
     ENVELOPE // Zarf
     PACKAGE // Paket (kargo)
     OTHER // Diğer
+    CONSOLIDATED // Konsolide (birden fazla paketin birleştirilmesi)
   }
 
   enum InvitationStatus {
@@ -876,6 +901,9 @@ model Attachment {
     JUNKED // Çöte Atıldı.
     HOLDING_FOR_PICKUP // Kullanıcıy bekliyor.
     IN_PROCESS // Aksiyon bekliyor (forward, shred, vs.)
+    CONSOLIDATED // Konsolide edildi
+    SCANNED // Paket tarandı
+    COMPLETED // Tüm işlemler tamamlandı
   }
 
   enum TicketStatus {

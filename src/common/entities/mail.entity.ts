@@ -17,14 +17,15 @@ export class MailEntity implements PrismaMail {
   width: number | null;
   height: number | null;
   length: number | null;
-  weightKg: number | null;
+  weight: number | null;
   volumeDesi: number | null;
   volumeCm3: number | null;
   photoUrls: string[];
   createdAt: Date;
   updatedAt: Date;
   recipientId: string | null;
-
+  isJunked: boolean;
+  parentMailId: string | null;
   constructor(partial: Partial<MailEntity>) {
     Object.assign(this, partial);
   }

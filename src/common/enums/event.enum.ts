@@ -29,4 +29,7 @@ export enum Events {
     DOCUMENT_DELETED="document.deleted",
     DOCUMENT_COMMENTED="document.commented",
     MAIL_ACTION_CREATED="mailAction.created",
+    MAIL_CONSOLIDATION_REQUESTED="mail.consolidation.requested",
+    MAIL_CONSOLIDATION_COMPLETED="mail.consolidation.completed",
+    MAIL_CONSOLIDATION_CANCELLED="mail.consolidation.cancelled",
   }

@@ -84,13 +84,19 @@ export class CaslAbilityFactory {
     const { can, cannot, build } = abilityBuilder;
 
     if (userRoles.includes('SUPERADMIN')) {
+      console.log('🔍 CASL - Using SUPERADMIN abilities');
       defineSuperAdminAbilities(abilityBuilder);
     } else if (userRoles.includes('ADMIN')) {
+      console.log('🔍 CASL - Using ADMIN abilities');
       defineAdminAbilities(abilityBuilder);
     } else if (userRoles.includes('STAFF')) {
+      console.log('🔍 CASL - Using STAFF abilities');
       defineStaffAbilities(abilityBuilder);
     } else if (userRoles.includes('CUSTOMER')) {
+      console.log('🔍 CASL - Using CUSTOMER abilities');
       defineUserAbilities(abilityBuilder, user, workspaceMemberships);
+    } else {
+      console.log('⚠️ CASL - No matching role found for user, roles:', userRoles);
     }
 
     const ability = build({
