@@ -1,13 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { 
   CreateMailboxDto, 
   UpdateMailboxDto, 
   MailboxResponseDto 
 } from 'src/dtos/mailbox.dto';
-import { Prisma } from '@prisma/client';
+import { PermissionAction, Prisma } from '@prisma/client';
 import { ContextDto } from 'src/dtos/user.dto';
 import { isMemberOfMailbox } from 'src/utils/validate';
+import { CreateDeliveryAddressDto, DeliveryAddressResponseDto, UpdateDeliveryAddressDto } from 'src/dtos/delivery-address.dto';
 
 @Injectable()
 export class MailboxService {
@@ -344,5 +345,69 @@ export class MailboxService {
       },
     });
     return mails;
+  }
+
+
+  async getDeliveryAddresses( mailboxId: string): Promise<DeliveryAddressResponseDto[]> {
+    const deliveryAddresses = await this.prisma.deliveryAddress.findMany({
+      where: { mailBoxId: mailboxId },
+    });
+    return deliveryAddresses;
+  }
+
+
+  async createDeliveryAddress( mailboxId: string, createDeliveryAddressDto: CreateDeliveryAddressDto): Promise<DeliveryAddressResponseDto> {
+    const mailbox=await this.prisma.mailbox.findUnique({
+      where: { id: mailboxId },
+    });
+    if(!mailbox){
+      throw new BadRequestException('Mailbox not found');
+    }
+    const deliveryAddress = await this.prisma.deliveryAddress.create({
+      data: {
+        ...createDeliveryAddressDto,
+        mailBoxId: mailboxId,
+      },
+      include: {
+        mailbox: true,
+      },
+    });
+    return deliveryAddress;
+  }
+
+
+  async updateDeliveryAddress( id: string, updateDeliveryAddressDto: UpdateDeliveryAddressDto, ability:any): Promise<DeliveryAddressResponseDto> {
+    const deliveryAddress = await this.prisma.deliveryAddress.findUnique({
+      where: { id },
+    });
+    if(!deliveryAddress){
+      throw new NotFoundException(`Delivery address with ID ${id} not found`);
+    }
+    if(!await ability.can(PermissionAction.UPDATE, deliveryAddress)){
+      throw new ForbiddenException('You are not allowed to update this delivery address');
+    }
+    const updatedDeliveryAddress = await this.prisma.deliveryAddress.update({
+      where: { id },
+      data: updateDeliveryAddressDto,
+      include: {
+        mailbox: true,
+      },
+    });
+    return updatedDeliveryAddress;
+  }
+
+  async deleteDeliveryAddress( id: string,ability:any): Promise<void> {
+    const deliveryAddress = await this.prisma.deliveryAddress.findUnique({
+      where: { id },
+    });
+    if(!deliveryAddress){
+      throw new NotFoundException(`Delivery address with ID ${id} not found`);
+    }
+    if(!await ability.can(PermissionAction.DELETE, deliveryAddress)){
+      throw new ForbiddenException('You are not allowed to delete this delivery address');
+    }
+    await this.prisma.deliveryAddress.delete({
+      where: { id },
+    });
   }
 }

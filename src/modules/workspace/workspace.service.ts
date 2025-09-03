@@ -70,6 +70,18 @@ export class WorkspaceService {
           },
         },
       });
+      if(!workspace){
+        throw new BadRequestException('Failed to create workspace');
+      }
+      const workspaceBalance = await this.prisma.workspaceBalance.create({
+        data: {
+          workspaceId: workspace.id,
+          stripeCustomerId: `cus_temp_${workspace.id}`, // Temporary
+          currentBalance: 0,
+          currentDebt: 0,
+          isActive: true,
+        },
+      });
 
       this.logger.log(`Workspace created successfully: ${workspace.id}`);
         return workspace;

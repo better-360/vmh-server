@@ -592,17 +592,33 @@ model ConsolidationAction {
     deliveryAddressId     String  @db.Uuid // Kullanıcının paketin gönderilmesini istediği adres
     deliverySpeedOptionId String  @db.Uuid
     packagingTypeOptionId String  @db.Uuid
-    carrierId             String? @db.Uuid // Kargo firması (opsiyonel, kullanıcı seçebilir)
+    carrierId             String? @db.Uuid // Local carrier (ignore for now)
     trackingCode          String? // Kargo firmasından alınan kod
 
-    shippingCost  Int // kuruş cinsinden (örnek: 1200 = 12.00 USD)
-    packagingCost Int // kuruş cinsinden
-    totalCost     Int // shippingCost + packagingCost
+    // EasyPost Rate Bilgileri - Kullanıcının seçtiği opsiyon
+    easypostRateId        String  // EasyPost'tan gelen rate ID
+    easypostShipmentId    String? // EasyPost shipment ID
+    selectedCarrier       String  // USPS, UPS, FedEx, DHL
+    selectedService       String  // Ground, Express, Priority Mail, etc.
+    
+    // Ücretlendirme Detayları (cents cinsinden)
+    baseShippingCost      Int     // EasyPost'tan gelen base shipping cost
+    deliverySpeedFee      Int     @default(0) // Delivery speed opsiyonu ücreti
+    packagingFee          Int     @default(0) // Packaging opsiyon ücreti
+    serviceFee            Int     @default(0) // Platform servis ücreti
+    totalCost             Int     // Toplam maliyet (tüm ücretlerin toplamı)
 
-    status        ForwardRequestStatus @default(PENDING) // Talep durumu
+    // Eski alanlar - backward compatibility için
+    shippingCost  Int // Deprecated - baseShippingCost kullan
+    packagingCost Int // Deprecated - packagingFee kullan
+
+    // Ödeme ve Durum
+    status        ForwardRequestStatus @default(PENDING)
     paymentStatus PaymentStatus        @default(PENDING)
-    priority   MailActionPriority @default(STANDARD)
+    priority      MailActionPriority   @default(STANDARD)
 
+    // Rate detayları (JSON olarak)
+    rateDetails   Json? // EasyPost'tan gelen tüm rate bilgileri
 
     createdAt   DateTime  @default(now())
     updatedAt   DateTime  @updatedAt
@@ -1058,7 +1074,6 @@ model Attachment {
   }
 
   enum MailActionType {
-    FORWARD
     SHRED
     SCAN
     HOLD

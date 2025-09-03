@@ -25,14 +25,6 @@ export class CreateDeliveryAddressDto {
   type?: DeliveryAddressType;
 
   @ApiProperty({
-    description: 'Mailbox ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  mailBoxId: string;
-
-  @ApiProperty({
     description: 'Address label',
     example: 'Home Address',
   })
@@ -89,14 +81,6 @@ export class CreateDeliveryAddressDto {
   @IsOptional()
   isDefault?: boolean;
 
-  @ApiPropertyOptional({
-    description: 'Is address confirmed',
-    example: false,
-    default: false,
-  })
-  @IsBoolean()
-  @IsOptional()
-  isConfirmed?: boolean;
 }
 
 export class UpdateDeliveryAddressDto extends PartialType(CreateDeliveryAddressDto) {}

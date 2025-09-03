@@ -156,17 +156,6 @@ import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
     return this.actionService.updateActionStatus(id, dto);
   }
 
-  // Forward tamamla
-  @Patch('mail-actions/:id/forward/complete')
-  async completeForward(@Param('id') id: string, @Body() body: CompleteForwardDto) {
-    return this.actionService.completeForward(id, body);
-  }
-
-  // Forward iptal
-  @Patch('mail-actions/:id/forward/cancel')
-  async cancelForward(@Param('id') id: string, @Body() body: CancelForwardDto) {
-    return this.actionService.cancelForward(id, body);
-  }
       
   } 
 

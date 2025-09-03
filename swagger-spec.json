@@ -6305,6 +6305,106 @@
         ]
       }
     },
+    "/api/mailboxes/delivery-address": {
+      "post": {
+        "operationId": "MailboxController_createDeliveryAddress",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDeliveryAddressDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mailboxes/delivery-addresses": {
+      "get": {
+        "operationId": "MailboxController_getDeliveryAddresses",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mailboxes/delivery-address/{id}": {
+      "put": {
+        "operationId": "MailboxController_updateDeliveryAddress",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDeliveryAddressDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "MailboxController_deleteDeliveryAddress",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/mail-handler/dashboard": {
       "get": {
         "operationId": "MailHandlerController_dashboard",
@@ -6553,7 +6653,6 @@
             "description": "Filter by action type",
             "schema": {
               "enum": [
-                "FORWARD",
                 "SHRED",
                 "SCAN",
                 "HOLD",
@@ -6693,82 +6792,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateActionStatusDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/mail-handler/mail-actions/{id}/forward/complete": {
-      "patch": {
-        "operationId": "MailHandlerController_completeForward",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CompleteForwardDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/mail-handler/mail-actions/{id}/forward/cancel": {
-      "patch": {
-        "operationId": "MailHandlerController_cancelForward",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CancelForwardDto"
               }
             }
           }
@@ -7008,7 +7031,6 @@
             "description": "Tek tipe filtre (opsiyonel)",
             "schema": {
               "enum": [
-                "FORWARD",
                 "SHRED",
                 "SCAN",
                 "HOLD",
@@ -7583,6 +7605,651 @@
         },
         "tags": [
           "Mail Actions"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/forward/quote": {
+      "post": {
+        "operationId": "ForwardController_getForwardingQuote",
+        "summary": "Get forwarding quote for mail item",
+        "description": "Retrieves shipping rates and options for forwarding a mail item to a specific delivery address. This endpoint calculates shipping costs from multiple carriers (USPS, UPS, FedEx, DHL) and returns available delivery speed and packaging options.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetForwardingQuoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Forwarding quote with shipping rates, delivery options, and cost summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForwardingQuoteResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Mail dimensions are required for shipping quote calculation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Mail item or delivery address not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Forward"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/forward/calculate-cost": {
+      "post": {
+        "operationId": "ForwardController_calculateForwardingCost",
+        "summary": "Calculate total forwarding cost",
+        "description": "Calculates the total cost breakdown for forwarding a mail item including base shipping cost, delivery speed fees, packaging fees, and service fees. Use this before creating a forwarding request to show users the final cost.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Detailed cost breakdown for the forwarding request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "baseShippingCost": {
+                      "type": "number",
+                      "example": 11800,
+                      "description": "EasyPost shipping cost in cents"
+                    },
+                    "deliverySpeedFee": {
+                      "type": "number",
+                      "example": 500,
+                      "description": "Delivery speed option fee in cents"
+                    },
+                    "packagingFee": {
+                      "type": "number",
+                      "example": 200,
+                      "description": "Packaging option fee in cents"
+                    },
+                    "serviceFee": {
+                      "type": "number",
+                      "example": 100,
+                      "description": "Platform service fee in cents"
+                    },
+                    "totalCost": {
+                      "type": "number",
+                      "example": 12600,
+                      "description": "Total cost in cents"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Forward"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/forward/requests": {
+      "post": {
+        "operationId": "ForwardController_createForwardingRequest",
+        "summary": "Create forwarding request",
+        "description": "Creates a forwarding request for a mail item. This endpoint purchases a shipping label from EasyPost, deducts the cost from workspace balance, and initiates the forwarding process. The mail handler will receive the request for physical processing.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateForwardingRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Forwarding request created successfully with shipping label and tracking code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForwardingRequestResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data, rate no longer available, or price has changed significantly. Common errors: \"Selected shipping option no longer available. Please get a new quote.\" or \"Shipping price has changed from $X to $Y. Please get a new quote.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Mail item, delivery address, or related options not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Forward"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/forward/requests/{id}": {
+      "get": {
+        "operationId": "ForwardController_getForwardingRequest",
+        "summary": "Get forwarding request details",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Forwarding request ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request details"
+          },
+          "404": {
+            "description": "Request not found"
+          }
+        },
+        "tags": [
+          "Forward"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/forward/requests/{id}/track": {
+      "get": {
+        "operationId": "ForwardController_trackForwardingRequest",
+        "summary": "Track forwarding request",
+        "description": "Retrieves real-time tracking information for a forwarding request from the shipping carrier. Provides detailed shipment status, location updates, and delivery progress.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Unique identifier of the forwarding request",
+            "schema": {
+              "example": "ca5b3aac-8e45-41e9-bfd1-98027d704bff",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tracking information with shipment status and location updates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "forwardingRequest": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "trackingCode": {
+                          "type": "string",
+                          "example": "9434600208303110397236"
+                        },
+                        "selectedCarrier": {
+                          "type": "string",
+                          "example": "USPS"
+                        },
+                        "selectedService": {
+                          "type": "string",
+                          "example": "GroundAdvantage"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "PENDING",
+                            "IN_PROGRESS",
+                            "COMPLETED",
+                            "CANCELLED",
+                            "FAILED"
+                          ]
+                        }
+                      }
+                    },
+                    "trackingInfo": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "tracking_code": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "example": "in_transit"
+                        },
+                        "status_detail": {
+                          "type": "string"
+                        },
+                        "tracking_details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No tracking code available for this request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Forwarding request not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Forward"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/forward/requests/{id}/cancel": {
+      "put": {
+        "operationId": "ForwardController_cancelForwardingRequest",
+        "summary": "Cancel forwarding request",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Forwarding request ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request cancelled successfully"
+          },
+          "400": {
+            "description": "Cannot cancel completed request"
+          },
+          "404": {
+            "description": "Request not found"
+          }
+        },
+        "tags": [
+          "Forward"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/forward/debug/rates": {
+      "post": {
+        "operationId": "ForwardController_debugRates",
+        "summary": "Debug endpoint to test EasyPost rates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Debug information about rates"
+          }
+        },
+        "tags": [
+          "Forward"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/forward/debug/mail-data": {
+      "post": {
+        "operationId": "ForwardController_debugMailData",
+        "summary": "Debug endpoint to check mail and address data",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Mail and address debug information"
+          }
+        },
+        "tags": [
+          "Forward"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mail-handler/forward/requests": {
+      "get": {
+        "operationId": "MailHandlerForwardController_getForwardingRequests",
+        "summary": "Get forwarding requests for mail handler",
+        "description": "Retrieves a list of forwarding requests for a specific office location. Mail handlers use this endpoint to see which packages need to be processed and shipped to customers.",
+        "parameters": [
+          {
+            "name": "officeLocationId",
+            "required": true,
+            "in": "query",
+            "description": "Office location ID where the mail handler is assigned",
+            "schema": {
+              "example": "59dad8d5-503c-4ab6-b3f0-e44410678595",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter requests by status (optional)",
+            "schema": {
+              "enum": [
+                "PENDING",
+                "IN_PROGRESS",
+                "COMPLETED",
+                "CANCELLED",
+                "FAILED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of forwarding requests with mail details, delivery addresses, and shipping information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "example": "ca5b3aac-8e45-41e9-bfd1-98027d704bff"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "PENDING",
+                          "IN_PROGRESS",
+                          "COMPLETED",
+                          "CANCELLED",
+                          "FAILED"
+                        ]
+                      },
+                      "selectedCarrier": {
+                        "type": "string",
+                        "example": "USPS"
+                      },
+                      "selectedService": {
+                        "type": "string",
+                        "example": "GroundAdvantage"
+                      },
+                      "trackingCode": {
+                        "type": "string",
+                        "example": "9434600208303110397236"
+                      },
+                      "totalCost": {
+                        "type": "number",
+                        "example": 12225
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "mail": {
+                        "type": "object"
+                      },
+                      "deliveryAddress": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Mail Handler - Forward"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mail-handler/forward/requests/{id}/complete": {
+      "put": {
+        "operationId": "MailHandlerForwardController_completeForwardingRequest",
+        "summary": "Mark forwarding request as completed",
+        "description": "Marks a forwarding request as completed after the mail handler has physically shipped the package to the carrier. This updates the request status and records the completion timestamp.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Unique identifier of the forwarding request",
+            "schema": {
+              "example": "ca5b3aac-8e45-41e9-bfd1-98027d704bff",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Forwarding request marked as completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "COMPLETED"
+                    },
+                    "completedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "trackingCode": {
+                      "type": "string"
+                    },
+                    "selectedCarrier": {
+                      "type": "string"
+                    },
+                    "selectedService": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request is already completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Forwarding request not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Mail Handler - Forward"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mail-handler/forward/requests/{id}/cancel": {
+      "put": {
+        "operationId": "MailHandlerForwardController_cancelForwardingRequest",
+        "summary": "Cancel forwarding request",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Forwarding request ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request cancelled successfully"
+          },
+          "400": {
+            "description": "Cannot cancel completed request"
+          },
+          "404": {
+            "description": "Request not found"
+          }
+        },
+        "tags": [
+          "Mail Handler - Forward"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mail-handler/forward/requests/{id}": {
+      "get": {
+        "operationId": "MailHandlerForwardController_getForwardingRequestDetails",
+        "summary": "Get forwarding request details",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Forwarding request ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request details"
+          },
+          "404": {
+            "description": "Request not found"
+          }
+        },
+        "tags": [
+          "Mail Handler - Forward"
         ],
         "security": [
           {
@@ -10865,7 +11532,6 @@
             "type": "string",
             "description": "Type of action",
             "enum": [
-              "FORWARD",
               "SHRED",
               "SCAN",
               "HOLD",
@@ -10931,6 +11597,118 @@
           "subscriptionId",
           "items"
         ]
+      },
+      "CreateDeliveryAddressDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Address type",
+            "enum": [
+              "DELIVERY",
+              "BILLING",
+              "PICKUP"
+            ],
+            "example": "DELIVERY",
+            "default": "DELIVERY"
+          },
+          "label": {
+            "type": "string",
+            "description": "Address label",
+            "example": "Home Address"
+          },
+          "addressLine": {
+            "type": "string",
+            "description": "Address line",
+            "example": "123 Main Street, Apt 4B"
+          },
+          "city": {
+            "type": "string",
+            "description": "City",
+            "example": "New York"
+          },
+          "state": {
+            "type": "string",
+            "description": "State",
+            "example": "NY"
+          },
+          "country": {
+            "type": "string",
+            "description": "Country",
+            "example": "United States"
+          },
+          "zipCode": {
+            "type": "string",
+            "description": "ZIP code",
+            "example": "10001"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Is default address",
+            "example": false,
+            "default": false
+          }
+        },
+        "required": [
+          "type",
+          "label",
+          "addressLine",
+          "city",
+          "state",
+          "country"
+        ]
+      },
+      "UpdateDeliveryAddressDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Address type",
+            "enum": [
+              "DELIVERY",
+              "BILLING",
+              "PICKUP"
+            ],
+            "example": "DELIVERY",
+            "default": "DELIVERY"
+          },
+          "label": {
+            "type": "string",
+            "description": "Address label",
+            "example": "Home Address"
+          },
+          "addressLine": {
+            "type": "string",
+            "description": "Address line",
+            "example": "123 Main Street, Apt 4B"
+          },
+          "city": {
+            "type": "string",
+            "description": "City",
+            "example": "New York"
+          },
+          "state": {
+            "type": "string",
+            "description": "State",
+            "example": "NY"
+          },
+          "country": {
+            "type": "string",
+            "description": "Country",
+            "example": "United States"
+          },
+          "zipCode": {
+            "type": "string",
+            "description": "ZIP code",
+            "example": "10001"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Is default address",
+            "example": false,
+            "default": false
+          }
+        }
       },
       "CreateMailDto": {
         "type": "object",
@@ -11196,52 +11974,6 @@
           "status"
         ]
       },
-      "CompleteForwardDto": {
-        "type": "object",
-        "properties": {
-          "carrierId": {
-            "type": "string",
-            "description": "Carrier ID",
-            "example": "f0d8f6d5-3e76-4e8e-8f3a-7d2c7b2a9b12"
-          },
-          "trackingCode": {
-            "type": "string",
-            "description": "Carrier tracking code",
-            "example": "UPS1Z999AA101234567"
-          },
-          "shippingCost": {
-            "type": "number",
-            "description": "Shipping cost (in cents)",
-            "example": 1299,
-            "minimum": 0
-          },
-          "packagingCost": {
-            "type": "number",
-            "description": "Packaging cost (in cents)",
-            "example": 300,
-            "minimum": 0
-          },
-          "totalCost": {
-            "type": "number",
-            "description": "Total cost (in cents). If omitted, the service will calculate as shippingCost + packagingCost",
-            "example": 1599,
-            "minimum": 0
-          }
-        }
-      },
-      "CancelForwardDto": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string",
-            "description": "Cancellation reason",
-            "example": "Cancelled by user request"
-          }
-        },
-        "required": [
-          "reason"
-        ]
-      },
       "CreateConsolidationRequestDto": {
         "type": "object",
         "properties": {
@@ -11379,6 +12111,514 @@
         },
         "required": [
           "senderName"
+        ]
+      },
+      "GetForwardingQuoteDto": {
+        "type": "object",
+        "properties": {
+          "mailId": {
+            "type": "string",
+            "description": "Unique identifier of the mail item to forward",
+            "example": "25de0024-2ca9-4ed7-81f5-3dc468956c93",
+            "format": "uuid"
+          },
+          "deliveryAddressId": {
+            "type": "string",
+            "description": "Unique identifier of the delivery address where mail will be forwarded",
+            "example": "943c9c3d-44f1-444f-bfee-b61497a50dda",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "mailId",
+          "deliveryAddressId"
+        ]
+      },
+      "ShippingRateResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "EasyPost rate identifier",
+            "example": "rate_8c3f4e9df6a24dbebccc463523b6e2ae"
+          },
+          "carrier": {
+            "type": "string",
+            "description": "Shipping carrier name",
+            "example": "USPS"
+          },
+          "service": {
+            "type": "string",
+            "description": "Shipping service type",
+            "example": "GroundAdvantage"
+          },
+          "rate": {
+            "type": "number",
+            "description": "Shipping rate in cents",
+            "example": 11800
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code",
+            "example": "USD"
+          },
+          "delivery_days": {
+            "type": "number",
+            "description": "Estimated delivery days",
+            "example": 2
+          },
+          "delivery_date": {
+            "type": "string",
+            "description": "Estimated delivery date",
+            "example": "2025-01-15"
+          },
+          "delivery_date_guaranteed": {
+            "type": "boolean",
+            "description": "Whether delivery date is guaranteed",
+            "example": false
+          }
+        },
+        "required": [
+          "id",
+          "carrier",
+          "service",
+          "rate",
+          "currency"
+        ]
+      },
+      "QuoteSummaryDto": {
+        "type": "object",
+        "properties": {
+          "totalRatesFound": {
+            "type": "number",
+            "description": "Total number of shipping rates found",
+            "example": 3
+          },
+          "cheapestRate": {
+            "description": "Cheapest shipping rate available",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ShippingRateResponseDto"
+              }
+            ]
+          },
+          "fastestRate": {
+            "description": "Fastest shipping rate available",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ShippingRateResponseDto"
+              }
+            ]
+          },
+          "availableCarriers": {
+            "description": "List of available shipping carriers",
+            "example": [
+              "USPS",
+              "UPS",
+              "FedEx"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "averagePrice": {
+            "type": "number",
+            "description": "Average price across all rates in cents",
+            "example": 15000
+          },
+          "priceRange": {
+            "type": "object",
+            "description": "Price range for all available rates",
+            "example": {
+              "min": 11800,
+              "max": 25000
+            }
+          }
+        },
+        "required": [
+          "totalRatesFound",
+          "cheapestRate",
+          "fastestRate",
+          "availableCarriers",
+          "averagePrice",
+          "priceRange"
+        ]
+      },
+      "DeliverySpeedOptionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier",
+            "example": "7772b11d-afb0-4281-a054-a9249a051144"
+          },
+          "label": {
+            "type": "string",
+            "description": "Speed option label",
+            "example": "FAST"
+          },
+          "title": {
+            "type": "string",
+            "description": "Human-readable title",
+            "example": "Fastest Delivery"
+          },
+          "price": {
+            "type": "number",
+            "description": "Additional fee in cents",
+            "example": 500
+          },
+          "description": {
+            "type": "string",
+            "description": "Option description",
+            "example": "Delivered within 3 business days"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "title",
+          "price"
+        ]
+      },
+      "PackagingTypeOptionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier",
+            "example": "37bba193-77b1-4fa5-af5a-83aebb3266d1"
+          },
+          "label": {
+            "type": "string",
+            "description": "Packaging type label",
+            "example": "STANDARD_BOX"
+          },
+          "title": {
+            "type": "string",
+            "description": "Human-readable title",
+            "example": "Standard Box"
+          },
+          "price": {
+            "type": "number",
+            "description": "Additional fee in cents",
+            "example": 200
+          },
+          "description": {
+            "type": "string",
+            "description": "Packaging description",
+            "example": "A standard cardboard box"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "title",
+          "price"
+        ]
+      },
+      "ForwardingQuoteResponseDto": {
+        "type": "object",
+        "properties": {
+          "rates": {
+            "description": "Available shipping rates from EasyPost",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShippingRateResponseDto"
+            }
+          },
+          "summary": {
+            "description": "Summary statistics for the quote",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuoteSummaryDto"
+              }
+            ]
+          },
+          "deliverySpeedOptions": {
+            "description": "Available delivery speed options",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeliverySpeedOptionDto"
+            }
+          },
+          "packagingTypeOptions": {
+            "description": "Available packaging type options",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackagingTypeOptionDto"
+            }
+          },
+          "mail": {
+            "type": "object",
+            "description": "Mail item details"
+          },
+          "deliveryAddress": {
+            "type": "object",
+            "description": "Delivery address details"
+          },
+          "officeLocation": {
+            "type": "object",
+            "description": "Office location details"
+          }
+        },
+        "required": [
+          "rates",
+          "summary",
+          "deliverySpeedOptions",
+          "packagingTypeOptions",
+          "mail",
+          "deliveryAddress",
+          "officeLocation"
+        ]
+      },
+      "BadRequestErrorDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Error message",
+            "example": "Selected rate no longer available. Please get a new quote."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error type",
+            "example": "Bad Request"
+          },
+          "statusCode": {
+            "type": "number",
+            "description": "HTTP status code",
+            "example": 400
+          }
+        },
+        "required": [
+          "message",
+          "error",
+          "statusCode"
+        ]
+      },
+      "NotFoundErrorDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Error message",
+            "example": "Mail not found"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error type",
+            "example": "Not Found"
+          },
+          "statusCode": {
+            "type": "number",
+            "description": "HTTP status code",
+            "example": 404
+          }
+        },
+        "required": [
+          "message",
+          "error",
+          "statusCode"
+        ]
+      },
+      "CreateForwardingRequestDto": {
+        "type": "object",
+        "properties": {
+          "mailId": {
+            "type": "string",
+            "description": "Mail ID"
+          },
+          "mailboxId": {
+            "type": "string",
+            "description": "Mailbox ID"
+          },
+          "deliveryAddressId": {
+            "type": "string",
+            "description": "Delivery address ID"
+          },
+          "deliverySpeedOptionId": {
+            "type": "string",
+            "description": "Delivery speed option ID"
+          },
+          "packagingTypeOptionId": {
+            "type": "string",
+            "description": "Packaging type option ID"
+          },
+          "carrierId": {
+            "type": "string",
+            "description": "Local carrier ID (ignore for now)"
+          },
+          "selectedRate": {
+            "type": "object",
+            "description": "Selected EasyPost rate details"
+          },
+          "deliverySpeedFee": {
+            "type": "number",
+            "description": "Delivery speed fee in cents"
+          },
+          "packagingFee": {
+            "type": "number",
+            "description": "Packaging fee in cents"
+          },
+          "serviceFee": {
+            "type": "number",
+            "description": "Service fee in cents"
+          },
+          "priority": {
+            "type": "string",
+            "description": "Priority"
+          }
+        },
+        "required": [
+          "mailId",
+          "mailboxId",
+          "deliveryAddressId",
+          "deliverySpeedOptionId",
+          "packagingTypeOptionId",
+          "selectedRate"
+        ]
+      },
+      "CostBreakdownDto": {
+        "type": "object",
+        "properties": {
+          "baseShippingCost": {
+            "type": "number",
+            "description": "Base shipping cost from EasyPost in cents",
+            "example": 11800
+          },
+          "deliverySpeedFee": {
+            "type": "number",
+            "description": "Delivery speed fee in cents",
+            "example": 0
+          },
+          "packagingFee": {
+            "type": "number",
+            "description": "Packaging fee in cents",
+            "example": 0
+          },
+          "serviceFee": {
+            "type": "number",
+            "description": "Platform service fee in cents",
+            "example": 10
+          },
+          "totalCost": {
+            "type": "number",
+            "description": "Total cost in cents",
+            "example": 11810
+          }
+        },
+        "required": [
+          "baseShippingCost",
+          "deliverySpeedFee",
+          "packagingFee",
+          "serviceFee",
+          "totalCost"
+        ]
+      },
+      "ForwardingRequestResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique forwarding request identifier",
+            "example": "ca5b3aac-8e45-41e9-bfd1-98027d704bff"
+          },
+          "mailId": {
+            "type": "string",
+            "description": "Mail item identifier",
+            "example": "25de0024-2ca9-4ed7-81f5-3dc468956c93"
+          },
+          "easypostRateId": {
+            "type": "string",
+            "description": "EasyPost rate identifier used",
+            "example": "rate_8c3f4e9df6a24dbebccc463523b6e2ae"
+          },
+          "easypostShipmentId": {
+            "type": "string",
+            "description": "EasyPost shipment identifier",
+            "example": "shp_8556fdceae3d459e9b3d1d5d16403fe2"
+          },
+          "selectedCarrier": {
+            "type": "string",
+            "description": "Selected shipping carrier",
+            "example": "USPS"
+          },
+          "selectedService": {
+            "type": "string",
+            "description": "Selected shipping service",
+            "example": "GroundAdvantage"
+          },
+          "trackingCode": {
+            "type": "string",
+            "description": "Tracking code for the shipment",
+            "example": "9434600208303110397236"
+          },
+          "labelUrl": {
+            "type": "string",
+            "description": "URL to download shipping label",
+            "example": "https://easypost-files.s3.us-west-2.amazonaws.com/files/postage_label/20250903/e87bcad9fa5d9048b285fe44579095966c.png"
+          },
+          "status": {
+            "type": "string",
+            "description": "Request status",
+            "enum": [
+              "PENDING",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "CANCELLED",
+              "FAILED"
+            ],
+            "example": "PENDING"
+          },
+          "costBreakdown": {
+            "description": "Cost breakdown details",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CostBreakdownDto"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Request creation timestamp",
+            "example": "2025-09-03T14:47:18.620Z"
+          },
+          "mail": {
+            "type": "object",
+            "description": "Mail item details"
+          },
+          "deliveryAddress": {
+            "type": "object",
+            "description": "Delivery address details"
+          },
+          "deliverySpeedOption": {
+            "type": "object",
+            "description": "Delivery speed option details"
+          },
+          "packagingTypeOption": {
+            "type": "object",
+            "description": "Packaging type option details"
+          }
+        },
+        "required": [
+          "id",
+          "mailId",
+          "easypostRateId",
+          "easypostShipmentId",
+          "selectedCarrier",
+          "selectedService",
+          "trackingCode",
+          "labelUrl",
+          "status",
+          "costBreakdown",
+          "createdAt",
+          "mail",
+          "deliveryAddress",
+          "deliverySpeedOption",
+          "packagingTypeOption"
         ]
       }
     }

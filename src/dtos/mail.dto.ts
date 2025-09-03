@@ -1218,7 +1218,8 @@ export interface FormattedMailResponseDto {
   itemType: MailType; 
   title: string;
   carrier: string;
-  
+  senderName: string;
+  senderAddress?: string;
   receivedAt: Date;
   status: MailStatus; 
   thumbnailUrl: string | null;
@@ -1232,6 +1233,7 @@ export interface FormattedMailResponseDto {
   pendingActionCount: number;
   isScanned: boolean;
   isForwarded: boolean;
+  recipient:any;
   dimensions?: {
     width: number;
     height: number;

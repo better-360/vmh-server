@@ -115,8 +115,17 @@ export class MailService {
     const mails = await this.prisma.mail.findMany({
       where,
       include: {
-        mailbox: true,
+        mailbox:true,
         containedMails: true,
+        recipient:{select:{
+          id:true,
+          name:true,
+          lastName:true,
+          email:true,
+          isDefault:true,
+          isConfirmed:true,
+          isActive:true,
+        }},
         actions: {
           orderBy: { requestedAt: 'desc' },
         },
@@ -234,7 +243,8 @@ export class MailService {
 
     const response: FormattedMailResponseDto = {
       id: mail.id,
-      // Directly sending the mail's type to the frontend.
+      senderName: mail.senderName,
+      senderAddress: mail.senderAddress,
       itemType: mail.type, 
       mailboxId: mail.mailboxId,
       isShereded: mail.isShereded,
@@ -265,6 +275,7 @@ export class MailService {
         : [],
         
       pendingActionCount: mail.actions?.length || 0,
+      recipient:mail.recipient,
       dimensions: {
         width: mail.width,
         height: mail.height,

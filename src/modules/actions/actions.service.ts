@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { ActionStatus, MailActionType, MailStatus, MailType, Prisma } from '@prisma/client';
-import { UpdateActionStatusDto,CreateMailActionDto,CompleteForwardDto, CancelForwardDto,QueryMailActionsDto, ForwarMeta, CreateMailActionRequestDto } from 'src/dtos/mail-actions.dto';
+import { ActionStatus, MailStatus, MailType, Prisma } from '@prisma/client';
+import { UpdateActionStatusDto,QueryMailActionsDto, CreateMailActionRequestDto } from 'src/dtos/mail-actions.dto';
 import { PrismaService } from 'src/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Events } from 'src/common/enums/event.enum';
@@ -160,98 +160,6 @@ async createActionRequest(dto: CreateMailActionRequestDto, userId: string, abili
     return updated;
   }
 
-  async completeForward(id: string, body: CompleteForwardDto) {
-    // Action + meta.forwardingRequestId bul
-    const action = await this.prisma.mailAction.findUnique({
-      where: { id },
-    });
-    if (!action) throw new NotFoundException('Action not found');
-    if (action.type !== MailActionType.FORWARD) {
-      throw new BadRequestException('Not a FORWARD action');
-    }
-
-    const forwardingRequestId = (action.meta as any)?.forwardingRequestId as string | undefined;
-    if (!forwardingRequestId) {
-      throw new BadRequestException('Missing forwardingRequestId in action.meta');
-    }
-
-    return await this.prisma.$transaction(async (tx) => {
-      // Maliyet hesap – dış servisten veya dahili kurallardan alabilirsiniz
-      const shippingCost = body.shippingCost ?? 0;
-      const packagingCost = body.packagingCost ?? 0;
-      const totalCost = body.totalCost ?? (shippingCost + packagingCost);
-
-      // ForwardingRequest güncelle
-      const forwarding = await tx.forwardingRequest.update({
-        where: { id: forwardingRequestId },
-        data: {
-          carrierId: body.carrierId ?? undefined,
-          trackingCode: body.trackingCode ?? undefined,
-          shippingCost, packagingCost, totalCost,
-          status: 'COMPLETED' as any,
-          paymentStatus: 'CHARGED' as any, // ödeme akışınıza göre
-          completedAt: new Date(),
-        },
-      });
-
-      // Action DONE
-      const updatedAction = await tx.mailAction.update({
-        where: { id },
-        data: { status: ActionStatus.DONE, completedAt: new Date() },
-      });
-
-      // Mail güncelle
-      await tx.mail.update({
-        where: { id: action.mailId },
-        data: {
-          isForwarded: true,
-          status: 'FORWARDED',
-          trackingNumber: body.trackingCode ?? undefined,
-        },
-      });
-
-      return { action: updatedAction, forwarding };
-    });
-  }
-
-  async cancelForward(id: string, dto: CancelForwardDto) {
-    const action = await this.prisma.mailAction.findUnique({ where: { id } });
-    if (!action) throw new NotFoundException('Action not found');
-    if (action.type !== MailActionType.FORWARD) {
-      throw new BadRequestException('Not a FORWARD action');
-    }
-
-    const forwardingRequestId = (action.meta as any)?.forwardingRequestId as string | undefined;
-    if (!forwardingRequestId) {
-      throw new BadRequestException('Missing forwardingRequestId in action.meta');
-    }
-
-    return await this.prisma.$transaction(async (tx) => {
-      const forwarding = await tx.forwardingRequest.update({
-        where: { id: forwardingRequestId },
-        data: {
-          status: 'CANCELLED' as any,
-          cancelledAt: new Date(),
-        },
-      });
-
-      const updatedAction = await tx.mailAction.update({
-        where: { id },
-        data: {
-          status: ActionStatus.FAILED,
-          meta: { ...(action.meta as any), cancelReason: dto.reason },
-        },
-      });
-
-      // Mail’i stok durumuna çekmek isteyebilirsiniz
-      await tx.mail.update({
-        where: { id: action.mailId },
-        data: { status: 'IN_WAREHOUSE' as any },
-      });
-
-      return { action: updatedAction, forwarding };
-    });
-  }
 
   private calculateVolumetricWeight(box:any, divisor = 5000): number {
     // 5000 is the divisor for cm^3 to kg conversion

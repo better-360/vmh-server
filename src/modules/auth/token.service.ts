@@ -19,7 +19,7 @@ export class TokenService {
   }
 
   generateAccessToken(user: Partial<IUser>) {
-    return this.generateToken(user, '1h');
+    return this.generateToken(user, '7d');
   }
 
   generateRefreshToken(user: Partial<IUser>) {

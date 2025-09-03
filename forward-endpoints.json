@@ -1,0 +1,647 @@
+{
+  "/api/forward/quote": {
+    "post": {
+      "operationId": "ForwardController_getForwardingQuote",
+      "summary": "Get forwarding quote for mail item",
+      "description": "Retrieves shipping rates and options for forwarding a mail item to a specific delivery address. This endpoint calculates shipping costs from multiple carriers (USPS, UPS, FedEx, DHL) and returns available delivery speed and packaging options.",
+      "parameters": [],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/GetForwardingQuoteDto"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Forwarding quote with shipping rates, delivery options, and cost summary",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForwardingQuoteResponseDto"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Mail dimensions are required for shipping quote calculation",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BadRequestErrorDto"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Mail item or delivery address not found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotFoundErrorDto"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "Forward"
+      ],
+      "security": [
+        {
+          "bearer": []
+        }
+      ]
+    }
+  },
+  "/api/forward/calculate-cost": {
+    "post": {
+      "operationId": "ForwardController_calculateForwardingCost",
+      "summary": "Calculate total forwarding cost",
+      "description": "Calculates the total cost breakdown for forwarding a mail item including base shipping cost, delivery speed fees, packaging fees, and service fees. Use this before creating a forwarding request to show users the final cost.",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "Detailed cost breakdown for the forwarding request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "baseShippingCost": {
+                    "type": "number",
+                    "example": 11800,
+                    "description": "EasyPost shipping cost in cents"
+                  },
+                  "deliverySpeedFee": {
+                    "type": "number",
+                    "example": 500,
+                    "description": "Delivery speed option fee in cents"
+                  },
+                  "packagingFee": {
+                    "type": "number",
+                    "example": 200,
+                    "description": "Packaging option fee in cents"
+                  },
+                  "serviceFee": {
+                    "type": "number",
+                    "example": 100,
+                    "description": "Platform service fee in cents"
+                  },
+                  "totalCost": {
+                    "type": "number",
+                    "example": 12600,
+                    "description": "Total cost in cents"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "Forward"
+      ],
+      "security": [
+        {
+          "bearer": []
+        }
+      ]
+    }
+  },
+  "/api/forward/requests": {
+    "post": {
+      "operationId": "ForwardController_createForwardingRequest",
+      "summary": "Create forwarding request",
+      "description": "Creates a forwarding request for a mail item. This endpoint purchases a shipping label from EasyPost, deducts the cost from workspace balance, and initiates the forwarding process. The mail handler will receive the request for physical processing.",
+      "parameters": [],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/CreateForwardingRequestDto"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Forwarding request created successfully with shipping label and tracking code",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForwardingRequestResponseDto"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Invalid request data, rate no longer available, or price has changed significantly. Common errors: \"Selected shipping option no longer available. Please get a new quote.\" or \"Shipping price has changed from $X to $Y. Please get a new quote.\"",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BadRequestErrorDto"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Mail item, delivery address, or related options not found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotFoundErrorDto"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "Forward"
+      ],
+      "security": [
+        {
+          "bearer": []
+        }
+      ]
+    }
+  },
+  "/api/forward/requests/{id}": {
+    "get": {
+      "operationId": "ForwardController_getForwardingRequest",
+      "summary": "Get forwarding request details",
+      "parameters": [
+        {
+          "name": "id",
+          "required": true,
+          "in": "path",
+          "description": "Forwarding request ID",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Request details"
+        },
+        "404": {
+          "description": "Request not found"
+        }
+      },
+      "tags": [
+        "Forward"
+      ],
+      "security": [
+        {
+          "bearer": []
+        }
+      ]
+    }
+  },
+  "/api/forward/requests/{id}/track": {
+    "get": {
+      "operationId": "ForwardController_trackForwardingRequest",
+      "summary": "Track forwarding request",
+      "description": "Retrieves real-time tracking information for a forwarding request from the shipping carrier. Provides detailed shipment status, location updates, and delivery progress.",
+      "parameters": [
+        {
+          "name": "id",
+          "required": true,
+          "in": "path",
+          "description": "Unique identifier of the forwarding request",
+          "schema": {
+            "example": "ca5b3aac-8e45-41e9-bfd1-98027d704bff",
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Tracking information with shipment status and location updates",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "forwardingRequest": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "trackingCode": {
+                        "type": "string",
+                        "example": "9434600208303110397236"
+                      },
+                      "selectedCarrier": {
+                        "type": "string",
+                        "example": "USPS"
+                      },
+                      "selectedService": {
+                        "type": "string",
+                        "example": "GroundAdvantage"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "PENDING",
+                          "IN_PROGRESS",
+                          "COMPLETED",
+                          "CANCELLED",
+                          "FAILED"
+                        ]
+                      }
+                    }
+                  },
+                  "trackingInfo": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "tracking_code": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string",
+                        "example": "in_transit"
+                      },
+                      "status_detail": {
+                        "type": "string"
+                      },
+                      "tracking_details": {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "No tracking code available for this request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BadRequestErrorDto"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Forwarding request not found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotFoundErrorDto"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "Forward"
+      ],
+      "security": [
+        {
+          "bearer": []
+        }
+      ]
+    }
+  },
+  "/api/forward/requests/{id}/cancel": {
+    "put": {
+      "operationId": "ForwardController_cancelForwardingRequest",
+      "summary": "Cancel forwarding request",
+      "parameters": [
+        {
+          "name": "id",
+          "required": true,
+          "in": "path",
+          "description": "Forwarding request ID",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Request cancelled successfully"
+        },
+        "400": {
+          "description": "Cannot cancel completed request"
+        },
+        "404": {
+          "description": "Request not found"
+        }
+      },
+      "tags": [
+        "Forward"
+      ],
+      "security": [
+        {
+          "bearer": []
+        }
+      ]
+    }
+  },
+  "/api/forward/debug/rates": {
+    "post": {
+      "operationId": "ForwardController_debugRates",
+      "summary": "Debug endpoint to test EasyPost rates",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "Debug information about rates"
+        }
+      },
+      "tags": [
+        "Forward"
+      ],
+      "security": [
+        {
+          "bearer": []
+        }
+      ]
+    }
+  },
+  "/api/forward/debug/mail-data": {
+    "post": {
+      "operationId": "ForwardController_debugMailData",
+      "summary": "Debug endpoint to check mail and address data",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "Mail and address debug information"
+        }
+      },
+      "tags": [
+        "Forward"
+      ],
+      "security": [
+        {
+          "bearer": []
+        }
+      ]
+    }
+  },
+  "/api/mail-handler/forward/requests": {
+    "get": {
+      "operationId": "MailHandlerForwardController_getForwardingRequests",
+      "summary": "Get forwarding requests for mail handler",
+      "description": "Retrieves a list of forwarding requests for a specific office location. Mail handlers use this endpoint to see which packages need to be processed and shipped to customers.",
+      "parameters": [
+        {
+          "name": "officeLocationId",
+          "required": true,
+          "in": "query",
+          "description": "Office location ID where the mail handler is assigned",
+          "schema": {
+            "example": "59dad8d5-503c-4ab6-b3f0-e44410678595",
+            "type": "string"
+          }
+        },
+        {
+          "name": "status",
+          "required": false,
+          "in": "query",
+          "description": "Filter requests by status (optional)",
+          "schema": {
+            "enum": [
+              "PENDING",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "CANCELLED",
+              "FAILED"
+            ],
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "List of forwarding requests with mail details, delivery addresses, and shipping information",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "example": "ca5b3aac-8e45-41e9-bfd1-98027d704bff"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "IN_PROGRESS",
+                        "COMPLETED",
+                        "CANCELLED",
+                        "FAILED"
+                      ]
+                    },
+                    "selectedCarrier": {
+                      "type": "string",
+                      "example": "USPS"
+                    },
+                    "selectedService": {
+                      "type": "string",
+                      "example": "GroundAdvantage"
+                    },
+                    "trackingCode": {
+                      "type": "string",
+                      "example": "9434600208303110397236"
+                    },
+                    "totalCost": {
+                      "type": "number",
+                      "example": 12225
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "mail": {
+                      "type": "object"
+                    },
+                    "deliveryAddress": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "Mail Handler - Forward"
+      ],
+      "security": [
+        {
+          "bearer": []
+        }
+      ]
+    }
+  },
+  "/api/mail-handler/forward/requests/{id}/complete": {
+    "put": {
+      "operationId": "MailHandlerForwardController_completeForwardingRequest",
+      "summary": "Mark forwarding request as completed",
+      "description": "Marks a forwarding request as completed after the mail handler has physically shipped the package to the carrier. This updates the request status and records the completion timestamp.",
+      "parameters": [
+        {
+          "name": "id",
+          "required": true,
+          "in": "path",
+          "description": "Unique identifier of the forwarding request",
+          "schema": {
+            "example": "ca5b3aac-8e45-41e9-bfd1-98027d704bff",
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Forwarding request marked as completed successfully",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "example": "COMPLETED"
+                  },
+                  "completedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "trackingCode": {
+                    "type": "string"
+                  },
+                  "selectedCarrier": {
+                    "type": "string"
+                  },
+                  "selectedService": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Request is already completed",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BadRequestErrorDto"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Forwarding request not found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotFoundErrorDto"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "Mail Handler - Forward"
+      ],
+      "security": [
+        {
+          "bearer": []
+        }
+      ]
+    }
+  },
+  "/api/mail-handler/forward/requests/{id}/cancel": {
+    "put": {
+      "operationId": "MailHandlerForwardController_cancelForwardingRequest",
+      "summary": "Cancel forwarding request",
+      "parameters": [
+        {
+          "name": "id",
+          "required": true,
+          "in": "path",
+          "description": "Forwarding request ID",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Request cancelled successfully"
+        },
+        "400": {
+          "description": "Cannot cancel completed request"
+        },
+        "404": {
+          "description": "Request not found"
+        }
+      },
+      "tags": [
+        "Mail Handler - Forward"
+      ],
+      "security": [
+        {
+          "bearer": []
+        }
+      ]
+    }
+  },
+  "/api/mail-handler/forward/requests/{id}": {
+    "get": {
+      "operationId": "MailHandlerForwardController_getForwardingRequestDetails",
+      "summary": "Get forwarding request details",
+      "parameters": [
+        {
+          "name": "id",
+          "required": true,
+          "in": "path",
+          "description": "Forwarding request ID",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Request details"
+        },
+        "404": {
+          "description": "Request not found"
+        }
+      },
+      "tags": [
+        "Mail Handler - Forward"
+      ],
+      "security": [
+        {
+          "bearer": []
+        }
+      ]
+    }
+  }
+}
