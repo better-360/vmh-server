@@ -32,6 +32,23 @@ export class CreateDeliveryAddressDto {
   @IsNotEmpty()
   label: string;
 
+
+  @ApiProperty({
+    description: 'Recipient name',
+    example: 'John Doe',
+  })
+  @IsString()
+  @IsOptional()
+  recipientName?: string;
+
+  @ApiProperty({
+    description: 'Recipient telephone',
+    example: '1234567890',
+  })
+  @IsString()
+  @IsOptional()
+  recipientTelephone?: string;
+
   @ApiProperty({
     description: 'Address line',
     example: '123 Main Street, Apt 4B',

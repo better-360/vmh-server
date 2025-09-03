@@ -2,7 +2,6 @@ import { Injectable, NotFoundException, BadRequestException } from "@nestjs/comm
 import { PrismaService } from "../../prisma.service";
 import { EasyPostService } from "../easypost/easypost.service";
 import { ForwardRequestStatus, PaymentStatus, MailActionPriority } from "@prisma/client";
-import { CreateForwardingRequestDto } from "../../dtos/forwarding-request.dto";
 
 export interface ShippingRate {
   id: string;
@@ -64,20 +63,6 @@ export interface CreateForwardRequestData {
   priority?: MailActionPriority;
 }
 
-// Backward compatibility için eski interface
-export interface CreateForwardRequestDataLegacy {
-  mailId: string;
-  mailboxId: string;
-  deliveryAddressId: string;
-  deliverySpeedOptionId: string;
-  packagingTypeOptionId: string;
-  carrierId?: string;
-  rateId: string;
-  shippingCost: number;
-  packagingCost: number;
-  totalCost: number;
-  priority?: MailActionPriority;
-}
 
 @Injectable()
 export class ForwardService {
@@ -277,16 +262,6 @@ export class ForwardService {
       }),
     ]);
 
-    // EasyPost'tan shipment oluştur ve label satın al
-    // Country code'u normalize et (EasyPost ISO 2-letter code istiyor)
-    const normalizeCountry = (country: string) => {
-      if (!country) return 'US';
-      const countryUpper = country.toUpperCase();
-      if (countryUpper === 'UNITED STATES' || countryUpper === 'USA') return 'US';
-      if (countryUpper === 'CANADA') return 'CA';
-      if (countryUpper.length === 2) return countryUpper;
-      return 'US'; // Default
-    };
 
     const fromAddress = {
       name: 'VMH Office',
@@ -295,16 +270,17 @@ export class ForwardService {
       city: mail.mailbox.officeLocation.city,
       state: mail.mailbox.officeLocation.state,
       zip: mail.mailbox.officeLocation.zipCode || '',
-      country: normalizeCountry(mail.mailbox.officeLocation.country),
+      country: mail.mailbox.officeLocation.country,
     };
 
     const toAddress = {
-      name: 'Recipient',
+      name: deliveryAddress.recipientName || 'Recipient',
+      telephone: deliveryAddress.recipientTelephone || undefined,
       street1: deliveryAddress.addressLine,
       city: deliveryAddress.city,
       state: deliveryAddress.state,
       zip: deliveryAddress.zipCode || '',
-      country: normalizeCountry(deliveryAddress.country),
+      country: deliveryAddress.country,
     };
 
     const parcel = {
@@ -324,21 +300,12 @@ export class ForwardService {
     // Purchase için yeni shipment oluştur (fiyat garantisi için aynı parametreler)
     let shipment;
     try {
-      console.log('Creating fresh shipment for purchase with guaranteed rates...');
-      
-      shipment = await this.easyPostService.createShipment({
+        shipment = await this.easyPostService.createShipment({
         to_address: toAddress,
         from_address: fromAddress,
         parcel: parcel,
       });
       
-      console.log('Fresh shipment created:', shipment.id);
-      console.log('Available rates:', shipment.rates?.map(r => ({
-        id: r.id,
-        carrier: r.carrier,
-        service: r.service,
-        rate: r.rate
-      })));
     } catch (error) {
       console.error('Failed to create fresh shipment:', error);
       throw new BadRequestException(`Failed to create shipment: ${error.message}`);
@@ -487,102 +454,6 @@ export class ForwardService {
     });
   }
 
-  /**
-   * Mail handler request'i completed olarak işaretler
-   */
-  async completeForwardingRequest(requestId: string): Promise<any> {
-    const forwardingRequest = await this.prisma.forwardingRequest.findUnique({
-      where: { id: requestId },
-    });
-
-    if (!forwardingRequest) {
-      throw new NotFoundException('Forwarding request not found');
-    }
-
-    if (forwardingRequest.status === ForwardRequestStatus.COMPLETED) {
-      throw new BadRequestException('Request is already completed');
-    }
-
-    return this.prisma.forwardingRequest.update({
-      where: { id: requestId },
-      data: {
-        status: ForwardRequestStatus.COMPLETED,
-        completedAt: new Date(),
-      },
-      include: {
-        mail: true,
-        deliveryAddress: true,
-        deliverySpeedOption: true,
-        packagingTypeOption: true,
-        carrier: true,
-      },
-    });
-  }
-
-  /**
-   * Forwarding request'i iptal et
-   */
-  async cancelForwardingRequest(requestId: string): Promise<any> {
-    const forwardingRequest = await this.prisma.forwardingRequest.findUnique({
-      where: { id: requestId },
-    });
-
-    if (!forwardingRequest) {
-      throw new NotFoundException('Forwarding request not found');
-    }
-
-    if (forwardingRequest.status === ForwardRequestStatus.COMPLETED) {
-      throw new BadRequestException('Cannot cancel completed request');
-    }
-
-    return this.prisma.forwardingRequest.update({
-      where: { id: requestId },
-      data: {
-        status: ForwardRequestStatus.CANCELLED,
-        cancelledAt: new Date(),
-      },
-      include: {
-        mail: true,
-        deliveryAddress: true,
-        deliverySpeedOption: true,
-        packagingTypeOption: true,
-        carrier: true,
-      },
-    });
-  }
-
-  /**
-   * Tracking bilgilerini getir
-   */
-  async trackForwardingRequest(requestId: string): Promise<any> {
-    const forwardingRequest = await this.prisma.forwardingRequest.findUnique({
-      where: { id: requestId },
-      include: {
-        mail: true,
-        deliveryAddress: true,
-        carrier: true,
-      },
-    });
-
-    if (!forwardingRequest) {
-      throw new NotFoundException('Forwarding request not found');
-    }
-
-    if (!forwardingRequest.trackingCode) {
-      throw new BadRequestException('No tracking code available');
-    }
-
-    // EasyPost'tan tracking bilgilerini al
-    const trackingInfo = await this.easyPostService.getTrackingInfo(
-      forwardingRequest.trackingCode,
-      forwardingRequest.carrier?.name
-    );
-
-    return {
-      forwardingRequest,
-      trackingInfo,
-    };
-  }
 
   /**
    * Workspace balance'tan ücret düşer
@@ -701,4 +572,102 @@ export class ForwardService {
       totalCost,
     };
   }
+
+    /**
+   * Mail handler request'i completed olarak işaretler
+   */
+    async completeForwardingRequest(requestId: string): Promise<any> {
+      const forwardingRequest = await this.prisma.forwardingRequest.findUnique({
+        where: { id: requestId },
+      });
+  
+      if (!forwardingRequest) {
+        throw new NotFoundException('Forwarding request not found');
+      }
+  
+      if (forwardingRequest.status === ForwardRequestStatus.COMPLETED) {
+        throw new BadRequestException('Request is already completed');
+      }
+  
+      return this.prisma.forwardingRequest.update({
+        where: { id: requestId },
+        data: {
+          status: ForwardRequestStatus.COMPLETED,
+          completedAt: new Date(),
+        },
+        include: {
+          mail: true,
+          deliveryAddress: true,
+          deliverySpeedOption: true,
+          packagingTypeOption: true,
+          carrier: true,
+        },
+      });
+    }
+  
+    /**
+     * Forwarding request'i iptal et
+     */
+    async cancelForwardingRequest(requestId: string): Promise<any> {
+      const forwardingRequest = await this.prisma.forwardingRequest.findUnique({
+        where: { id: requestId },
+      });
+  
+      if (!forwardingRequest) {
+        throw new NotFoundException('Forwarding request not found');
+      }
+  
+      if (forwardingRequest.status === ForwardRequestStatus.COMPLETED) {
+        throw new BadRequestException('Cannot cancel completed request');
+      }
+  
+      return this.prisma.forwardingRequest.update({
+        where: { id: requestId },
+        data: {
+          status: ForwardRequestStatus.CANCELLED,
+          cancelledAt: new Date(),
+        },
+        include: {
+          mail: true,
+          deliveryAddress: true,
+          deliverySpeedOption: true,
+          packagingTypeOption: true,
+          carrier: true,
+        },
+      });
+    }
+  
+    /**
+     * Tracking bilgilerini getir
+     */
+    async trackForwardingRequest(requestId: string): Promise<any> {
+      const forwardingRequest = await this.prisma.forwardingRequest.findUnique({
+        where: { id: requestId },
+        include: {
+          mail: true,
+          deliveryAddress: true,
+          carrier: true,
+        },
+      });
+  
+      if (!forwardingRequest) {
+        throw new NotFoundException('Forwarding request not found');
+      }
+  
+      if (!forwardingRequest.trackingCode) {
+        throw new BadRequestException('No tracking code available');
+      }
+  
+      // EasyPost'tan tracking bilgilerini al
+      const trackingInfo = await this.easyPostService.getTrackingInfo(
+        forwardingRequest.trackingCode,
+        forwardingRequest.carrier?.name
+      );
+  
+      return {
+        forwardingRequest,
+        trackingInfo,
+      };
+    }
+  
 }

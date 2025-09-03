@@ -290,10 +290,12 @@ generator dbml {
     id              String              @id @default(uuid()) @db.Uuid
     type            DeliveryAddressType @default(DELIVERY)
     mailBoxId       String              @db.Uuid
+    recipientName   String?            
+    recipientTelephone String?            
     label           String
     addressLine     String
     city            String
-    state           String
+    state           String?
     country         String
     zipCode         String?
     isDefault       Boolean             @default(false)

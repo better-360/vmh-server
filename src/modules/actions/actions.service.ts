@@ -404,6 +404,7 @@ async completeConsolidationRequest(requestId: string, data: ConsolidateMailItems
         mailboxId: firstMail.mailboxId,
         receivedAt: new Date(),
         senderName: data.senderName,
+        senderAddress: firstMail.senderAddress || '',
         type: MailType.CONSOLIDATED,
         status: MailStatus.CONSOLIDATED,
         width: data.width,
@@ -414,6 +415,7 @@ async completeConsolidationRequest(requestId: string, data: ConsolidateMailItems
         volumeCm3: volumeCm3,
         photoUrls: data.photoUrls || [],
         isScanned: true,
+        recipientId: firstMail.recipientId,
       },
     });
 

@@ -7968,46 +7968,6 @@
         ]
       }
     },
-    "/api/forward/debug/rates": {
-      "post": {
-        "operationId": "ForwardController_debugRates",
-        "summary": "Debug endpoint to test EasyPost rates",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Debug information about rates"
-          }
-        },
-        "tags": [
-          "Forward"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/forward/debug/mail-data": {
-      "post": {
-        "operationId": "ForwardController_debugMailData",
-        "summary": "Debug endpoint to check mail and address data",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Mail and address debug information"
-          }
-        },
-        "tags": [
-          "Forward"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
     "/api/mail-handler/forward/requests": {
       "get": {
         "operationId": "MailHandlerForwardController_getForwardingRequests",
@@ -11617,6 +11577,16 @@
             "description": "Address label",
             "example": "Home Address"
           },
+          "recipientName": {
+            "type": "string",
+            "description": "Recipient name",
+            "example": "John Doe"
+          },
+          "recipientTelephone": {
+            "type": "string",
+            "description": "Recipient telephone",
+            "example": "1234567890"
+          },
           "addressLine": {
             "type": "string",
             "description": "Address line",
@@ -11652,6 +11622,8 @@
         "required": [
           "type",
           "label",
+          "recipientName",
+          "recipientTelephone",
           "addressLine",
           "city",
           "state",
@@ -11676,6 +11648,16 @@
             "type": "string",
             "description": "Address label",
             "example": "Home Address"
+          },
+          "recipientName": {
+            "type": "string",
+            "description": "Recipient name",
+            "example": "John Doe"
+          },
+          "recipientTelephone": {
+            "type": "string",
+            "description": "Recipient telephone",
+            "example": "1234567890"
           },
           "addressLine": {
             "type": "string",
