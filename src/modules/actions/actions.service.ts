@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { ActionStatus, MailStatus, MailType, Prisma } from '@prisma/client';
-import { UpdateActionStatusDto,QueryMailActionsDto, CreateMailActionRequestDto } from 'src/dtos/mail-actions.dto';
+import { ActionStatus, MailActionType, MailStatus, MailType, Prisma, ForwardRequestStatus } from '@prisma/client';
+import { UpdateActionDto,QueryMailActionsDto, CreateMailActionRequestDto } from 'src/dtos/mail-actions.dto';
 import { PrismaService } from 'src/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Events } from 'src/common/enums/event.enum';
 import { ConsolidateMailItemsDto, CreateConsolidationRequestDto } from 'src/dtos/mail.dto';
+import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
 
 @Injectable()
 export class MailActionsService {
@@ -139,25 +140,166 @@ async createActionRequest(dto: CreateMailActionRequestDto, userId: string, abili
   return { action };
 }
 
-  async updateActionStatus(id: string, dto: UpdateActionStatusDto) {
+  async updateAction(id: string, dto: UpdateActionDto) {
+    // Action'ı kontrol et
     const action = await this.prisma.mailAction.findUnique({
       where: { id },
       include: { mail: true },
     });
-    if (!action) throw new NotFoundException('Action not found');
+    
+    if (!action) {
+      throw new NotFoundException('Action not found');
+    }
 
-    const nextData: Prisma.MailActionUpdateInput = {
-      status: dto.status,
-      ...(dto.status === ActionStatus.DONE && { completedAt: new Date() }),
-      ...(dto.status !== ActionStatus.DONE && { completedAt: null }),
-      ...(dto.reason && { meta: { ...(action.meta as any), reason: dto.reason } }),
+    // Status transition validation
+    this.validateStatusTransition(action.status, dto.status);
+
+    // Mail status mapping helper
+    const getMailStatusForAction = (actionType: MailActionType): MailStatus => {
+      const statusMap: Record<MailActionType, MailStatus> = {
+        [MailActionType.HOLD]: MailStatus.HOLDING_FOR_PICKUP,
+        [MailActionType.SHRED]: MailStatus.SHREDDED,
+        [MailActionType.JUNK]: MailStatus.JUNKED,
+        [MailActionType.SCAN]: MailStatus.SCANNED,
+        [MailActionType.CHECK_DEPOSIT]: MailStatus.COMPLETED,
+      };
+      return statusMap[actionType];
     };
 
-    const updated = await this.prisma.mailAction.update({
-      where: { id },
-      data: nextData,
+    // Transaction kullanarak atomik güncelleme
+    const result = await this.prisma.$transaction(async (tx) => {
+      // 1. Action update data hazırla
+      const actionUpdateData: Prisma.MailActionUpdateInput = {
+        status: dto.status,
+        updatedAt: new Date(),
+        ...(dto.status === ActionStatus.DONE && { completedAt: new Date() }),
+        ...(dto.status !== ActionStatus.DONE && { completedAt: null }),
+        ...(dto.reason && { 
+          meta: { 
+            ...(action.meta as Record<string, any> || {}), 
+            reason: dto.reason,
+            updatedAt: new Date().toISOString()
+          } 
+        }),
+      };
+
+      // 2. Mail updates (sadece gerektiğinde)
+      const mailUpdates: Prisma.MailUpdateInput = {};
+      
+      // Photos varsa ekle
+      if (dto.photos && dto.photos.length > 0) {
+        mailUpdates.photoUrls = dto.photos;
+      }
+
+      // Action DONE olduğunda mail status'unu güncelle
+      if (dto.status === ActionStatus.DONE) {
+        mailUpdates.status = getMailStatusForAction(action.type);
+        
+        // Action type'a göre özel flag'ler
+        switch (action.type) {
+          case MailActionType.SCAN:
+            mailUpdates.isScanned = true;
+            break;
+          case MailActionType.SHRED:
+            mailUpdates.isShereded = true;
+            break;
+          case MailActionType.JUNK:
+            mailUpdates.isJunked = true;
+            break;
+        }
+      }
+
+      // 3. Mail'i güncelle (sadece gerektiğinde)
+      if (Object.keys(mailUpdates).length > 0) {
+        await tx.mail.update({
+          where: { id: action.mailId },
+          data: {
+            ...mailUpdates,
+            updatedAt: new Date(),
+          },
+        });
+      }
+
+      // 4. Action'ı güncelle
+      const updatedAction = await tx.mailAction.update({
+        where: { id },
+        data: actionUpdateData,
+        include: {
+          mail: {
+            include: {
+              recipient: true,
+              forwardRequests: {
+                where: { status: { not: ForwardRequestStatus.CANCELLED } }
+              }
+            }
+          },
+        },
+      });
+
+      return updatedAction;
     });
-    return updated;
+
+    console.log(`✅ Action ${action.type} updated to ${dto.status} for mail ${action.mailId}`);
+    
+    return result;
+  }
+
+  /**
+   * Validate action status transition
+   */
+  private validateStatusTransition(currentStatus: ActionStatus, newStatus: ActionStatus): void {
+    const validTransitions: Record<ActionStatus, ActionStatus[]> = {
+      [ActionStatus.PENDING]: [ActionStatus.IN_PROGRESS, ActionStatus.DONE, ActionStatus.FAILED],
+      [ActionStatus.IN_PROGRESS]: [ActionStatus.DONE, ActionStatus.FAILED, ActionStatus.PENDING],
+      [ActionStatus.DONE]: [], // Done actions cannot be changed
+      [ActionStatus.FAILED]: [ActionStatus.PENDING, ActionStatus.IN_PROGRESS], // Can retry failed actions
+    };
+
+    if (currentStatus === ActionStatus.DONE && newStatus !== ActionStatus.DONE) {
+      throw new BadRequestException('Completed actions cannot be changed');
+    }
+
+    const allowedTransitions = validTransitions[currentStatus] || [];
+    if (!allowedTransitions.includes(newStatus)) {
+      throw new BadRequestException(`Invalid status transition from ${currentStatus} to ${newStatus}`);
+    }
+  }
+
+  /**
+   * Get action statistics for a mailbox
+   */
+  async getActionStatistics(mailboxId: string) {
+    const stats = await this.prisma.mailAction.groupBy({
+      by: ['type', 'status'],
+      where: { mail: { mailboxId } },
+      _count: true,
+    });
+
+    const summary = {
+      total: 0,
+      byType: {} as Record<string, number>,
+      byStatus: {} as Record<string, number>,
+      byTypeAndStatus: {} as Record<string, Record<string, number>>,
+    };
+
+    stats.forEach(stat => {
+      const count = stat._count;
+      summary.total += count;
+      
+      // By type
+      summary.byType[stat.type] = (summary.byType[stat.type] || 0) + count;
+      
+      // By status  
+      summary.byStatus[stat.status] = (summary.byStatus[stat.status] || 0) + count;
+      
+      // By type and status
+      if (!summary.byTypeAndStatus[stat.type]) {
+        summary.byTypeAndStatus[stat.type] = {};
+      }
+      summary.byTypeAndStatus[stat.type][stat.status] = count;
+    });
+
+    return summary;
   }
 
 
@@ -460,4 +602,135 @@ async completeConsolidationRequest(requestId: string, data: ConsolidateMailItems
     };
   });
 }
+
+
+
+async listActionRequestsByType(officeLocationId:string,input: ListActionRequestsQueryDto) {
+  const {
+    type,
+    status,
+  } = input;
+
+  // ortak where (officeLocation üzerinden join)
+  const baseWhere: any = {
+    mail: { mailbox: { officeLocationId } },
+  };
+  if (status) baseWhere.status = status;
+
+  // === MODE A: Tek tip + sayfalama
+  if (type) {
+    const where = { ...baseWhere, type };
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.mailAction.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          id: true,
+          type: true,
+          status: true,
+          requestedAt: true,
+          completedAt: true,
+          updatedAt: true,
+          meta: true,
+          mailId: true,
+          mail: {
+            select: {
+              id: true,
+              receivedAt: true,
+              type: true,
+              status: true,
+              isScanned: true,
+              isForwarded: true,
+              isShereded: true,
+              senderName: true,
+              trackingNumber: true,
+              mailbox: { select: { id: true, steNumber: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.mailAction.count({ where }),
+    ]);
+    return {
+      mode: 'single',
+      type,
+      total,
+      items,
+    };
+  }
+
+  // === MODE B: Tüm tipler ayrı ayrı (grouped)
+  // toplamlar (her tipe kaç adet düştüğü)
+  const grouped = await this.prisma.mailAction.groupBy({
+    by: ['type'],
+    _count: { _all: true },
+    where: baseWhere,
+  });
+
+  const totals: Record<string, number> = {};
+  for (const g of grouped) totals[g.type] = g._count._all;
+
+  // tüm enum tiplerini sırala; olmayanlara 0 koy
+  const allTypes: MailActionType[] = Object.values(MailActionType);
+
+  // her tip için son N kaydı paralel çek
+  const queries = allTypes.map((t) =>
+    this.prisma.mailAction.findMany({
+      where: { ...baseWhere, type: t },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        requestedAt: true,
+        completedAt: true,
+        updatedAt: true,
+        meta: true,
+        mailId: true,
+        mail: {
+          select: {
+            id: true,
+            receivedAt: true,
+            type: true,
+            status: true,
+            senderName: true,
+            trackingNumber: true,
+            photoUrls:true,
+            carrier:true,
+            senderAddress:true,
+            mailbox: { select: { id: true, steNumber: true } },
+          },
+        },
+      },
+    }),
+  );
+
+  const lists = await this.prisma.$transaction(queries);
+
+  const groups = allTypes.map((t, i) => ({
+    type: t,
+    total: totals[t] || 0,
+    items: lists[i],
+  }));
+
+  return {
+    mode: 'grouped',
+    officeLocationId,
+    totals,
+    groups,
+  };
+}
+
+async getActionRequestDetails(requestId:string){
+return await this.prisma.mailAction.findUnique({
+  where:{id:requestId},
+  include:{
+    mail:{
+    include:{recipient:true}
+    }
+  }
+ })
+}
+
 }

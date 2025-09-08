@@ -47,7 +47,6 @@ export interface ForwardingQuote {
 
 export interface CreateForwardRequestData {
   mailId: string;
-  mailboxId: string;
   deliveryAddressId: string;
   deliverySpeedOptionId: string;
   packagingTypeOptionId: string;
@@ -373,7 +372,7 @@ export class ForwardService {
     const forwardingRequest = await this.prisma.forwardingRequest.create({
       data: {
         mailId: data.mailId,
-        mailboxId: data.mailboxId,
+        mailboxId: mail.mailboxId,
         officeLocationId: mail.mailbox.officeLocationId,
         deliveryAddressId: data.deliveryAddressId,
         deliverySpeedOptionId: data.deliverySpeedOptionId,
@@ -399,6 +398,7 @@ export class ForwardService {
         rateDetails: JSON.parse(JSON.stringify(data.selectedRate)),
         
         trackingCode: purchaseResult.trackingCode,
+        labelUrl: purchaseResult.labelUrl, // Label URL'yi database'e kaydet
         status: ForwardRequestStatus.PENDING,
         paymentStatus: PaymentStatus.PENDING,
         priority: data.priority || MailActionPriority.STANDARD,
@@ -417,11 +417,18 @@ export class ForwardService {
     });
 
     // Kullanıcının bakiyesinden düş (WorkspaceBalance'tan)
-    await this.deductFromWorkspaceBalance(data.mailboxId, totalCost);
+    await this.deductFromWorkspaceBalance(mail.mailboxId, totalCost);
 
+    // Customer için optimize edilmiş response
     return {
-      ...forwardingRequest,
+      id: forwardingRequest.id,
+      mailId: forwardingRequest.mailId,
+      selectedCarrier: forwardingRequest.selectedCarrier,
+      selectedService: forwardingRequest.selectedService,
+      trackingCode: forwardingRequest.trackingCode,
       labelUrl: purchaseResult.labelUrl,
+      status: forwardingRequest.status,
+      paymentStatus: forwardingRequest.paymentStatus,
       costBreakdown: {
         baseShippingCost,
         deliverySpeedFee,
@@ -429,11 +436,34 @@ export class ForwardService {
         serviceFee,
         totalCost,
       },
+      createdAt: forwardingRequest.createdAt.toISOString(),
+      // Sadeleştirilmiş related data
+      mail: {
+        id: forwardingRequest.mail.id,
+        type: forwardingRequest.mail.type,
+        status: forwardingRequest.mail.status,
+        dimensions: {
+          width: forwardingRequest.mail.width,
+          height: forwardingRequest.mail.height,
+          length: forwardingRequest.mail.length,
+          weight: forwardingRequest.mail.weight,
+        },
+      },
+      deliveryAddress: {
+        id: forwardingRequest.deliveryAddress.id,
+        label: forwardingRequest.deliveryAddress.label,
+        recipientName: forwardingRequest.deliveryAddress.recipientName || 'Recipient',
+        addressLine: forwardingRequest.deliveryAddress.addressLine,
+        city: forwardingRequest.deliveryAddress.city,
+        state: forwardingRequest.deliveryAddress.state,
+        zipCode: forwardingRequest.deliveryAddress.zipCode,
+      },
     };
   }
 
   /**
-   * Mail handler'ların forwarding request'leri listelemesi
+   * Mail handler'ların forwarding request'leri listelemesi - SADE VERSİYON
+   * Sadece temel bilgiler, hızlı loading için
    */
   async getForwardingRequestsForHandler(officeLocationId: string, status?: ForwardRequestStatus) {
     const where: any = { officeLocationId };
@@ -441,19 +471,198 @@ export class ForwardService {
       where.status = status;
     }
 
-    return this.prisma.forwardingRequest.findMany({
+    const requests = await this.prisma.forwardingRequest.findMany({
       where,
-      include: {
-        mail: true,
-        deliveryAddress: true,
-        deliverySpeedOption: true,
-        packagingTypeOption: true,
-        carrier: true,
+      // Minimal include - sadece gerekli alanlar
+      select: {
+        id: true,
+        status: true,
+        priority: true,
+        selectedCarrier: true,
+        selectedService: true,
+        trackingCode: true,
+        labelUrl: true,
+        totalCost: true,
+        createdAt: true,
+        completedAt: true,
+        
+        // Mail - sadece temel bilgiler
+        mail: {
+          select: {
+            id: true,
+            type: true,
+            senderName: true,
+            width: true,
+            height: true,
+            length: true,
+            weight: true,
+          }
+        },
+        
+        // Delivery address - sadece özet
+        deliveryAddress: {
+          select: {
+            recipientName: true,
+            addressLine: true,
+            city: true,
+            state: true,
+          }
+        }
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    // Handler listing için minimal response
+    return requests.map(request => ({
+      id: request.id,
+      status: request.status,
+      priority: request.priority,
+      carrier: request.selectedCarrier,
+      service: request.selectedService,
+      trackingCode: request.trackingCode,
+      labelUrl: request.labelUrl,
+      totalCost: request.totalCost,
+      createdAt: request.createdAt.toISOString(),
+      completedAt: request.completedAt?.toISOString(),
+      
+      // Minimal mail info
+      mail: {
+        id: request.mail.id,
+        type: request.mail.type,
+        sender: request.mail.senderName || 'Unknown',
+        size: `${request.mail.length || 0}"×${request.mail.width || 0}"×${request.mail.height || 0}" (${request.mail.weight || 0} oz)`,
+      },
+      
+      // Minimal delivery info
+      recipient: {
+        name: request.deliveryAddress.recipientName || 'Recipient',
+        location: `${request.deliveryAddress.city}, ${request.deliveryAddress.state}`,
+      },
+    }));
   }
 
+  /**
+   * Forwarding request detayları - DETAYLI VERSİYON
+   * Handler'ın işlem yapması için tüm gerekli bilgiler
+   */
+  async getForwardingRequestDetails(requestId: string) {
+    const request = await this.prisma.forwardingRequest.findUnique({
+      where: { id: requestId },
+      include: {
+        mail: {
+          include: {
+            recipient: true,
+          }
+        },
+        deliveryAddress: true,
+        deliverySpeedOption: true,
+        packagingTypeOption: true,
+        officeLocation: true,
+        subscription: { // mailbox relation name
+          include: {
+            workspace: true,
+          }
+        }
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Forwarding request not found');
+    }
+
+    // Handler için detaylı response
+    return {
+      // Temel request bilgileri
+      id: request.id,
+      status: request.status,
+      priority: request.priority,
+      
+      // Shipping bilgileri
+      shipping: {
+        carrier: request.selectedCarrier,
+        service: request.selectedService,
+        trackingCode: request.trackingCode,
+        labelUrl: request.labelUrl,
+        easypostShipmentId: request.easypostShipmentId,
+      },
+      
+      // Maliyet bilgileri
+      costs: {
+        baseShipping: request.baseShippingCost,
+        deliverySpeedFee: request.deliverySpeedFee,
+        packagingFee: request.packagingFee,
+        serviceFee: request.serviceFee,
+        total: request.totalCost,
+      },
+      
+      // Mail detayları
+      mail: {
+        id: request.mail.id,
+        type: request.mail.type,
+        status: request.mail.status,
+        senderName: request.mail.senderName || 'Unknown Sender',
+        senderAddress: request.mail.senderAddress,
+        receivedAt: request.mail.receivedAt.toISOString(),
+        dimensions: {
+          width: request.mail.width,
+          height: request.mail.height,
+          length: request.mail.length,
+          weight: request.mail.weight,
+          volume: request.mail.volumeCm3,
+        },
+        photoUrls: request.mail.photoUrls,
+        recipient: request.mail.recipient ? {
+          name: request.mail.recipient.name,
+          email: request.mail.recipient.email,
+        } : null,
+      },
+      
+      // Delivery detayları
+      deliveryAddress: {
+        recipientName: request.deliveryAddress.recipientName || 'Recipient',
+        recipientTelephone: request.deliveryAddress.recipientTelephone || 'Not provided',
+        fullAddress: `${request.deliveryAddress.addressLine}, ${request.deliveryAddress.city}, ${request.deliveryAddress.state} ${request.deliveryAddress.zipCode || ''}`,
+        addressBreakdown: {
+          street: request.deliveryAddress.addressLine,
+          city: request.deliveryAddress.city,
+          state: request.deliveryAddress.state,
+          zipCode: request.deliveryAddress.zipCode,
+          country: request.deliveryAddress.country,
+        },
+      },
+      
+      // Delivery options detayları
+      options: {
+        deliverySpeed: {
+          title: request.deliverySpeedOption.title,
+          description: request.deliverySpeedOption.description,
+          fee: request.deliverySpeedFee,
+        },
+        packaging: {
+          title: request.packagingTypeOption.title,
+          description: request.packagingTypeOption.description,
+          fee: request.packagingFee,
+        },
+      },
+      
+      // Workspace bilgileri
+      workspace: {
+        id: request.subscription.workspace.id,
+        name: request.subscription.workspace.name,
+      },
+      
+      // Timestamps
+      timestamps: {
+        createdAt: request.createdAt.toISOString(),
+        updatedAt: request.updatedAt.toISOString(),
+        completedAt: request.completedAt?.toISOString(),
+        cancelledAt: request.cancelledAt?.toISOString(),
+      },
+      
+      // EasyPost raw data (debugging için)
+      easypostData: request.rateDetails,
+    };
+  }
 
   /**
    * Workspace balance'tan ücret düşer
@@ -658,16 +867,35 @@ export class ForwardService {
         throw new BadRequestException('No tracking code available');
       }
   
-      // EasyPost'tan tracking bilgilerini al
-      const trackingInfo = await this.easyPostService.getTrackingInfo(
-        forwardingRequest.trackingCode,
-        forwardingRequest.carrier?.name
-      );
-  
-      return {
-        forwardingRequest,
-        trackingInfo,
-      };
+    // EasyPost'tan tracking bilgilerini al
+    const trackingInfo = await this.easyPostService.getTrackingInfo(
+      forwardingRequest.trackingCode,
+      forwardingRequest.selectedCarrier
+    );
+
+    // Sadeleştirilmiş tracking response
+    return {
+      request: {
+        id: forwardingRequest.id,
+        trackingCode: forwardingRequest.trackingCode,
+        selectedCarrier: forwardingRequest.selectedCarrier,
+        selectedService: forwardingRequest.selectedService,
+        status: forwardingRequest.status,
+        totalCost: forwardingRequest.totalCost,
+      },
+      trackingInfo: {
+        status: trackingInfo.status || 'unknown',
+        statusDetail: trackingInfo.status_detail || '',
+        lastUpdate: trackingInfo.updated_at || new Date().toISOString(),
+        estimatedDelivery: trackingInfo.est_delivery_date || '',
+        trackingDetails: (trackingInfo.tracking_details || []).map((detail: any) => ({
+          datetime: detail.datetime || '',
+          status: detail.status || '',
+          message: detail.message || '',
+          location: `${detail.tracking_location?.city || ''}, ${detail.tracking_location?.state || ''}`.trim(),
+        })),
+      },
+    };
     }
   
 }

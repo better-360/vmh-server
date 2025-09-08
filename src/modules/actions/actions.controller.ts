@@ -1,70 +1,60 @@
 import {
-    Body,
+  Body,
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { Public } from 'src/common/decorators/public.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { CheckPolicies } from 'src/authorization/decorators/check-policies.decorator';
-import { PoliciesGuard } from 'src/authorization/guards/policies.guard';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { MailActionsService } from './actions.service';
-import { CarrierService, PackagingOptionService, ShippingSpeedService } from '../shipping/shipping.service';
-import { CreateMailActionDto } from 'src/dtos/mail-actions.dto';
+import { UpdateActionDto,QueryMailActionsDto } from 'src/dtos/mail-actions.dto';
 import { CreateConsolidationRequestDto, ConsolidateMailItemsDto, ConsolidationRequestResponseDto } from 'src/dtos/mail.dto';
 import { CaslAbilityFactory } from 'src/authorization/casl/ability.factory';
-import { PermissionAction } from '@prisma/client';
-import { MailEntity } from 'src/common/entities/mail.entity';
 import { ActionStatus } from '@prisma/client';
+import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
 
 @ApiTags('Mail Actions')
 @Controller('actions')
 export class MailActionsController {
   constructor(
     private readonly actionsService: MailActionsService,
-    private readonly packagingService: PackagingOptionService,
-    private readonly carrierService: CarrierService,
-    private readonly speedService: ShippingSpeedService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
   ) {}
 
-  @Public()
-  @Get('speeds/:locationId')
-  @ApiOperation({ summary: 'List active shipping speeds for a location' })
-  @ApiParam({ name: 'locationId', description: 'Office location ID' })
-  @ApiResponse({ status: 200, description: 'List of speeds.' })
-  async findSpeedOptions(@Param('locationId') locationId: string) {
-    return await this.speedService.findAssigned(locationId);
+  @Get('requests')
+  @ApiOperation({
+    summary: 'Action Request List',
+    description:
+      'officeLocationId is required. if type is provided, it will return paginated results by type. if type is not provided, it will return grouped results by type.',
+  })
+  async list(@Query() query: ListActionRequestsQueryDto,@CurrentUser('assignedLocationId') assignedLocationId: string): Promise<any> {
+    return this.actionsService.listActionRequestsByType(assignedLocationId,query);
   }
 
-  @Public()
-  @Get('packaging/:locationId')
-  @ApiOperation({ summary: 'List active packaging options for a location' })
-  @ApiParam({ name: 'locationId', description: 'Office location ID' })
-  @ApiResponse({ status: 200, description: 'List of packaging options.' })
-  findPackagingOptions(@Param('locationId') locationId: string) {
-    return this.packagingService.findAssigned(locationId);
+  @Get('requests/:id')
+  @ApiOperation({
+    summary: 'Action Request Details',
+    description:'Get detailed information about a specific action request.'})
+  async getActionRequestDetails(@Param('id') requestId:string){
+    return this.actionsService.getActionRequestDetails(requestId)
   }
 
-  @Public()
-  @Get('carrier/:locationId')
-  @ApiOperation({ summary: 'List active carriers for a location' })
-  @ApiParam({ name: 'locationId', description: 'Office location ID' })
-  @ApiResponse({ status: 200, description: 'List of carriers.' })
-  findAllCarriers(@Param('locationId') locationId: string) {
-    return this.carrierService.findAssigned(locationId);
+@ApiOperation({
+  summary: 'Update Action Request',
+  description:'Update the status of a specific action request.'})
+  @Patch('requests/:id')
+  async updateStatus(@Param('id') id: string, @Body() dto: UpdateActionDto) {
+    return this.actionsService.updateAction(id, dto);
   }
 
-  // =====================
-  // CONSOLIDATION ENDPOINTS
-  // =====================
 
+  
   @Post('consolidation/request')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

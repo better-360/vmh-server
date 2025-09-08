@@ -6630,203 +6630,6 @@
         ]
       }
     },
-    "/api/mail-handler/mail-actions/{id}": {
-      "get": {
-        "operationId": "MailHandlerController_get",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/mail-handler/mail-actions/search": {
-      "get": {
-        "operationId": "MailHandlerController_list",
-        "parameters": [
-          {
-            "name": "type",
-            "required": false,
-            "in": "query",
-            "description": "Filter by action type",
-            "schema": {
-              "enum": [
-                "SHRED",
-                "SCAN",
-                "HOLD",
-                "JUNK",
-                "CHECK_DEPOSIT"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "description": "Filter by action status",
-            "schema": {
-              "enum": [
-                "PENDING",
-                "IN_PROGRESS",
-                "DONE",
-                "FAILED"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "mailboxId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by Mailbox (subscription) ID",
-            "schema": {
-              "example": "4c1c8e08-6d9e-4ea7-9b0c-4d6c5a5f4a11",
-              "type": "string"
-            }
-          },
-          {
-            "name": "officeLocationId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by office location ID (join via: mail.mailbox.officeLocationId)",
-            "schema": {
-              "example": "9a0f2eb1-2f9b-4c82-8d51-1d9a3e9b3d77",
-              "type": "string"
-            }
-          },
-          {
-            "name": "search",
-            "required": false,
-            "in": "query",
-            "description": "Search text (STE number, tracking code, sender name, etc.)",
-            "schema": {
-              "example": "STE-102938 / UPS / Acme Corp",
-              "type": "string"
-            }
-          },
-          {
-            "name": "from",
-            "required": false,
-            "in": "query",
-            "description": "Start date (ISO 8601)",
-            "schema": {
-              "example": "2025-08-01T00:00:00.000Z",
-              "type": "string"
-            }
-          },
-          {
-            "name": "to",
-            "required": false,
-            "in": "query",
-            "description": "End date (ISO 8601)",
-            "schema": {
-              "example": "2025-08-10T23:59:59.999Z",
-              "type": "string"
-            }
-          },
-          {
-            "name": "sort",
-            "required": false,
-            "in": "query",
-            "description": "Sort field",
-            "schema": {
-              "example": "requestedAt",
-              "enum": [
-                "requestedAt",
-                "updatedAt",
-                "type",
-                "status"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "order",
-            "required": false,
-            "in": "query",
-            "description": "Sort order",
-            "schema": {
-              "example": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/mail-handler/mail-actions/{id}/status": {
-      "patch": {
-        "operationId": "MailHandlerController_updateStatus",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateActionStatusDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Mail Handler Panel"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
     "/api/mail-handler/tickets": {
       "get": {
         "operationId": "HandlerSupportController_getTickets",
@@ -7034,89 +6837,6 @@
         ]
       }
     },
-    "/api/mail-handler/action-requests": {
-      "get": {
-        "operationId": "HandlerActionRequestsController_list",
-        "summary": "Action Request listesi",
-        "description": "officeLocationId zorunlu. type verilirse tek tipe göre sayfalı sonuç döner. type yoksa tüm tipleri gruplu döner.",
-        "parameters": [
-          {
-            "name": "type",
-            "required": false,
-            "in": "query",
-            "description": "Tek tipe filtre (opsiyonel)",
-            "schema": {
-              "enum": [
-                "SHRED",
-                "SCAN",
-                "HOLD",
-                "JUNK",
-                "CHECK_DEPOSIT"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "description": "Aksiyon durum filtresi (opsiyonel)",
-            "schema": {
-              "enum": [
-                "PENDING",
-                "IN_PROGRESS",
-                "DONE",
-                "FAILED"
-              ],
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Mail Handler - Request Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/api/mail-handler/action-requests/{id}": {
-      "get": {
-        "operationId": "HandlerActionRequestsController_getActionRequestDetails",
-        "summary": "Action Request listesi",
-        "description": "officeLocationId zorunlu. type verilirse tek tipe göre sayfalı sonuç döner. type yoksa tüm tipleri gruplu döner.",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Mail Handler - Request Management"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
     "/api/mail-handler/tasks": {
       "get": {
         "operationId": "HandlerTaskController_listByOffice",
@@ -7297,24 +7017,47 @@
         ]
       }
     },
-    "/api/actions/speeds/{locationId}": {
+    "/api/actions/requests": {
       "get": {
-        "operationId": "MailActionsController_findSpeedOptions",
-        "summary": "List active shipping speeds for a location",
+        "operationId": "MailActionsController_list",
+        "summary": "Action Request List",
+        "description": "officeLocationId is required. if type is provided, it will return paginated results by type. if type is not provided, it will return grouped results by type.",
         "parameters": [
           {
-            "name": "locationId",
-            "required": true,
-            "in": "path",
-            "description": "Office location ID",
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "description": "Tek tipe filtre (opsiyonel)",
             "schema": {
+              "enum": [
+                "SHRED",
+                "SCAN",
+                "HOLD",
+                "JUNK",
+                "CHECK_DEPOSIT"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Aksiyon durum filtresi (opsiyonel)",
+            "schema": {
+              "enum": [
+                "PENDING",
+                "IN_PROGRESS",
+                "DONE",
+                "FAILED"
+              ],
               "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "List of speeds."
+            "description": ""
           }
         },
         "tags": [
@@ -7322,16 +7065,16 @@
         ]
       }
     },
-    "/api/actions/packaging/{locationId}": {
+    "/api/actions/requests/{id}": {
       "get": {
-        "operationId": "MailActionsController_findPackagingOptions",
-        "summary": "List active packaging options for a location",
+        "operationId": "MailActionsController_getActionRequestDetails",
+        "summary": "Action Request Details",
+        "description": "Get detailed information about a specific action request.",
         "parameters": [
           {
-            "name": "locationId",
+            "name": "id",
             "required": true,
             "in": "path",
-            "description": "Office location ID",
             "schema": {
               "type": "string"
             }
@@ -7339,32 +7082,40 @@
         ],
         "responses": {
           "200": {
-            "description": "List of packaging options."
+            "description": ""
           }
         },
         "tags": [
           "Mail Actions"
         ]
-      }
-    },
-    "/api/actions/carrier/{locationId}": {
-      "get": {
-        "operationId": "MailActionsController_findAllCarriers",
-        "summary": "List active carriers for a location",
+      },
+      "patch": {
+        "operationId": "MailActionsController_updateStatus",
+        "summary": "Update Action Request",
+        "description": "Update the status of a specific action request.",
         "parameters": [
           {
-            "name": "locationId",
+            "name": "id",
             "required": true,
             "in": "path",
-            "description": "Office location ID",
             "schema": {
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateActionDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "List of carriers."
+            "description": ""
           }
         },
         "tags": [
@@ -7984,22 +7735,102 @@
         ]
       }
     },
+    "/api/forward/speeds/{locationId}": {
+      "get": {
+        "operationId": "ForwardController_findSpeedOptions",
+        "summary": "List active shipping speeds for a location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "required": true,
+            "in": "path",
+            "description": "Office location ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of speeds."
+          }
+        },
+        "tags": [
+          "Forward"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/forward/packaging/{locationId}": {
+      "get": {
+        "operationId": "ForwardController_findPackagingOptions",
+        "summary": "List active packaging options for a location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "required": true,
+            "in": "path",
+            "description": "Office location ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of packaging options."
+          }
+        },
+        "tags": [
+          "Forward"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/forward/carrier/{locationId}": {
+      "get": {
+        "operationId": "ForwardController_findAllCarriers",
+        "summary": "List active carriers for a location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "required": true,
+            "in": "path",
+            "description": "Office location ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of carriers."
+          }
+        },
+        "tags": [
+          "Forward"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/mail-handler/forward/requests": {
       "get": {
         "operationId": "MailHandlerForwardController_getForwardingRequests",
         "summary": "Get forwarding requests for mail handler",
         "description": "Retrieves a list of forwarding requests for a specific office location. Mail handlers use this endpoint to see which packages need to be processed and shipped to customers.",
         "parameters": [
-          {
-            "name": "officeLocationId",
-            "required": true,
-            "in": "query",
-            "description": "Office location ID where the mail handler is assigned",
-            "schema": {
-              "example": "59dad8d5-503c-4ab6-b3f0-e44410678595",
-              "type": "string"
-            }
-          },
           {
             "name": "status",
             "required": false,
@@ -8072,6 +7903,39 @@
                 }
               }
             }
+          }
+        },
+        "tags": [
+          "Mail Handler - Forward"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mail-handler/forward/requests/{id}": {
+      "get": {
+        "operationId": "MailHandlerForwardController_getForwardingRequestDetails",
+        "summary": "Get forwarding request details",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Forwarding request ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request details"
+          },
+          "404": {
+            "description": "Request not found"
           }
         },
         "tags": [
@@ -8201,10 +8065,10 @@
         ]
       }
     },
-    "/api/mail-handler/forward/requests/{id}": {
+    "/api/mail-handler/forward/requests/{id}/track": {
       "get": {
-        "operationId": "MailHandlerForwardController_getForwardingRequestDetails",
-        "summary": "Get forwarding request details",
+        "operationId": "MailHandlerForwardController_getForwardingRequestTrackingDetails",
+        "summary": "Get forwarding request tracking details",
         "parameters": [
           {
             "name": "id",
@@ -8218,7 +8082,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Request details"
+            "description": "Request tracking details"
           },
           "404": {
             "description": "Request not found"
@@ -11948,7 +11812,7 @@
           }
         }
       },
-      "UpdateActionStatusDto": {
+      "UpdateActionDto": {
         "type": "object",
         "properties": {
           "status": {
@@ -11966,6 +11830,16 @@
             "type": "string",
             "description": "Reason or error message (e.g., FAILED)",
             "example": "Address could not be verified"
+          },
+          "photos": {
+            "description": "Photos",
+            "example": [
+              "https://s3.amazonaws.com/bucket/photo1.jpg"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -12429,10 +12303,6 @@
             "type": "string",
             "description": "Mail ID"
           },
-          "mailboxId": {
-            "type": "string",
-            "description": "Mailbox ID"
-          },
           "deliveryAddressId": {
             "type": "string",
             "description": "Delivery address ID"
@@ -12472,7 +12342,6 @@
         },
         "required": [
           "mailId",
-          "mailboxId",
           "deliveryAddressId",
           "deliverySpeedOptionId",
           "packagingTypeOptionId",

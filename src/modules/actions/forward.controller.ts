@@ -6,7 +6,6 @@ import {
   Param, 
   Body, 
   Query, 
-  UseGuards,
   HttpStatus,
   HttpCode
 } from "@nestjs/common";
@@ -24,13 +23,13 @@ import { ForwardService } from "./forward.service";
 import { ForwardRequestStatus, MailActionPriority } from "@prisma/client";
 import { IsString, IsNotEmpty, IsNumber, IsOptional, IsEnum, IsObject } from "class-validator";
 import { 
-  GetForwardingQuoteSwaggerDto,
-  CreateForwardingRequestSwaggerDto,
   ForwardingQuoteResponseDto,
   ForwardingRequestResponseDto,
   BadRequestErrorDto,
   NotFoundErrorDto
 } from './forward.swagger';
+import { CurrentUser, Public } from "src/common/decorators";
+import { CarrierService, PackagingOptionService, ShippingSpeedService } from "../shipping/shipping.service";
 
 // DTOs
 export class GetForwardingQuoteDto {
@@ -58,11 +57,6 @@ export class CreateForwardingRequestDto {
   @IsString()
   @IsNotEmpty()
   mailId: string;
-
-  @ApiProperty({ description: 'Mailbox ID' })
-  @IsString()
-  @IsNotEmpty()
-  mailboxId: string;
 
   @ApiProperty({ description: 'Delivery address ID' })
   @IsString()
@@ -137,18 +131,13 @@ export class UpdateForwardingStatusDto {
 @ApiBearerAuth()
 @Controller('mail-handler/forward')
 export class MailHandlerForwardController {
-  constructor(private readonly forwardService: ForwardService) {}
+  constructor(private readonly forwardService: ForwardService,
+  ) {}
 
   @Get('requests')
   @ApiOperation({ 
     summary: 'Get forwarding requests for mail handler',
     description: 'Retrieves a list of forwarding requests for a specific office location. Mail handlers use this endpoint to see which packages need to be processed and shipped to customers.'
-  })
-  @ApiQuery({ 
-    name: 'officeLocationId', 
-    required: true, 
-    description: 'Office location ID where the mail handler is assigned',
-    example: '59dad8d5-503c-4ab6-b3f0-e44410678595'
   })
   @ApiQuery({ 
     name: 'status', 
@@ -179,10 +168,20 @@ export class MailHandlerForwardController {
     }
   })
   async getForwardingRequests(
-    @Query('officeLocationId') officeLocationId: string,
+    @CurrentUser('assignedLocationId') officeLocationId: string,
     @Query('status') status?: ForwardRequestStatus,
   ) {
     return this.forwardService.getForwardingRequestsForHandler(officeLocationId, status);
+  }
+
+
+  @Get('requests/:id')
+  @ApiOperation({ summary: 'Get forwarding request details' })
+  @ApiParam({ name: 'id', description: 'Forwarding request ID' })
+  @ApiResponse({ status: 200, description: 'Request details' })
+  @ApiResponse({ status: 404, description: 'Request not found' })
+  async getForwardingRequestDetails(@Param('id') requestId: string) {
+    return this.forwardService.getForwardingRequestDetails(requestId);
   }
 
   @Put('requests/:id/complete')
@@ -234,12 +233,12 @@ export class MailHandlerForwardController {
     return this.forwardService.cancelForwardingRequest(requestId);
   }
 
-  @Get('requests/:id')
-  @ApiOperation({ summary: 'Get forwarding request details' })
+  @Get('requests/:id/track')
+  @ApiOperation({ summary: 'Get forwarding request tracking details' })
   @ApiParam({ name: 'id', description: 'Forwarding request ID' })
-  @ApiResponse({ status: 200, description: 'Request details' })
+  @ApiResponse({ status: 200, description: 'Request tracking details' })
   @ApiResponse({ status: 404, description: 'Request not found' })
-  async getForwardingRequestDetails(@Param('id') requestId: string) {
+  async getForwardingRequestTrackingDetails(@Param('id') requestId: string) {
     return this.forwardService.trackForwardingRequest(requestId);
   }
 }
@@ -249,7 +248,11 @@ export class MailHandlerForwardController {
 @ApiBearerAuth()
 @Controller('forward')
 export class ForwardController {
-  constructor(private readonly forwardService: ForwardService) {}
+  constructor(private readonly forwardService: ForwardService,
+    private readonly speedService: ShippingSpeedService,
+    private readonly packagingService: PackagingOptionService,
+    private readonly carrierService: CarrierService,
+  ) {}
 
   @Post('quote')
   @ApiOperation({ 
@@ -414,4 +417,34 @@ export class ForwardController {
   async cancelForwardingRequest(@Param('id') requestId: string) {
     return this.forwardService.cancelForwardingRequest(requestId);
   }
+
+
+
+  @Public()
+  @Get('speeds/:locationId')
+  @ApiOperation({ summary: 'List active shipping speeds for a location' })
+  @ApiParam({ name: 'locationId', description: 'Office location ID' })
+  @ApiResponse({ status: 200, description: 'List of speeds.' })
+  async findSpeedOptions(@Param('locationId') locationId: string) {
+    return await this.speedService.findAssigned(locationId);
+  }
+
+  @Public()
+  @Get('packaging/:locationId')
+  @ApiOperation({ summary: 'List active packaging options for a location' })
+  @ApiParam({ name: 'locationId', description: 'Office location ID' })
+  @ApiResponse({ status: 200, description: 'List of packaging options.' })
+  findPackagingOptions(@Param('locationId') locationId: string) {
+    return this.packagingService.findAssigned(locationId);
+  }
+
+  @Public()
+  @Get('carrier/:locationId')
+  @ApiOperation({ summary: 'List active carriers for a location' })
+  @ApiParam({ name: 'locationId', description: 'Office location ID' })
+  @ApiResponse({ status: 200, description: 'List of carriers.' })
+  findAllCarriers(@Param('locationId') locationId: string) {
+    return this.carrierService.findAssigned(locationId);
+  }
+
 }

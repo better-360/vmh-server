@@ -32,7 +32,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { MailService } from '../mail/mail.service';
 import { MailboxService } from '../mailbox/mailbox.service';
 import { MailboxResponseDto } from 'src/dtos/mailbox.dto';
-import { UpdateActionStatusDto,CompleteForwardDto, CancelForwardDto,QueryMailActionsDto } from 'src/dtos/mail-actions.dto';
+import { UpdateActionDto,QueryMailActionsDto } from 'src/dtos/mail-actions.dto';
 import { MailActionsService } from '../actions/actions.service';
 import { CreateTaskDto, EditTicketStatusDto, TaskMessageDto,TicketMessageDto,UpdateTaskDto } from 'src/dtos/support.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
@@ -136,27 +136,6 @@ import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
       return this.mailService.findOne(id);
     }
   
-  @Get('mail-actions/:id')
-  async get(@Param('id') id: string) {
-    return this.actionService.getActionById(id);
-  }
-
-  // Panel listesi
-  @Get('mail-actions/search')
-  async list(@Query() q: QueryMailActionsDto) {
-    console.log('Listing mail actions with query:', q);
-    return this.actionService.listActions(q);
-  }
-
-
-
-  // Genel status update
-  @Patch('mail-actions/:id/status')
-  async updateStatus(@Param('id') id: string, @Body() dto: UpdateActionStatusDto) {
-    return this.actionService.updateActionStatus(id, dto);
-  }
-
-      
   } 
 
 
@@ -233,36 +212,8 @@ import { ListActionRequestsQueryDto } from 'src/dtos/handler.dto';
   }
   }
 
-  @ApiBearerAuth()
-  @ApiTags('Mail Handler - Request Management')
-  @Controller('mail-handler')
-  export class HandlerActionRequestsController {
-  constructor(private readonly handlerService: HandlerService) {}
 
-  @Get('action-requests')
-  @ApiOperation({
-    summary: 'Action Request listesi',
-    description:
-      'officeLocationId zorunlu. type verilirse tek tipe göre sayfalı sonuç döner. type yoksa tüm tipleri gruplu döner.',
-  })
-  async list(@Query() query: ListActionRequestsQueryDto,@CurrentUser('assignedLocationId') assignedLocationId: string): Promise<any> {
-    return this.handlerService.listActionRequestsByType(assignedLocationId,query);
-  }
-
-
-  @Get('action-requests/:id')
-  @ApiOperation({
-    summary: 'Action Request listesi',
-    description:
-      'officeLocationId zorunlu. type verilirse tek tipe göre sayfalı sonuç döner. type yoksa tüm tipleri gruplu döner.',
-  })
-  async getActionRequestDetails(@Param('id') requestId:string){
-    return this.handlerService.getActionRequestDetails(requestId)
-
-  }
-}
-
-
+  
   @ApiBearerAuth()
   @ApiTags('Mail Handler - Task Management')
   @Controller('mail-handler')

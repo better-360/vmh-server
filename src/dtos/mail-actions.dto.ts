@@ -9,6 +9,8 @@ import {
   IsEnum,
   IsObject,
   IsBoolean,
+  IsArray,
+  IsNotEmpty,
 } from 'class-validator';
 import {
   ApiProperty,
@@ -168,14 +170,15 @@ export class CreateMailActionDto {
 /**
  * Update Action Status DTO
  */
-export class UpdateActionStatusDto {
+export class UpdateActionDto {
   @ApiProperty({
     description: 'New action status',
     enum: ActionStatus,
     example: ActionStatus.IN_PROGRESS,
   })
   @IsEnum(ActionStatus)
-  status!: ActionStatus;
+  @IsNotEmpty()
+  status: ActionStatus;
 
   @ApiPropertyOptional({
     description: 'Reason or error message (e.g., FAILED)',
@@ -184,6 +187,16 @@ export class UpdateActionStatusDto {
   @IsOptional()
   @IsString()
   reason?: string;
+
+  @ApiPropertyOptional({
+    description: 'Photos',
+    example: ['https://s3.amazonaws.com/bucket/photo1.jpg'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  photos?: string[];
 }
 
 /**

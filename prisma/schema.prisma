@@ -594,6 +594,7 @@ model ConsolidationAction {
     packagingTypeOptionId String  @db.Uuid
     carrierId             String? @db.Uuid // Local carrier (ignore for now)
     trackingCode          String? // Kargo firmasından alınan kod
+    labelUrl              String? // EasyPost label URL
 
     // EasyPost Rate Bilgileri - Kullanıcının seçtiği opsiyon
     easypostRateId        String  // EasyPost'tan gelen rate ID
