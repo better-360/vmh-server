@@ -33,7 +33,6 @@ generator dbml {
     currentWorkspaceId String?
     currentMailboxId   String?
     assignedLocationId String? @db.Uuid
-    forms              Forms[]
     attachment         Attachment[]
     invoices           Invoice[]
     tickets            Ticket[]
@@ -95,8 +94,7 @@ generator dbml {
     recipients        Recipient[]
     tickets     Ticket[]
     tasks         Task[]
-
-
+    forms              Forms[]
 
     @@unique([workspaceId, officeLocationId, isActive], name: "OneActiveSubscriptionPerOffice")
     @@index([workspaceId, isActive])
@@ -749,11 +747,11 @@ model ConsolidationAction {
 
   model Forms {
     id          String     @id @default(uuid()) @db.Uuid
-    userId      String     @db.Uuid
-    user        User       @relation(fields: [userId], references: [id])
+    mailboxId      String     @db.Uuid
+    mailbox       Mailbox       @relation(fields: [mailboxId], references: [id])
     formName    String
     formData    Json
-    status      FormStatus @default(ACTIVE) // Formun durumu
+    status      FormStatus @default(PENDING) // Formun durumu
     createdAt   DateTime   @default(now())
     updatedAt   DateTime   @updatedAt
     deletedAt   DateTime? // Silinmişse burada tutulur
@@ -1101,12 +1099,8 @@ model Attachment {
   }
 
   enum FormStatus {
-    ACTIVE
-    INACTIVE
     PENDING
-    ARCHIVED
     COMPLETED
-    DELETED
   }
 
   model Token {

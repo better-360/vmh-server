@@ -10,7 +10,7 @@ import {
   UpdateMailboxDto,
   MailboxResponseDto,
 } from 'src/dtos/mailbox.dto';
-import { PermissionAction, Prisma } from '@prisma/client';
+import { PermissionAction, Prisma, FormStatus } from '@prisma/client';
 import { ContextDto } from 'src/dtos/user.dto';
 import { isMemberOfMailbox } from 'src/utils/validate';
 import {
@@ -44,6 +44,18 @@ export class MailboxService {
 
       const steNumber = await this.generateSteNumber();
 
+      // Office location bilgilerini al (form için gerekli)
+      const officeLocation = await this.prisma.officeLocation.findUnique({
+        where: { id: createMailboxDto.officeLocationId },
+      });
+
+      if (!officeLocation) {
+        throw new NotFoundException('Office location not found');
+      }
+
+      // Default form oluştur (USPS 1583 form)
+      const defaultFormData = this.createDefaultFormData(steNumber, officeLocation);
+
       const mailbox = await this.prisma.mailbox.create({
         data: {
           ...createMailboxDto,
@@ -52,14 +64,22 @@ export class MailboxService {
             ? new Date(createMailboxDto.endDate)
             : null,
           steNumber: steNumber,
+          forms: { 
+            create: [defaultFormData]
+          }
         },
         include: {
           workspace: true,
           officeLocation: true,
           plan: true,
           planPrice: true,
+          forms: true, // Forms'ları da include et
         },
       });
+
+      console.log(`✅ Mailbox created successfully: ${mailbox.id}`);
+      console.log(`📄 USPS 1583 Form created for STE Number: ${steNumber}`);
+      console.log(`📋 Form count: ${mailbox.forms?.length || 0}`);
 
       return mailbox;
     } catch (error) {
@@ -288,11 +308,175 @@ export class MailboxService {
   }
 
   async generateSteNumber(): Promise<string> {
-    const steNumber = Math.random()
-      .toString(36)
-      .substring(2, 2 + 4)
-      .toUpperCase();
-    return steNumber;
+    const characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+
+    // Check if this STE number already exists
+    const existingMailbox = await this.prisma.mailbox.findUnique({
+      where: { steNumber: result },
+    });
+
+    if (existingMailbox) {
+      // If it exists, generate a new one recursively
+      return this.generateSteNumber();
+    }
+
+    return result;
+  }
+
+  /**
+   * Creates default form data for a new mailbox (USPS 1583 form)
+   */
+  private createDefaultFormData(steNumber: string, officeLocation: any) {
+    const agentAddress = `${officeLocation.addressLine}${officeLocation.addressLine2 ? ', ' + officeLocation.addressLine2 : ''}, ${officeLocation.city}, ${officeLocation.state} ${officeLocation.zipCode || ''}, ${officeLocation.country || 'US'}`;
+    
+    return {
+      formName: 'USPS_1583',
+      formData: {
+        "formType": "USPS_1583",
+        "title": "Application for Delivery of Mail Through Agent",
+        "description": "USPS Form 1583 - Required for mail forwarding authorization",
+        "steNumber": steNumber,
+        "fields": {
+          "applicantName": {
+            "value": "",
+            "required": true,
+            "label": "Name of Applicant (Person or Company)",
+            "placeholder": "Enter full legal name"
+          },
+          "applicantAddress": {
+            "value": "",
+            "required": true,
+            "label": "Address of Applicant",
+            "placeholder": "Street, City, State, ZIP Code"
+          },
+          "agentName": {
+            "value": "Virtual Mail Hub",
+            "required": true,
+            "label": "Name of Agent (Person or Company)",
+            "readonly": true
+          },
+          "agentAddress": {
+            "value": agentAddress,
+            "required": true,
+            "label": "Address of Agent",
+            "readonly": true
+          },
+          "serviceType": {
+            "value": "Mail Forwarding and Package Receiving",
+            "required": true,
+            "label": "Type of Service Requested",
+            "readonly": true
+          },
+          "effectiveDate": {
+            "value": "",
+            "required": true,
+            "label": "Date Service is to Begin",
+            "type": "date"
+          },
+          "applicantSignature": {
+            "value": "",
+            "required": true,
+            "label": "Signature of Applicant",
+            "type": "signature"
+          },
+          "signatureDate": {
+            "value": "",
+            "required": true,
+            "label": "Date of Signature",
+            "type": "date"
+          },
+          "identificationCopy": {
+            "value": false,
+            "required": true,
+            "label": "Copy of Valid Photo ID Attached",
+            "type": "boolean"
+          },
+          "witnessSignature": {
+            "value": "",
+            "required": false,
+            "label": "Witness Signature (if applicable)",
+            "type": "signature"
+          }
+        },
+        "metadata": {
+          "createdForMailbox": true,
+          "autoGenerated": true,
+          "version": "1.0",
+          "formUrl": "https://www.usps.com/forms/_pdf/ps1583.pdf",
+          "instructions": [
+            "Complete all required fields",
+            "Attach copy of valid photo identification",
+            "Sign and date the form",
+            "Submit to Virtual Mail Hub for processing"
+          ],
+          "legalNotice": "I certify that I am authorized to receive mail for the person(s) or company named above."
+        }
+      },
+      status: FormStatus.PENDING,
+      isActive: true,
+      isCompleted: false,
+      isDeleted: false
+    };
+  }
+
+  /**
+   * Get forms for a specific mailbox
+   */
+  async getMailboxForms(mailboxId: string) {
+    return this.prisma.forms.findMany({
+      where: {
+        mailboxId: mailboxId,
+        isDeleted: false,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Update form completion status
+   */
+  async updateFormStatus(formId: string, isCompleted: boolean) {
+    const form = await this.prisma.forms.findUnique({
+      where: { id: formId },
+    });
+
+    if (!form) {
+      throw new NotFoundException('Form not found');
+    }
+
+    return this.prisma.forms.update({
+      where: { id: formId },
+      data: {
+        isCompleted,
+        status: isCompleted ? FormStatus.COMPLETED : FormStatus.PENDING,
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  /**
+   * Update form data
+   */
+  async updateFormData(formId: string, formData: any) {
+    const form = await this.prisma.forms.findUnique({
+      where: { id: formId },
+    });
+
+    if (!form) {
+      throw new NotFoundException('Form not found');
+    }
+
+    return this.prisma.forms.update({
+      where: { id: formId },
+      data: {
+        formData: formData,
+        updatedAt: new Date(),
+      },
+    });
   }
 
   async findBySteNumber(steNumber: string): Promise<MailboxResponseDto[]> {
@@ -474,7 +658,8 @@ export class MailboxService {
           include: {
             feature: true,
           },
-        }
+        },
+        forms: true,
       },
     });
 
@@ -501,11 +686,12 @@ export class MailboxService {
       take: 5,
       orderBy: { createdAt: 'desc' },
     });
-
+    const usps1583Form = mailbox.forms.find(form => form.formName === 'USPS_1583') || null;
     const dashboardData = {
       plan: mailbox.plan,
       recentTasks,
       recentMails,
+      usps1583Form: usps1583Form ? usps1583Form : null,
     };
     return dashboardData;
   }
