@@ -6305,6 +6305,22 @@
         ]
       }
     },
+    "/api/mailboxes/dashboard": {
+      "get": {
+        "operationId": "MailboxController_getMailboxDashboard",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/mailboxes/delivery-address": {
       "post": {
         "operationId": "MailboxController_createDeliveryAddress",

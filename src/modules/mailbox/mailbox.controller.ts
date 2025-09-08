@@ -12,6 +12,12 @@ import { IUser } from "src/common/interfaces/user.interface";
 export class MailboxController {
   constructor(private readonly mailboxService: MailboxService, private readonly caslAbilityFactory: CaslAbilityFactory) {}
 
+
+  @Get('dashboard')
+  async getMailboxDashboard(@Context() context: ContextDto): Promise<any> {
+    return this.mailboxService.getMailboxDashboard(context.mailboxId);
+  }
+
   @Post('delivery-address')
   async createDeliveryAddress(@Body() createDeliveryAddressDto: CreateDeliveryAddressDto,@Context() context: ContextDto): Promise<DeliveryAddressResponseDto> {
     return this.mailboxService.createDeliveryAddress(context.mailboxId, createDeliveryAddressDto);

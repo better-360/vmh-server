@@ -1,20 +1,31 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { 
-  CreateMailboxDto, 
-  UpdateMailboxDto, 
-  MailboxResponseDto 
+import {
+  CreateMailboxDto,
+  UpdateMailboxDto,
+  MailboxResponseDto,
 } from 'src/dtos/mailbox.dto';
 import { PermissionAction, Prisma } from '@prisma/client';
 import { ContextDto } from 'src/dtos/user.dto';
 import { isMemberOfMailbox } from 'src/utils/validate';
-import { CreateDeliveryAddressDto, DeliveryAddressResponseDto, UpdateDeliveryAddressDto } from 'src/dtos/delivery-address.dto';
+import {
+  CreateDeliveryAddressDto,
+  DeliveryAddressResponseDto,
+  UpdateDeliveryAddressDto,
+} from 'src/dtos/delivery-address.dto';
 
 @Injectable()
 export class MailboxService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createMailboxDto: CreateMailboxDto): Promise<MailboxResponseDto> {
+  async create(
+    createMailboxDto: CreateMailboxDto,
+  ): Promise<MailboxResponseDto> {
     try {
       // Check if there's already an active mailbox for this workspace-office combination
       const existingMailbox = await this.prisma.mailbox.findFirst({
@@ -27,7 +38,7 @@ export class MailboxService {
 
       if (existingMailbox) {
         throw new BadRequestException(
-          'An active mailbox already exists for this workspace and office location'
+          'An active mailbox already exists for this workspace and office location',
         );
       }
 
@@ -37,7 +48,9 @@ export class MailboxService {
         data: {
           ...createMailboxDto,
           startDate: new Date(createMailboxDto.startDate),
-          endDate: createMailboxDto.endDate ? new Date(createMailboxDto.endDate) : null,
+          endDate: createMailboxDto.endDate
+            ? new Date(createMailboxDto.endDate)
+            : null,
           steNumber: steNumber,
         },
         include: {
@@ -52,7 +65,9 @@ export class MailboxService {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
-          throw new BadRequestException('A mailbox with these details already exists');
+          throw new BadRequestException(
+            'A mailbox with these details already exists',
+          );
         }
       }
       throw error;
@@ -62,10 +77,10 @@ export class MailboxService {
   async findAll(
     workspaceId?: string,
     officeLocationId?: string,
-    isActive?: boolean
+    isActive?: boolean,
   ): Promise<MailboxResponseDto[]> {
     const where: Prisma.MailboxWhereInput = {};
-    
+
     if (workspaceId) where.workspaceId = workspaceId;
     if (officeLocationId) where.officeLocationId = officeLocationId;
     if (isActive !== undefined) where.isActive = isActive;
@@ -132,13 +147,18 @@ export class MailboxService {
     return mailbox;
   }
 
-  async update(id: string, updateMailboxDto: UpdateMailboxDto): Promise<MailboxResponseDto> {
+  async update(
+    id: string,
+    updateMailboxDto: UpdateMailboxDto,
+  ): Promise<MailboxResponseDto> {
     try {
       const mailbox = await this.prisma.mailbox.update({
         where: { id },
         data: {
           ...updateMailboxDto,
-          endDate: updateMailboxDto.endDate ? new Date(updateMailboxDto.endDate) : undefined,
+          endDate: updateMailboxDto.endDate
+            ? new Date(updateMailboxDto.endDate)
+            : undefined,
         },
         include: {
           workspace: true,
@@ -183,7 +203,9 @@ export class MailboxService {
     return this.findAll(workspaceId);
   }
 
-  async findByOfficeLocation(officeLocationId: string): Promise<MailboxResponseDto[]> {
+  async findByOfficeLocation(
+    officeLocationId: string,
+  ): Promise<MailboxResponseDto[]> {
     return this.findAll(undefined, officeLocationId);
   }
 
@@ -194,7 +216,7 @@ export class MailboxService {
   async checkFeatureUsage(mailboxId: string, featureId: string): Promise<any> {
     const currentPeriodStart = new Date();
     currentPeriodStart.setDate(1); // Start of current month
-    
+
     const currentPeriodEnd = new Date(currentPeriodStart);
     currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
     currentPeriodEnd.setDate(0); // End of current month
@@ -231,10 +253,13 @@ export class MailboxService {
     return usage;
   }
 
-  async incrementFeatureUsage(mailboxId: string, featureId: string): Promise<void> {
+  async incrementFeatureUsage(
+    mailboxId: string,
+    featureId: string,
+  ): Promise<void> {
     const currentPeriodStart = new Date();
     currentPeriodStart.setDate(1);
-    
+
     const currentPeriodEnd = new Date(currentPeriodStart);
     currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
     currentPeriodEnd.setDate(0);
@@ -263,7 +288,10 @@ export class MailboxService {
   }
 
   async generateSteNumber(): Promise<string> {
-    const steNumber = Math.random().toString(36).substring(2, 2 + 4).toUpperCase();
+    const steNumber = Math.random()
+      .toString(36)
+      .substring(2, 2 + 4)
+      .toUpperCase();
     return steNumber;
   }
 
@@ -305,7 +333,9 @@ export class MailboxService {
       });
 
       if (mailboxes.length === 0) {
-        throw new NotFoundException(`No mailboxes found for STE number: ${steNumber}`);
+        throw new NotFoundException(
+          `No mailboxes found for STE number: ${steNumber}`,
+        );
       }
 
       return mailboxes;
@@ -313,15 +343,19 @@ export class MailboxService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new BadRequestException(`Failed to find mailboxes by STE number: ${error.message}`);
+      throw new BadRequestException(
+        `Failed to find mailboxes by STE number: ${error.message}`,
+      );
     }
   }
 
-  async getMyMails(userId:string,context:ContextDto){
-    if(!await isMemberOfMailbox(userId,context.mailboxId,this.prisma)){
-      throw new BadRequestException(`User with ID ${userId} is not a member of mailbox with ID ${context.mailboxId}`);
+  async getMyMails(userId: string, context: ContextDto) {
+    if (!(await isMemberOfMailbox(userId, context.mailboxId, this.prisma))) {
+      throw new BadRequestException(
+        `User with ID ${userId} is not a member of mailbox with ID ${context.mailboxId}`,
+      );
     }
-    const mailbox=await this.prisma.mailbox.findUnique({
+    const mailbox = await this.prisma.mailbox.findUnique({
       where: {
         id: context.mailboxId,
         isActive: true,
@@ -335,11 +369,13 @@ export class MailboxService {
         },
       },
     });
-    if(!mailbox){
-      throw new NotFoundException(`Mailbox with ID ${context.mailboxId} not found`);
+    if (!mailbox) {
+      throw new NotFoundException(
+        `Mailbox with ID ${context.mailboxId} not found`,
+      );
     }
 
-    const mails= await this.prisma.mail.findMany({
+    const mails = await this.prisma.mail.findMany({
       where: {
         mailboxId: context.mailboxId,
       },
@@ -347,20 +383,23 @@ export class MailboxService {
     return mails;
   }
 
-
-  async getDeliveryAddresses( mailboxId: string): Promise<DeliveryAddressResponseDto[]> {
+  async getDeliveryAddresses(
+    mailboxId: string,
+  ): Promise<DeliveryAddressResponseDto[]> {
     const deliveryAddresses = await this.prisma.deliveryAddress.findMany({
       where: { mailBoxId: mailboxId },
     });
     return deliveryAddresses;
   }
 
-
-  async createDeliveryAddress( mailboxId: string, createDeliveryAddressDto: CreateDeliveryAddressDto): Promise<DeliveryAddressResponseDto> {
-    const mailbox=await this.prisma.mailbox.findUnique({
+  async createDeliveryAddress(
+    mailboxId: string,
+    createDeliveryAddressDto: CreateDeliveryAddressDto,
+  ): Promise<DeliveryAddressResponseDto> {
+    const mailbox = await this.prisma.mailbox.findUnique({
       where: { id: mailboxId },
     });
-    if(!mailbox){
+    if (!mailbox) {
       throw new BadRequestException('Mailbox not found');
     }
     const deliveryAddress = await this.prisma.deliveryAddress.create({
@@ -375,16 +414,21 @@ export class MailboxService {
     return deliveryAddress;
   }
 
-
-  async updateDeliveryAddress( id: string, updateDeliveryAddressDto: UpdateDeliveryAddressDto, ability:any): Promise<DeliveryAddressResponseDto> {
+  async updateDeliveryAddress(
+    id: string,
+    updateDeliveryAddressDto: UpdateDeliveryAddressDto,
+    ability: any,
+  ): Promise<DeliveryAddressResponseDto> {
     const deliveryAddress = await this.prisma.deliveryAddress.findUnique({
       where: { id },
     });
-    if(!deliveryAddress){
+    if (!deliveryAddress) {
       throw new NotFoundException(`Delivery address with ID ${id} not found`);
     }
-    if(!await ability.can(PermissionAction.UPDATE, deliveryAddress)){
-      throw new ForbiddenException('You are not allowed to update this delivery address');
+    if (!(await ability.can(PermissionAction.UPDATE, deliveryAddress))) {
+      throw new ForbiddenException(
+        'You are not allowed to update this delivery address',
+      );
     }
     const updatedDeliveryAddress = await this.prisma.deliveryAddress.update({
       where: { id },
@@ -396,18 +440,73 @@ export class MailboxService {
     return updatedDeliveryAddress;
   }
 
-  async deleteDeliveryAddress( id: string,ability:any): Promise<void> {
+  async deleteDeliveryAddress(id: string, ability: any): Promise<void> {
     const deliveryAddress = await this.prisma.deliveryAddress.findUnique({
       where: { id },
     });
-    if(!deliveryAddress){
+    if (!deliveryAddress) {
       throw new NotFoundException(`Delivery address with ID ${id} not found`);
     }
-    if(!await ability.can(PermissionAction.DELETE, deliveryAddress)){
-      throw new ForbiddenException('You are not allowed to delete this delivery address');
+    if (!(await ability.can(PermissionAction.DELETE, deliveryAddress))) {
+      throw new ForbiddenException(
+        'You are not allowed to delete this delivery address',
+      );
     }
     await this.prisma.deliveryAddress.delete({
       where: { id },
     });
+  }
+
+  async getMailboxDashboard(mailboxId: string): Promise<any> {
+    const mailbox = await this.prisma.mailbox.findUnique({
+      where: { id: mailboxId },
+      include: {
+        plan: {
+          include: {
+            features: {
+              include: {
+                feature: true,
+              },
+            },
+          },
+        },
+        featureUsages: {
+          include: {
+            feature: true,
+          },
+        }
+      },
+    });
+
+    if (!mailbox) {
+      throw new NotFoundException(`Mailbox with ID ${mailboxId} not found`);
+    }
+
+    const recentMails = await this.prisma.mail.findMany({
+      where: { mailboxId: mailboxId },
+      include: {
+        recipient: true,
+        actions: true,
+        forwardRequests: true,
+        consulidationRequests: true,
+      },
+      take: 5,
+      orderBy: { receivedAt: 'desc' },
+    });
+    const recentTasks = await this.prisma.task.findMany({
+      where: { mailboxId: mailboxId },
+      include: {
+        attachments: true,
+      },
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const dashboardData = {
+      plan: mailbox.plan,
+      recentTasks,
+      recentMails,
+    };
+    return dashboardData;
   }
 }
