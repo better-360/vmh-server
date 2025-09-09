@@ -42,6 +42,28 @@ export class UserService {
           mailboxes: (Mailbox & {
             plan: { name: string };
             planPrice: { amount: number };
+            officeLocation: {
+              id: string;
+              label: string;
+              addressLine: string;
+              addressLine2?: string;
+              city: string;
+              state: string;
+              country: string;
+              phone?: string;
+              email?: string;
+              workingHours?: string;
+              timezone?: string;
+              zipCode?: string;
+              description?: string;
+              latitude?: number;
+              longitude?: number;
+              isActive: boolean;
+              isDeleted: boolean;
+              createdAt: Date;
+              updatedAt: Date;
+              deletedAt?: Date;
+            };
           })[];
         };
       })[];
@@ -74,6 +96,21 @@ export class UserService {
           status: mailbox.status,
           startDate: mailbox.startDate,
           endDate: mailbox.endDate,
+          officeLocation: {
+            id: mailbox.officeLocation.id,
+            label: mailbox.officeLocation.label,
+            addressLine: mailbox.officeLocation.addressLine,
+            addressLine2: mailbox.officeLocation.addressLine2,
+            city: mailbox.officeLocation.city,
+            state: mailbox.officeLocation.state,
+            country: mailbox.officeLocation.country,
+            phone: mailbox.officeLocation.phone,
+            email: mailbox.officeLocation.email,
+            workingHours: mailbox.officeLocation.workingHours,
+            timezone: mailbox.officeLocation.timezone,
+            zipCode: mailbox.officeLocation.zipCode,
+            description: mailbox.officeLocation.description,
+          },
         })),
       })),
     };
@@ -121,21 +158,7 @@ export class UserService {
                   include: {
                     plan: true,       
                     planPrice: true,
-                    officeLocation: {
-                      select: {
-                        id: true,
-                        label: true,
-                        addressLine: true,
-                        addressLine2: true,
-                        city: true,
-                        state: true,
-                        country: true,
-                        phone: true,
-                        email: true,
-                        workingHours: true,
-                        timezone: true,
-                      },
-                    },
+                    officeLocation: true, // Tüm alanları include et
                   },
                 },
               },
@@ -185,6 +208,7 @@ export class UserService {
               include: {
                 mailboxes: {
                   include: {
+                    officeLocation: true,
                     plan: true,
                     planPrice: true,
                   },
