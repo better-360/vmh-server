@@ -206,6 +206,9 @@ export class OrderResponseDto {
 
   @ApiPropertyOptional()
   userId?: string;
+  
+  @ApiPropertyOptional()
+  stripeCheckoutUrl?: string;
 
   @ApiPropertyOptional()
   metadata?: any;

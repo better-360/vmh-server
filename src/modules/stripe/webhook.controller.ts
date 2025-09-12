@@ -38,8 +38,6 @@ export class WebhookController {
         const intent = event.data.object as Stripe.PaymentIntent;
         console.log('✅ Ödeme başarılı:', intent.id);
         this.billingService.handleStripePaymentIntentSucceeded(intent);
-        // 👉 Burada Order tablonu güncelleyebilirsin:
-        // örneğin: this.orderService.markAsPaid(intent.id);
         break;
       }
 
@@ -47,7 +45,14 @@ export class WebhookController {
         const intent = event.data.object as Stripe.PaymentIntent;
         const errorMessage = intent.last_payment_error?.message;
         console.log('❌ Ödeme başarısız:', intent.id, errorMessage);
-        // 👉 Order'ı başarısız olarak işaretle
+        this.billingService.handleStripePaymentIntentPaymentFailed(intent);
+        break;
+      }
+
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        console.log('✅ Checkout session tamamlandı:', session.id);
+        this.billingService.handleStripeCheckoutSessionCompleted(session);
         break;
       }
 

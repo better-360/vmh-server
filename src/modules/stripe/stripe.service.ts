@@ -733,6 +733,54 @@ export class StripeService {
     }
   }
 
+  async createCheckoutSessionForOrder(params: {
+    amount: number;
+    currency: string;
+    customer: string;
+    metadata: Record<string, string>;
+    successUrl: string;
+    cancelUrl: string;
+  }): Promise<Stripe.Checkout.Session> {
+    try {
+      const session = await this.stripe.checkout.sessions.create({
+        customer: params.customer,
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: params.currency,
+              product_data: {
+                name: 'Initial Subscription Order',
+                description: 'Plan and addons for initial subscription',
+              },
+              unit_amount: params.amount,
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: params.successUrl,
+        cancel_url: params.cancelUrl,
+        metadata: params.metadata,
+        automatic_tax: { enabled: false },
+        payment_intent_data: {
+          setup_future_usage: 'off_session',
+        },
+      });
+      this.logger.log('Checkout session created successfully for order');
+      return session;
+    } catch (error) {
+      this.logger.error(
+        'Failed to create checkout session on Stripe',
+        error.stack,
+      );
+      throw new HttpException(
+        `Unable to create checkout session on Stripe ${error.message}`,
+        500,
+      );
+    }
+  }
+
   async retrievePaymentIntent(
     paymentIntentId: string,
   ): Promise<Stripe.PaymentIntent> {

@@ -76,11 +76,13 @@ export class BillingService {
       const fullName = `${dto.firstName} ${dto.lastName || ''}`.trim();
       const customerId = await this.stripeService.findOrCreateStripeCustomer(dto.email, fullName);
 
-      // 6) Stripe PaymentIntent
-      const intentData={
+      // 6) Stripe Checkout Session
+      const sessionData = {
         amount: totalAmount, // cents
         currency: planPrice.currency || 'USD',
         customer: customerId,
+        successUrl: 'https://vmh.thedice.ai/completion',
+        cancelUrl: 'https://vmh.thedice.ai/completion',
         metadata: {
           orderType: 'initialSubscription',
           customerName: fullName,
@@ -92,8 +94,8 @@ export class BillingService {
           addonIds: JSON.stringify(dto.addons || []),
           itemCount: (1 + (dto.addons?.length || 0)).toString(),
         },
-      }
-      const paymentIntent = await this.stripeService.createPaymentIntentForOrder(intentData);
+      };
+      const checkoutSession = await this.stripeService.createCheckoutSessionForOrder(sessionData);
 
       // 7) Persist Order + Items
       const order = await this.prisma.order.create({
@@ -101,8 +103,8 @@ export class BillingService {
           email: dto.email,
           totalAmount,
           currency: planPrice.currency || 'USD',
-          stripePaymentIntentId: paymentIntent.id,
-          stripeClientSecret: paymentIntent.client_secret,
+          stripeSessionId: checkoutSession.id,
+          stripePaymentIntentId: checkoutSession.payment_intent as string,
           stripeCustomerId: customerId,
           type: OrderType.INITIAL_SUBSCRIPTION,
           metadata: {
@@ -113,6 +115,9 @@ export class BillingService {
             planId: planPrice.plan.id,
             billingCycle: planPrice.billingCycle,
             addonIds: dto.addons || [],
+            successUrl: 'https://vmh.thedice.ai/completion',
+            cancelUrl: 'https://vmh.thedice.ai/completion',
+            stripeCheckoutUrl: checkoutSession.url,
           },
           items: {
             create: [planItem, ...addonItems],
@@ -168,6 +173,14 @@ export class BillingService {
     return order ? this.mapOrderToResponseDto(order) : null;
   }
 
+  async getOrderBySessionId(sessionId: string): Promise<OrderResponseDto | null> {
+    const order = await this.prisma.order.findFirst({
+      where: { stripeSessionId: sessionId },
+      include: { items: true },
+    });
+    return order ? this.mapOrderToResponseDto(order) : null;
+  }
+
   /**
    * STRIPE WEBHOOK HANDLERS
    */
@@ -204,6 +217,30 @@ export class BillingService {
       }
     } catch (e) {
       console.error('Error handling payment intent failed:', e);
+    }
+  }
+
+  async handleStripeCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+    try {
+      const order = await this.getOrderBySessionId(session.id);
+      if (!order) return;
+
+      await this.updateOrderStatus(order.id, OrderStatus.PAYMENT_SUCCEEDED);
+
+      // Handle different order types
+      switch (order.type) {
+        case OrderType.INITIAL_SUBSCRIPTION:
+          // Check if this is our initial subscription order (not formation)
+          if (session.metadata?.orderType === 'initialSubscription') {
+            await this.handleInitialSubscriptionOrder(order);
+          }
+          break;
+        default:
+          // extend for other order types if needed
+          break;
+      }
+    } catch (e) {
+      console.error('Error handling checkout session completed:', e);
     }
   }
 
@@ -432,7 +469,9 @@ export class BillingService {
       status: order.status,
       stripePaymentIntentId: order.stripePaymentIntentId,
       stripeCustomerId: order.stripeCustomerId,
+      stripeSessionId: order.stripeSessionId,
       stripeClientSecret: order.stripeClientSecret,
+      stripeCheckoutUrl: order.metadata?.stripeCheckoutUrl,
       userId: order.userId,
       metadata: order.metadata,
       createdAt: order.createdAt,
