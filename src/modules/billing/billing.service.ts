@@ -104,8 +104,8 @@ export class BillingService {
           totalAmount,
           currency: planPrice.currency || 'USD',
           stripeSessionId: checkoutSession.id,
-          stripePaymentIntentId: checkoutSession.payment_intent as string,
           stripeCustomerId: customerId,
+          stripeCheckoutUrl: checkoutSession.url,
           type: OrderType.INITIAL_SUBSCRIPTION,
           metadata: {
             firstName: dto.firstName,
@@ -165,8 +165,10 @@ export class BillingService {
     return this.mapOrderToResponseDto(order);
   }
 
+//bypassing payment intent id
+
   async getOrderByPaymentIntentId(paymentIntentId: string): Promise<OrderResponseDto | null> {
-    const order = await this.prisma.order.findUnique({
+    const order = await this.prisma.order.findFirst({
       where: { stripePaymentIntentId: paymentIntentId },
       include: { items: true },
     });
@@ -471,7 +473,7 @@ export class BillingService {
       stripeCustomerId: order.stripeCustomerId,
       stripeSessionId: order.stripeSessionId,
       stripeClientSecret: order.stripeClientSecret,
-      stripeCheckoutUrl: order.metadata?.stripeCheckoutUrl,
+      stripeCheckoutUrl: order.stripeCheckoutUrl,
       userId: order.userId,
       metadata: order.metadata,
       createdAt: order.createdAt,

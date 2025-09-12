@@ -339,10 +339,11 @@ generator dbml {
     currency              String      @default("USD")
     status                OrderStatus @default(PAYMENT_PENDING)
     type                  OrderType   @default(SINGLE)
-    stripePaymentIntentId String      @unique
+    stripePaymentIntentId String?   
     stripeCustomerId      String?
     stripeSessionId       String?
     stripeClientSecret    String?
+    stripeCheckoutUrl     String?
 
     mailboxId   String?   @db.Uuid
     metadata    Json? // Additional order metadata
