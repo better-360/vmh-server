@@ -81,8 +81,8 @@ export class BillingService {
         amount: totalAmount, // cents
         currency: planPrice.currency || 'USD',
         customer: customerId,
-        successUrl: 'https://vmh.thedice.ai/completion',
-        cancelUrl: 'https://vmh.thedice.ai/completion',
+        successUrl: process.env.SUCCESS_STRIPE_URL,
+        cancelUrl: process.env.CANCEL_STRIPE_URL,
         metadata: {
           orderType: 'initialSubscription',
           customerName: fullName,
