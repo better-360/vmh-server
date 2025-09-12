@@ -56,4 +56,10 @@ export class BillingController {
   getPublishableKey() {
     return { publishableKey: process.env.STRIPE_PUBLISHABLE_KEY };
   }
+
+  @Public()
+  @Get(':checkoutSessionId/status')
+  async getOrderStatus(@Param('checkoutSessionId') checkoutSessionId: string) {
+    return this.billingService.getOrderStatusByCheckoutSessionId(checkoutSessionId);
+  }
 }

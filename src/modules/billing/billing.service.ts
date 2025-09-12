@@ -183,6 +183,21 @@ export class BillingService {
     return order ? this.mapOrderToResponseDto(order) : null;
   }
 
+  async getOrderStatusByCheckoutSessionId(checkoutSessionId: string) {
+    const session = await this.stripeService.retrieveCheckoutSession(checkoutSessionId);
+    const order = await this.prisma.order.findFirst({
+      where: { stripeSessionId: checkoutSessionId },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    return {
+      orderId: order.id,
+      orderStatus: order.status,
+      sessionId: session.id,
+      sessionStatus: session.status,
+      paymentType: session.metadata?.paymentType,
+    }
+  }
+
   /**
    * STRIPE WEBHOOK HANDLERS
    */
