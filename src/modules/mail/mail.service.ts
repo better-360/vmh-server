@@ -129,6 +129,7 @@ export class MailService {
         actions: {
           orderBy: { requestedAt: 'desc' },
         },
+        consulidationRequests: true,
         forwardRequests: {
           include: {
             deliveryAddress: true,

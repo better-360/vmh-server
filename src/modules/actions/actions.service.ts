@@ -496,7 +496,7 @@ async createConsolidationRequest(dto: CreateConsolidationRequestDto, userId: str
   // Update mail statuses to IN_PROCESS
   await this.prisma.mail.updateMany({
     where: { id: { in: mailIds } },
-    data: { status: MailStatus.IN_PROCESS }
+    data: { status: MailStatus.WAITING_FOR_CONSOLIDATION }
   });
 
   // Emit event
