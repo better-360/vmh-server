@@ -108,7 +108,7 @@ Kargo paketlerinin temel yönetimi.
 - STE numarası eşleştirme
 - Paket bilgilerini güncelleme
 - Fotoğraf ekleme
-- Durum güncelleme: `PENDING`, `IN_PROCESS`, `COMPLETED` vs.
+- Durum güncelleme: `PENDING`, `IN_PROGRESS`, `COMPLETED` vs.
 
 ---
 

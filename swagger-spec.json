@@ -4316,10 +4316,12 @@
                 "SHREDDED",
                 "JUNKED",
                 "HOLDING_FOR_PICKUP",
-                "IN_PROCESS",
+                "IN_PROGRESS",
                 "CONSOLIDATED",
                 "SCANNED",
-                "COMPLETED"
+                "COMPLETED",
+                "WAITING_FOR_CONSOLIDATION",
+                "OTHER"
               ],
               "type": "string"
             }
@@ -6072,10 +6074,12 @@
                 "SHREDDED",
                 "JUNKED",
                 "HOLDING_FOR_PICKUP",
-                "IN_PROCESS",
+                "IN_PROGRESS",
                 "CONSOLIDATED",
                 "SCANNED",
-                "COMPLETED"
+                "COMPLETED",
+                "WAITING_FOR_CONSOLIDATION",
+                "OTHER"
               ],
               "type": "string"
             }
@@ -11333,10 +11337,12 @@
               "SHREDDED",
               "JUNKED",
               "HOLDING_FOR_PICKUP",
-              "IN_PROCESS",
+              "IN_PROGRESS",
               "CONSOLIDATED",
               "SCANNED",
-              "COMPLETED"
+              "COMPLETED",
+              "WAITING_FOR_CONSOLIDATION",
+              "OTHER"
             ],
             "example": "PENDING"
           },
@@ -11690,10 +11696,12 @@
               "SHREDDED",
               "JUNKED",
               "HOLDING_FOR_PICKUP",
-              "IN_PROCESS",
+              "IN_PROGRESS",
               "CONSOLIDATED",
               "SCANNED",
-              "COMPLETED"
+              "COMPLETED",
+              "WAITING_FOR_CONSOLIDATION",
+              "OTHER"
             ],
             "example": "PENDING",
             "default": "PENDING"
@@ -11813,10 +11821,12 @@
               "SHREDDED",
               "JUNKED",
               "HOLDING_FOR_PICKUP",
-              "IN_PROCESS",
+              "IN_PROGRESS",
               "CONSOLIDATED",
               "SCANNED",
-              "COMPLETED"
+              "COMPLETED",
+              "WAITING_FOR_CONSOLIDATION",
+              "OTHER"
             ],
             "example": "PENDING",
             "default": "PENDING"

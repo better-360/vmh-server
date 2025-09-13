@@ -129,7 +129,7 @@ async createActionRequest(dto: CreateMailActionRequestDto, userId: string, abili
      await this.prisma.mail.update({
       where:{id:mail.id},
       data:{
-        status:MailStatus.IN_PROCESS
+        status:MailStatus.IN_PROGRESS
       }
     })
   
@@ -493,7 +493,6 @@ async createConsolidationRequest(dto: CreateConsolidationRequestDto, userId: str
     }
   });
 
-  // Update mail statuses to IN_PROCESS
   await this.prisma.mail.updateMany({
     where: { id: { in: mailIds } },
     data: { status: MailStatus.WAITING_FOR_CONSOLIDATION }

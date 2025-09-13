@@ -943,7 +943,7 @@ enum MailStatus {
   SHREDDED // Paket imha edildi
   JUNKED // Çöte Atıldı.
   HOLDING_FOR_PICKUP // Kullanıcıy bekliyor.
-  IN_PROCESS // Aksiyon bekliyor (forward, shred, vs.)
+  IN_PROGRESS // Aksiyon bekliyor (forward, shred, vs.)
   CONSOLIDATED // Konsolide edildi
   SCANNED // Paket tarandı
   COMPLETED // Tüm işlemler tamamlandı
