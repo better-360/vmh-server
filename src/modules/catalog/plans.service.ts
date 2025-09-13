@@ -42,7 +42,6 @@ export class PlansService {
       ...(search && {
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
           { slug: { contains: search, mode: 'insensitive' } },
         ],
       }),
