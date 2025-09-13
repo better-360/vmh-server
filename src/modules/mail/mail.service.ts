@@ -272,6 +272,7 @@ export class MailService {
             senderName: item.senderName,
             type: item.type,
             receivedAt: item.receivedAt,
+            status: item.status,
           }))
         : [],
         
