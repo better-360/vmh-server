@@ -8997,9 +8997,63 @@
             "example": "basic-plan"
           },
           "description": {
-            "type": "string",
-            "description": "Plan description",
-            "example": "Basic plan with essential features"
+            "type": "object",
+            "description": "Planın detaylı açıklaması (Rich Text Editor JSON formatı)",
+            "example": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Detaylı plan açıklaması."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "displayFeatures": {
+            "type": "array",
+            "description": "Arayüzde gösterilecek özellikler (ikon, etiket vb.)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "icon": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              }
+            },
+            "example": [
+              {
+                "icon": "mail",
+                "label": "Yüksek Hızlı İnternet",
+                "value": "100 Mbps"
+              },
+              {
+                "icon": "shield ",
+                "label": "Sınırsız Kahve",
+                "value": "Evet"
+              }
+            ]
+          },
+          "bestFor": {
+            "type": "array",
+            "description": "Planın kimler için uygun olduğunu belirten etiketler dizisi",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "Founders",
+              "Freelancers"
+            ]
           },
           "imageUrl": {
             "type": "string",
@@ -9011,16 +9065,6 @@
             "description": "Is plan active",
             "example": true,
             "default": true
-          },
-          "displayFeatures": {
-            "type": "object",
-            "description": "Display features for UI (JSON format)",
-            "example": {
-              "highlights": [
-                "Feature 1",
-                "Feature 2"
-              ]
-            }
           },
           "showOnMarketplace": {
             "type": "boolean",
@@ -9204,9 +9248,63 @@
             "example": "basic-plan"
           },
           "description": {
-            "type": "string",
-            "description": "Plan description",
-            "example": "Basic plan with essential features"
+            "type": "object",
+            "description": "Planın detaylı açıklaması (Rich Text Editor JSON formatı)",
+            "example": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Detaylı plan açıklaması."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "displayFeatures": {
+            "type": "array",
+            "description": "Arayüzde gösterilecek özellikler (ikon, etiket vb.)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "icon": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              }
+            },
+            "example": [
+              {
+                "icon": "mail",
+                "label": "Yüksek Hızlı İnternet",
+                "value": "100 Mbps"
+              },
+              {
+                "icon": "shield ",
+                "label": "Sınırsız Kahve",
+                "value": "Evet"
+              }
+            ]
+          },
+          "bestFor": {
+            "type": "array",
+            "description": "Planın kimler için uygun olduğunu belirten etiketler dizisi",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "Founders",
+              "Freelancers"
+            ]
           },
           "imageUrl": {
             "type": "string",
@@ -9218,16 +9316,6 @@
             "description": "Is plan active",
             "example": true,
             "default": true
-          },
-          "displayFeatures": {
-            "type": "object",
-            "description": "Display features for UI (JSON format)",
-            "example": {
-              "highlights": [
-                "Feature 1",
-                "Feature 2"
-              ]
-            }
           },
           "showOnMarketplace": {
             "type": "boolean",
@@ -9560,9 +9648,22 @@
             "default": "USD"
           },
           "description": {
-            "type": "string",
-            "description": "Price description",
-            "example": "Monthly subscription for extra recipient"
+            "type": "object",
+            "description": "Planın detaylı açıklaması (Rich Text Editor JSON formatı)",
+            "example": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Detaylı plan açıklaması."
+                    }
+                  ]
+                }
+              ]
+            }
           },
           "priceType": {
             "type": "string",
@@ -9638,18 +9739,67 @@
           },
           "description": {
             "type": "object",
-            "description": "Product description",
-            "example": "{\"en\": \"Additional recipient for mail forwarding\", \"tr\": \"Ek yazıcı için ekstra yazıcı\"}"
+            "description": "Planın detaylı açıklaması (Rich Text Editor JSON formatı)",
+            "example": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Detaylı plan açıklaması."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "displayFeatures": {
+            "type": "array",
+            "description": "Arayüzde gösterilecek özellikler (ikon, etiket vb.)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "icon": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              }
+            },
+            "example": [
+              {
+                "icon": "mail",
+                "label": "Yüksek Hızlı İnternet",
+                "value": "100 Mbps"
+              },
+              {
+                "icon": "shield ",
+                "label": "Sınırsız Kahve",
+                "value": "Evet"
+              }
+            ]
+          },
+          "bestFor": {
+            "type": "array",
+            "description": "Planın kimler için uygun olduğunu belirten etiketler dizisi",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "Founders",
+              "Freelancers"
+            ]
           },
           "category": {
             "type": "string",
             "description": "Product category",
             "example": "ADDON"
-          },
-          "bestFor": {
-            "type": "object",
-            "description": "Product best for",
-            "example": "{\"type\": \"ADDON\", \"description\": \"Additional recipient for mail forwarding\"}"
           },
           "stripeProductId": {
             "type": "string",
@@ -9712,8 +9862,62 @@
           },
           "description": {
             "type": "object",
-            "description": "Product description",
-            "example": "Additional recipient for mail forwarding"
+            "description": "Planın detaylı açıklaması (Rich Text Editor JSON formatı)",
+            "example": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Detaylı plan açıklaması."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "displayFeatures": {
+            "type": "array",
+            "description": "Arayüzde gösterilecek özellikler (ikon, etiket vb.)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "icon": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              }
+            },
+            "example": [
+              {
+                "icon": "mail",
+                "label": "Yüksek Hızlı İnternet",
+                "value": "100 Mbps"
+              },
+              {
+                "icon": "shield ",
+                "label": "Sınırsız Kahve",
+                "value": "Evet"
+              }
+            ]
+          },
+          "bestFor": {
+            "type": "array",
+            "description": "Planın kimler için uygun olduğunu belirten etiketler dizisi",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "Girişimciler",
+              "Serbest Çalışanlar"
+            ]
           },
           "stripeProductId": {
             "type": "string",
@@ -9810,18 +10014,67 @@
           },
           "description": {
             "type": "object",
-            "description": "Product description",
-            "example": "{\"en\": \"Additional recipient for mail forwarding\", \"tr\": \"Ek yazıcı için ekstra yazıcı\"}"
+            "description": "Planın detaylı açıklaması (Rich Text Editor JSON formatı)",
+            "example": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Detaylı plan açıklaması."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "displayFeatures": {
+            "type": "array",
+            "description": "Arayüzde gösterilecek özellikler (ikon, etiket vb.)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "icon": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              }
+            },
+            "example": [
+              {
+                "icon": "mail",
+                "label": "Yüksek Hızlı İnternet",
+                "value": "100 Mbps"
+              },
+              {
+                "icon": "shield ",
+                "label": "Sınırsız Kahve",
+                "value": "Evet"
+              }
+            ]
+          },
+          "bestFor": {
+            "type": "array",
+            "description": "Planın kimler için uygun olduğunu belirten etiketler dizisi",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "Founders",
+              "Freelancers"
+            ]
           },
           "category": {
             "type": "string",
             "description": "Product category",
             "example": "ADDON"
-          },
-          "bestFor": {
-            "type": "object",
-            "description": "Product best for",
-            "example": "{\"type\": \"ADDON\", \"description\": \"Additional recipient for mail forwarding\"}"
           },
           "stripeProductId": {
             "type": "string",
@@ -9914,9 +10167,22 @@
             "example": "123e4567-e89b-12d3-a456-426614174000"
           },
           "description": {
-            "type": "string",
-            "description": "Price description",
-            "example": "Monthly subscription for extra recipient"
+            "type": "object",
+            "description": "Planın detaylı açıklaması (Rich Text Editor JSON formatı)",
+            "example": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Detaylı plan açıklaması."
+                    }
+                  ]
+                }
+              ]
+            }
           },
           "recurringId": {
             "type": "string",
@@ -10914,9 +11180,16 @@
             "example": "USD"
           },
           "description": {
-            "type": "string",
-            "description": "Price description",
-            "example": "Monthly subscription fee"
+            "type": "object",
+            "description": "Serbest biçimli açıklama JSON’u (object veya array).",
+            "additionalProperties": true,
+            "example": {
+              "summary": "Uygun fiyatlı başlangıç planı",
+              "details": {
+                "docs": true,
+                "forwarding": false
+              }
+            }
           },
           "stripePriceId": {
             "type": "string",
@@ -11083,9 +11356,46 @@
             "example": "basic-plan"
           },
           "description": {
-            "type": "string",
-            "description": "Plan description",
-            "example": "Basic plan with essential features"
+            "type": "object",
+            "description": "Serbest biçimli açıklama JSON’u (object veya array).",
+            "additionalProperties": true,
+            "example": {
+              "summary": "Uygun fiyatlı başlangıç planı",
+              "details": {
+                "docs": true,
+                "forwarding": false
+              }
+            }
+          },
+          "displayFeatures": {
+            "type": "object",
+            "description": "Sadece gösterim için kullanılacak özellikler (UI config).",
+            "additionalProperties": true,
+            "example": {
+              "badges": [
+                "Best Value"
+              ],
+              "highlights": [
+                "Aylık 20 tarama",
+                "1 ücretsiz yönlendirme"
+              ],
+              "theme": {
+                "color": "#6B8AFB",
+                "icon": "mail"
+              }
+            }
+          },
+          "bestFor": {
+            "description": "Hedef kitle listesi (JSON’a string[] olarak yazılır).",
+            "example": [
+              "freelancers",
+              "startups",
+              "remote teams"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "imageUrl": {
             "type": "string",
@@ -11106,10 +11416,6 @@
             "type": "boolean",
             "description": "Show on marketplace",
             "example": true
-          },
-          "displayFeatures": {
-            "type": "object",
-            "description": "Display features for UI"
           },
           "createdAt": {
             "format": "date-time",

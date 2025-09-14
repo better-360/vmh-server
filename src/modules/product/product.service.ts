@@ -42,7 +42,7 @@ export class ProductService {
         data.stripeProductId ??
         (await this.stripeService.createProduct({
           name: data.name,
-          description: data.description,
+          description: JSON.stringify(data.description) ?? undefined,
         })).id;
 
       // 2) Create Local product
@@ -179,7 +179,7 @@ export class ProductService {
 
         let stripeData = {
           name: data.name,
-          description: data.description,
+          description:JSON.stringify(data.description) ?? undefined,
           images: data.imageUrl ? [data.imageUrl] : undefined,
         }
         await this.stripeService.updateProduct(product.stripeProductId, stripeData);

@@ -13,8 +13,10 @@ import {
   IsEnum,
   IsInt,
   IsJSON,
+  IsObject,
 } from 'class-validator';
 import { PriceType, ProductType, RecurringInterval, ResetCycle } from '@prisma/client';
+import { JsonValue } from '@prisma/client/runtime/library';
 
 export class RecurringDto {
   @ApiProperty({ description: 'Recurring interval (örn: day, week, month, year)', enum: RecurringInterval })
@@ -105,13 +107,18 @@ export class CreatePriceDto {
   @IsNotEmpty()
   currency: string;
 
-  @ApiPropertyOptional({
-    description: 'Price description',
-    example: 'Monthly subscription for extra recipient',
+
+
+  @ApiProperty({
+    description: 'Planın detaylı açıklaması (Rich Text Editor JSON formatı)',
+    type: 'object',
+    required: false,
+    example: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Detaylı plan açıklaması.' }] }] },
   })
-  @IsString()
   @IsOptional()
-  description?: string;
+  @IsObject()
+  description?: JsonValue;
+
 
   @ApiPropertyOptional({
     description: 'Price type: "one_time" or "recurring"',
@@ -197,11 +204,16 @@ export class PriceResponseDto {
   })
   productId: string;
 
-  @ApiPropertyOptional({
-    description: 'Price description',
-    example: 'Monthly subscription for extra recipient',
+
+  @ApiProperty({
+    description: 'Planın detaylı açıklaması (Rich Text Editor JSON formatı)',
+    type: 'object',
+    required: false,
+    example: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Detaylı plan açıklaması.' }] }] },
   })
-  description?: string;
+  @IsOptional()
+  @IsObject()
+  description?: JsonValue;
 
   @ApiPropertyOptional({
     description: 'Recurring ID',
@@ -271,14 +283,51 @@ export class CreateProductDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiPropertyOptional({
-    description: 'Product description',
-    example: '{"en": "Additional recipient for mail forwarding", "tr": "Ek yazıcı için ekstra yazıcı"}',
+
+ @ApiProperty({
+    description: 'Planın detaylı açıklaması (Rich Text Editor JSON formatı)',
+    type: 'object',
+    required: false,
+    example: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Detaylı plan açıklaması.' }] }] },
   })
   @IsOptional()
-  @IsJSON()
-  description?: any;
+  @IsObject()
+  description?: JsonValue;
 
+  @ApiProperty({
+    description: 'Arayüzde gösterilecek özellikler (ikon, etiket vb.)',
+    type: 'array',
+    items: {
+        type: 'object',
+        properties: {
+            icon: { type: 'string' },
+            label: { type: 'string' },
+            value: { type: 'string' },
+        }
+    },
+    required: false,
+    example: [
+      { icon: 'mail', label: 'Yüksek Hızlı İnternet', value: '100 Mbps' },
+      { icon: 'shield ', label: 'Sınırsız Kahve', value: 'Evet' }
+    ],
+  })
+  @IsOptional()
+  @IsArray()
+  displayFeatures?: JsonValue;
+
+
+  @ApiProperty({
+    description: 'Planın kimler için uygun olduğunu belirten etiketler dizisi',
+    type: 'array',
+    items: { type: 'string' },
+    required: false,
+    example: ['Founders', 'Freelancers'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  bestFor?: JsonValue;
+  
   @ApiPropertyOptional({
     description: 'Product category',
     example: 'ADDON',
@@ -286,14 +335,6 @@ export class CreateProductDto {
   @IsString()
   @IsOptional()
   category?: string;
-
-  @ApiPropertyOptional({
-    description: 'Product best for',
-    example: '{"type": "ADDON", "description": "Additional recipient for mail forwarding"}',
-  })
-  @IsJSON()
-  @IsOptional()
-  bestFor?: any;
 
   @ApiPropertyOptional({
     description: 'Stripe product ID if product is created in stripe and not in local database',
@@ -367,11 +408,49 @@ export class ProductResponseDto {
   })
   name: string;
 
-  @ApiPropertyOptional({
-    description: 'Product description',
-    example: 'Additional recipient for mail forwarding',
+@ApiProperty({
+    description: 'Planın detaylı açıklaması (Rich Text Editor JSON formatı)',
+    type: 'object',
+    required: false,
+    example: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Detaylı plan açıklaması.' }] }] },
   })
-  description?: any;
+  @IsOptional()
+  @IsObject()
+  description?: JsonValue;
+
+  @ApiProperty({
+    description: 'Arayüzde gösterilecek özellikler (ikon, etiket vb.)',
+    type: 'array',
+    items: {
+        type: 'object',
+        properties: {
+            icon: { type: 'string' },
+            label: { type: 'string' },
+            value: { type: 'string' },
+        }
+    },
+    required: false,
+    example: [
+      { icon: 'mail', label: 'Yüksek Hızlı İnternet', value: '100 Mbps' },
+      { icon: 'shield ', label: 'Sınırsız Kahve', value: 'Evet' }
+    ],
+  })
+  @IsOptional()
+  @IsArray()
+  displayFeatures?: JsonValue;
+
+  @ApiProperty({
+    description: 'Planın kimler için uygun olduğunu belirten etiketler dizisi',
+    type: 'array',
+    items: { type: 'string' },
+    required: false,
+    example: ['Girişimciler', 'Serbest Çalışanlar'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  bestFor?: JsonValue;
+
 
   @ApiPropertyOptional({
     description: 'Stripe product ID',

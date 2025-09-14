@@ -14,9 +14,11 @@ import {
   IsInt,
   IsJSON,
   Max,
+  IsObject,
 } from 'class-validator';
 import { BillingCycle } from '@prisma/client';
 import { CreatePlanAddonDto, PlanAddonResponseDto, PlanFeatureResponseDto, CreatePlanFeatureDto } from './plan_entitlements.dto';
+import { JsonValue } from '@prisma/client/runtime/library';
 
 // =====================
 // PLAN DTOs
@@ -46,15 +48,51 @@ export class CreatePlanDto {
   @IsString()
   @IsNotEmpty()
   slug: string;
-
-  @ApiPropertyOptional({
-    description: 'Plan description',
-    example: 'Basic plan with essential features',
+ 
+  @ApiProperty({
+    description: 'Planın detaylı açıklaması (Rich Text Editor JSON formatı)',
+    type: 'object',
+    required: false,
+    example: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Detaylı plan açıklaması.' }] }] },
   })
-  @IsString()
   @IsOptional()
-  description?: string;
+  @IsObject()
+  description?: JsonValue;
 
+  @ApiProperty({
+    description: 'Arayüzde gösterilecek özellikler (ikon, etiket vb.)',
+    type: 'array',
+    items: {
+        type: 'object',
+        properties: {
+            icon: { type: 'string' },
+            label: { type: 'string' },
+            value: { type: 'string' },
+        }
+    },
+    required: false,
+    example: [
+      { icon: 'mail', label: 'Yüksek Hızlı İnternet', value: '100 Mbps' },
+      { icon: 'shield ', label: 'Sınırsız Kahve', value: 'Evet' }
+    ],
+  })
+  @IsOptional()
+  @IsArray()
+  displayFeatures?: JsonValue;
+
+  @ApiProperty({
+    description: 'Planın kimler için uygun olduğunu belirten etiketler dizisi',
+    type: 'array',
+    items: { type: 'string' },
+    required: false,
+    example: ['Founders', 'Freelancers'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  bestFor?: JsonValue;
+
+  
   @ApiPropertyOptional({
     description: 'Plan image URL',
     example: 'https://example.com/plan-image.png',
@@ -72,12 +110,6 @@ export class CreatePlanDto {
   @IsOptional()
   isActive?: boolean;
 
-  @ApiPropertyOptional({
-    description: 'Display features for UI (JSON format)',
-    example: { 'highlights': ['Feature 1', 'Feature 2'] },
-  })
-  @IsOptional()
-  displayFeatures?: any;
 
   @ApiPropertyOptional({
     description: 'Show on marketplace',
@@ -209,10 +241,14 @@ export class PlanPriceResponseDto {
   currency: string;
 
   @ApiPropertyOptional({
-    description: 'Price description',
-    example: 'Monthly subscription fee',
+    description: 'Serbest biçimli açıklama JSON’u (object veya array).',
+    type: 'object',
+    additionalProperties: true,
+    example: { summary: 'Uygun fiyatlı başlangıç planı', details: { docs: true, forwarding: false } },
   })
-  description?: string;
+  @IsOptional()
+  @IsObject()
+  description?: Record<string, unknown>;
 
   @ApiPropertyOptional({
     description: 'Stripe Price ID',
@@ -292,12 +328,40 @@ export class PlanResponseDto {
   })
   slug: string;
 
-  @ApiPropertyOptional({
-    description: 'Plan description',
-    example: 'Basic plan with essential features',
+ @ApiPropertyOptional({
+    description: 'Serbest biçimli açıklama JSON’u (object veya array).',
+    type: 'object',
+    additionalProperties: true,
+    example: { summary: 'Uygun fiyatlı başlangıç planı', details: { docs: true, forwarding: false } },
   })
-  description?: string;
+  @IsOptional()
+  @IsObject()
+  description?: Record<string, unknown>;
 
+  @ApiPropertyOptional({
+    description: 'Sadece gösterim için kullanılacak özellikler (UI config).',
+    type: 'object',
+    additionalProperties: true,
+    example: {
+      badges: ['Best Value'],
+      highlights: ['Aylık 20 tarama', '1 ücretsiz yönlendirme'],
+      theme: { color: '#6B8AFB', icon: 'mail' },
+    },
+  })
+  @IsOptional()
+  @IsObject()
+  displayFeatures?: Record<string, unknown>;
+  
+  @ApiPropertyOptional({
+    description: 'Hedef kitle listesi (JSON’a string[] olarak yazılır).',
+    type: [String],
+    example: ['freelancers', 'startups', 'remote teams'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  bestFor?: string[];
+  
   @ApiPropertyOptional({
     description: 'Plan image URL',
     example: 'https://example.com/plan-image.png',
@@ -321,11 +385,6 @@ export class PlanResponseDto {
     example: true,
   })
   showOnMarketplace: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Display features for UI',
-  })
-  displayFeatures?: any;
 
   @ApiProperty({
     description: 'Created at',
