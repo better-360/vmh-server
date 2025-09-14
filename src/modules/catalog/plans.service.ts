@@ -1,4 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import {
   CreatePlanDto,
@@ -8,15 +15,17 @@ import {
   PlanResponseDto,
   GetPlansQueryDto,
 } from 'src/dtos/plan.dto';
-import { Prisma } from '@prisma/client';
+import { BillingCycle, Prisma } from '@prisma/client';
 import { StripeService } from '../stripe/stripe.service';
 import { isValidUUID } from 'src/utils/validate';
+import Stripe from 'stripe';
 
 @Injectable()
 export class PlansService {
   private readonly logger = new Logger('PlansService');
 
-  constructor(private readonly prisma: PrismaService,
+  constructor(
+    private readonly prisma: PrismaService,
     private readonly stripeService: StripeService,
   ) {}
 
@@ -30,7 +39,7 @@ export class PlansService {
       limit = 10,
     } = query || {};
 
-   const isValid= isValidUUID(officeLocationId);
+    const isValid = isValidUUID(officeLocationId);
     if (officeLocationId && !isValid) {
       throw new BadRequestException('Invalid office location ID');
     }
@@ -64,7 +73,12 @@ export class PlansService {
             where: { isActive: true, isDeleted: false },
             include: {
               feature: {
-                select: { id: true, name: true, description: true, imageUrl: true },
+                select: {
+                  id: true,
+                  name: true,
+                  description: true,
+                  imageUrl: true,
+                },
               },
             },
           },
@@ -85,9 +99,13 @@ export class PlansService {
     };
   }
 
-  async getPlanByOfficeLocationId(officeLocation:string) {
+  async getPlanByOfficeLocationId(officeLocation: string) {
     return await this.prisma.plan.findMany({
-      where: { isActive: true, isDeleted: false, officeLocationId:officeLocation },
+      where: {
+        isActive: true,
+        isDeleted: false,
+        officeLocationId: officeLocation,
+      },
       include: {
         prices: {
           where: { isActive: true, isDeleted: false },
@@ -119,7 +137,12 @@ export class PlansService {
           where: { isActive: true, isDeleted: false },
           include: {
             feature: {
-              select: { id: true, name: true, description: true, imageUrl: true },
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                imageUrl: true,
+              },
             },
           },
         },
@@ -143,7 +166,12 @@ export class PlansService {
           where: { isActive: true, isDeleted: false },
           include: {
             feature: {
-              select: { id: true, name: true, description: true, imageUrl: true },
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                imageUrl: true,
+              },
             },
           },
         },
@@ -153,7 +181,7 @@ export class PlansService {
   }
 
   async getPlanById(id: string) {
-    console.log('id',id)
+    console.log('id', id);
     const plan = await this.prisma.plan.findFirst({
       where: { id, isDeleted: false },
       include: {
@@ -175,16 +203,15 @@ export class PlansService {
                 imageUrl: true,
               },
             },
-            
           },
         },
       },
     });
-  
+
     if (!plan) {
       throw new NotFoundException('Plan not found');
     }
-  
+
     // Formatla ve dön
     return {
       id: plan.id,
@@ -201,7 +228,7 @@ export class PlansService {
         city: plan.officeLocation.city,
         state: plan.officeLocation.state,
       },
-      prices: plan.prices.map(price => ({
+      prices: plan.prices.map((price) => ({
         id: price.id,
         billingCycle: price.billingCycle,
         amount: price.amount,
@@ -209,7 +236,7 @@ export class PlansService {
         description: price.description,
         stripePriceId: price.stripePriceId,
       })),
-      features: plan.features.map(pf => ({
+      features: plan.features.map((pf) => ({
         id: pf.feature.id,
         name: pf.feature.name,
         description: pf.feature.description,
@@ -220,13 +247,12 @@ export class PlansService {
       })),
     };
   }
-  
 
   async createPlan(data: CreatePlanDto) {
     try {
       // Check if office location exists
       const officeLocation = await this.prisma.officeLocation.findUnique({
-        where: { id: data.officeLocationId},
+        where: { id: data.officeLocationId },
       });
 
       if (!officeLocation) {
@@ -235,35 +261,92 @@ export class PlansService {
 
       // Check if plan slug already exists for this location
       const existingPlan = await this.prisma.plan.findFirst({
-        where: { 
-          slug: data.slug, 
+        where: {
+          slug: data.slug,
           officeLocationId: data.officeLocationId,
-          isDeleted: false 
+          isDeleted: false,
         },
       });
 
       if (existingPlan) {
-        throw new ConflictException('Plan with this slug already exists for this location');
+        throw new ConflictException(
+          'Plan with this slug already exists for this location',
+        );
       }
 
-      return await this.prisma.plan.create({
-        data,
-        include: {
-          officeLocation: {
-            select: { id: true, label: true, city: true, state: true },
+      const created = await this.prisma.$transaction(async (tx) => {
+        let stripeProductId = data.stripeProductId ?? null;
+
+        if (!stripeProductId) {
+          try {
+            const stripePrice = await this.stripeService.createProduct({
+              name: data.name,
+              description: data.description
+                ? JSON.stringify(data.description)
+                : undefined,
+              metadata: {
+                officeLocationId: data.officeLocationId,
+                planSlug: data.slug,
+              },
+            });
+            stripeProductId = stripePrice.id;
+          } catch (err) {
+            const se = err as Stripe.errors.StripeError;
+            this.logger.error(
+              `Stripe product create failed: ${se?.message ?? String(err)}`,
+            );
+            throw new InternalServerErrorException(
+              'Failed to create Stripe product.',
+            );
+          }
+        } else {
+          try {
+            await this.stripeService.getProduct(stripeProductId);
+          } catch (err) {
+            this.logger.warn(
+              `Provided stripeProductId (${stripeProductId}) could not be retrieved. Proceeding anyway.`,
+            );
+          }
+        }
+
+        const createdPlan = await tx.plan.create({
+          data: {
+            ...data,
+            stripeProductId,
           },
-          prices: true,
-          features: {
-            include: { feature: true },
+          include: {
+            officeLocation: {
+              select: { id: true, label: true, city: true, state: true },
+            },
+            prices: true,
+            features: {
+              include: { feature: true },
+            },
           },
-        },
+        });
+        return createdPlan;
       });
+
+      return created;
     } catch (error) {
-      this.logger.error(error.message);
-      if (error instanceof ConflictException || error instanceof NotFoundException) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Plan with this slug already exists for this location',
+        );
+      }
+
+      if (
+        error instanceof ConflictException ||
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
-      
+
+      this.logger.error(`Failed to create plan: ${String(error)}`);
       throw new BadRequestException('Failed to create plan');
     }
   }
@@ -281,34 +364,72 @@ export class PlansService {
 
       // Check if plan slug already exists for this location
       const existingPlan = await this.prisma.plan.findFirst({
-        where: { 
-          slug: data.slug, 
+        where: {
+          slug: data.slug,
           officeLocationId: data.officeLocationId,
-          isDeleted: false 
+          isDeleted: false,
         },
       });
 
       if (existingPlan) {
-        throw new ConflictException('Plan with this slug already exists for this location');
+        throw new ConflictException(
+          'Plan with this slug already exists for this location',
+        );
       }
 
       // Validate all features exist
-      const featureIds = data.features.map(f => f.featureId);
+      const featureIds = data.features.map((f) => f.featureId);
       const features = await this.prisma.feature.findMany({
-        where: { 
+        where: {
           id: { in: featureIds },
           isActive: true,
-          isDeleted: false 
+          isDeleted: false,
         },
       });
 
       if (features.length !== featureIds.length) {
-        const foundIds = features.map(f => f.id);
-        const missingIds = featureIds.filter(id => !foundIds.includes(id));
-        throw new BadRequestException(`Features not found: ${missingIds.join(', ')}`);
+        const foundIds = features.map((f) => f.id);
+        const missingIds = featureIds.filter((id) => !foundIds.includes(id));
+        throw new BadRequestException(
+          `Features not found: ${missingIds.join(', ')}`,
+        );
       }
 
       return await this.prisma.$transaction(async (tx) => {
+
+        let stripeProductId = data.stripeProductId ?? null;
+        if (!stripeProductId) {
+          try {
+            const stripePrice = await this.stripeService.createProduct({
+              name: data.name,
+              description: data.description
+                ? JSON.stringify(data.description)
+                : undefined,
+              metadata: {
+                officeLocationId: data.officeLocationId,
+                planSlug: data.slug,
+              },
+            });
+            stripeProductId = stripePrice.id;
+          } catch (err) {
+            const se = err as Stripe.errors.StripeError;
+            this.logger.error(
+              `Stripe product create failed: ${se?.message ?? String(err)}`,
+            );
+            throw new InternalServerErrorException(
+              'Failed to create Stripe product.',
+            );
+          }
+        } else {
+          try {
+            await this.stripeService.getProduct(stripeProductId);
+          } catch (err) {
+            this.logger.warn(
+              `Provided stripeProductId (${stripeProductId}) could not be retrieved. Proceeding anyway.`,
+            );
+          }
+        }
+
         // 1. Create Plan
         const plan = await tx.plan.create({
           data: {
@@ -318,13 +439,14 @@ export class PlansService {
             description: data.description,
             imageUrl: data.imageUrl,
             isActive: data.isActive ?? true,
+            stripeProductId,
           },
         });
 
         // 2. Create Plan Features
         if (data.features && data.features.length > 0) {
           await tx.planFeature.createMany({
-            data: data.features.map(feature => ({
+            data: data.features.map((feature) => ({
               planId: plan.id,
               featureId: feature.featureId,
               includedLimit: feature.includedLimit,
@@ -337,7 +459,7 @@ export class PlansService {
         // 3. Create Plan Prices
         if (data.prices && data.prices.length > 0) {
           await tx.planPrice.createMany({
-            data: data.prices.map(price => ({
+            data: data.prices.map((price) => ({
               planId: plan.id,
               billingCycle: price.billingCycle,
               amount: price.amount,
@@ -364,7 +486,12 @@ export class PlansService {
               where: { isActive: true, isDeleted: false },
               include: {
                 feature: {
-                  select: { id: true, name: true, description: true, imageUrl: true },
+                  select: {
+                    id: true,
+                    name: true,
+                    description: true,
+                    imageUrl: true,
+                  },
                 },
               },
             },
@@ -372,12 +499,22 @@ export class PlansService {
         });
       });
     } catch (error) {
-      this.logger.error(error.message);
-      if (error instanceof ConflictException || error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('Plan with this slug already exists for this location');
+      }
+      if (
+        error instanceof ConflictException ||
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
-      
-      throw new BadRequestException('Failed to create plan with features');
+
+      this.logger.error(`Failed to create plan: ${String(error)}`);
+      throw new BadRequestException('Failed to create plan');
     }
   }
 
@@ -389,16 +526,18 @@ export class PlansService {
       if (data.slug) {
         const plan = await this.prisma.plan.findUnique({ where: { id } });
         const existingPlan = await this.prisma.plan.findFirst({
-          where: { 
-            slug: data.slug, 
+          where: {
+            slug: data.slug,
             officeLocationId: plan.officeLocationId,
-            id: { not: id }, 
-            isDeleted: false 
+            id: { not: id },
+            isDeleted: false,
           },
         });
 
         if (existingPlan) {
-          throw new ConflictException('Plan with this slug already exists for this location');
+          throw new ConflictException(
+            'Plan with this slug already exists for this location',
+          );
         }
       }
 
@@ -497,15 +636,17 @@ export class PlansService {
 
       // Check if plan slug already exists for this location
       const existingPlan = await this.prisma.plan.findFirst({
-        where: { 
-          slug: planSlug, 
+        where: {
+          slug: planSlug,
           officeLocationId: data.officeLocationId,
-          isDeleted: false 
+          isDeleted: false,
         },
       });
 
       if (existingPlan) {
-        throw new ConflictException('Plan with this slug already exists for this location');
+        throw new ConflictException(
+          'Plan with this slug already exists for this location',
+        );
       }
 
       return await this.prisma.$transaction(async (tx) => {
@@ -545,7 +686,7 @@ export class PlansService {
         // 3. Create Plan Features
         if (template.features && template.features.length > 0) {
           await tx.planFeature.createMany({
-            data: template.features.map(templateFeature => ({
+            data: template.features.map((templateFeature) => ({
               planId: plan.id,
               featureId: templateFeature.featureId,
               includedLimit: templateFeature.includedLimit,
@@ -576,7 +717,10 @@ export class PlansService {
       });
     } catch (error) {
       this.logger.error(error.message);
-      if (error instanceof NotFoundException || error instanceof ConflictException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
         throw error;
       }
       throw new BadRequestException('Failed to create plan from template');
@@ -627,46 +771,157 @@ export class PlansService {
   }
 
   async createPlanPrice(data: CreatePlanPriceDto) {
-    // Check if plan exists
+    if (!data.planId) {
+      throw new BadRequestException('planId is required.');
+    }
+    if (typeof data.amount !== 'number' || data.amount < 0) {
+      throw new BadRequestException(
+        'amount must be a non-negative integer (in cents).',
+      );
+    }
+    if (!data.currency || typeof data.currency !== 'string') {
+      throw new BadRequestException('currency is required.');
+    }
+    const billingCycle = data.billingCycle ?? BillingCycle.MONTHLY;
+    const isActive = data.isActive ?? true;
+
     const plan = await this.prisma.plan.findFirst({
       where: { id: data.planId, isDeleted: false },
+      select: {
+        id: true,
+        name: true,
+        isDeleted: true,
+        officeLocationId: true,
+        stripeProductId: true,
+        description: true,
+      },
     });
 
     if (!plan) {
       throw new NotFoundException('Plan not found');
     }
+    const existingPrice = await this.prisma.planPrice.findFirst({
+      where: {
+        planId: data.planId,
+        billingCycle,
+        isDeleted: false,
+      },
+      select: { id: true },
+    });
+    if (existingPrice) {
+      throw new ConflictException(
+        'Price for this plan and billing cycle already exists',
+      );
+    }
+
+    const recurring = this.mapBillingToRecurring(billingCycle);
 
     try {
-      // Check if price for this plan and billing cycle already exists
-      const existingPrice = await this.prisma.planPrice.findFirst({
-        where: {
-          planId: data.planId,
-          billingCycle: data.billingCycle,
-          isDeleted: false,
-        },
-      });
+      return await this.prisma.$transaction(async (tx) => {
+        let stripeProductId = plan.stripeProductId ?? null;
 
-      if (existingPrice) {
-        throw new ConflictException('Price for this plan and billing cycle already exists');
-      }
+        if (!stripeProductId) {
+          try {
+            const sp = await this.stripeService.createProduct({
+              name: plan.name ?? `Plan ${plan.id}`,
+              description: JSON.stringify(plan.description) ?? undefined,
+              metadata: { planId: plan.id },
+            });
+            stripeProductId = sp.id;
+            await tx.plan.update({
+              where: { id: plan.id },
+              data: { stripeProductId },
+            });
+          } catch (err) {
+            this.logger.error(`Stripe product create failed: ${String(err)}`);
+            throw new InternalServerErrorException(
+              'Failed to create Stripe product for plan.',
+            );
+          }
+        }
 
-      return await this.prisma.planPrice.create({
-        data,
-        include: {
-          plan: {
-            include: {
-              officeLocation: {
-                select: { id: true, label: true, city: true, state: true },
+        let stripePriceId = data.stripePriceId ?? null;
+
+        if (!stripePriceId) {
+          try {
+            const created = await this.stripeService.createPrice({
+              unit_amount: data.amount,
+              currency: data.currency.toLowerCase(),
+              product: stripeProductId!,
+              recurring: recurring ?? undefined,
+              nickname: `${plan.name ?? 'Plan'} - ${billingCycle}`,
+              metadata: {
+                planId: plan.id,
+                billingCycle,
+              },
+            });
+            stripePriceId = created.id;
+          } catch (err) {
+            const se = err as Stripe.errors.StripeError;
+            this.logger.error(
+              `Stripe price create failed: ${se?.message ?? String(err)}`,
+            );
+            throw new BadRequestException(
+              `Failed to create Stripe price: ${se?.message ?? 'Unknown error'}`,
+            );
+          }
+        } else {
+          try {
+            await this.stripeService.getPrice(stripePriceId);
+          } catch (err) {
+            this.logger.warn(
+              `Provided stripePriceId (${stripePriceId}) could not be retrieved. Proceeding anyway.`,
+            );
+          }
+        }
+        const created = await tx.planPrice.create({
+          data: {
+            planId: plan.id,
+            billingCycle,
+            amount: data.amount,
+            currency: data.currency,
+            description: data.description
+              ? JSON.stringify(data.description)
+              : undefined,
+            stripePriceId: stripePriceId!,
+            isActive,
+            isDeleted: false,
+          },
+          include: {
+            plan: {
+              include: {
+                officeLocation: {
+                  select: { id: true, label: true, city: true, state: true },
+                },
               },
             },
           },
-        },
+        });
+
+        this.logger.log(
+          `PlanPrice created for plan=${plan.id} cycle=${billingCycle} stripePrice=${stripePriceId}`,
+        );
+        return created;
       });
-    } catch (error) {
-      if (error instanceof ConflictException || error instanceof NotFoundException) {
-        throw error;
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2002' // unique violation
+      ) {
+        throw new ConflictException(
+          'A price for this plan and billing cycle already exists.',
+        );
       }
-      throw new BadRequestException('Failed to create plan price');
+
+      if (
+        err instanceof ConflictException ||
+        err instanceof BadRequestException
+      ) {
+        throw err;
+      }
+
+      this.logger.error(`createPlanPrice failed: ${String(err)}`);
+      throw new InternalServerErrorException('Failed to create plan price.');
     }
   }
 
@@ -726,6 +981,21 @@ export class PlansService {
     }
   }
 
-
-
+  private mapBillingToRecurring(b: BillingCycle | undefined) {
+    const billing = b ?? BillingCycle.MONTHLY;
+    switch (billing) {
+      case BillingCycle.MONTHLY:
+        return { interval: 'month' as const, interval_count: 1 };
+      case BillingCycle.QUARTERLY:
+        return { interval: 'month' as const, interval_count: 3 };
+      case BillingCycle.YEARLY:
+        return { interval: 'year' as const, interval_count: 1 };
+      case BillingCycle.WEEKLY:
+        return { interval: 'week' as const, interval_count: 1 };
+      case BillingCycle.ONE_TIME:
+        return null;
+      default:
+        return { interval: 'month' as const, interval_count: 1 };
+    }
+  }
 }

@@ -8986,6 +8986,11 @@
             "description": "Office Location ID",
             "example": "123e4567-e89b-12d3-a456-426614174000"
           },
+          "stripeProductId": {
+            "type": "string",
+            "description": "Plan stripe product id (optional - will be created if not provided)",
+            "example": "prod_1234567890"
+          },
           "name": {
             "type": "string",
             "description": "Plan name",
@@ -9176,9 +9181,22 @@
             "example": "USD"
           },
           "description": {
-            "type": "string",
-            "description": "Price description",
-            "example": "Monthly subscription fee"
+            "type": "object",
+            "description": "Planın fiyatının detaylı açıklaması (Rich Text Editor JSON formatı)",
+            "example": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Detaylı fiyat açıklaması."
+                    }
+                  ]
+                }
+              ]
+            }
           },
           "stripePriceId": {
             "type": "string",
@@ -9236,6 +9254,11 @@
             "type": "string",
             "description": "Office Location ID",
             "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "stripeProductId": {
+            "type": "string",
+            "description": "Plan stripe product id (optional - will be created if not provided)",
+            "example": "prod_1234567890"
           },
           "name": {
             "type": "string",
@@ -9364,9 +9387,22 @@
             "example": "USD"
           },
           "description": {
-            "type": "string",
-            "description": "Price description",
-            "example": "Monthly subscription fee"
+            "type": "object",
+            "description": "Planın fiyatının detaylı açıklaması (Rich Text Editor JSON formatı)",
+            "example": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Detaylı fiyat açıklaması."
+                    }
+                  ]
+                }
+              ]
+            }
           },
           "stripePriceId": {
             "type": "string",

@@ -33,6 +33,15 @@ export class CreatePlanDto {
   @IsNotEmpty()
   officeLocationId: string;
 
+
+  @ApiPropertyOptional({
+    description: 'Plan stripe product id (optional - will be created if not provided)',
+    example: 'prod_1234567890',
+  })
+  @IsString()
+  @IsOptional()
+  stripeProductId?: string;
+
   @ApiProperty({
     description: 'Plan name',
     example: 'Basic Plan',
@@ -172,13 +181,15 @@ export class CreatePlanPriceDto {
   @IsNotEmpty()
   currency: string;
 
-  @ApiPropertyOptional({
-    description: 'Price description',
-    example: 'Monthly subscription fee',
+@ApiProperty({
+    description: 'Planın fiyatının detaylı açıklaması (Rich Text Editor JSON formatı)',
+    type: 'object',
+    required: false,
+    example: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Detaylı fiyat açıklaması.' }] }] },
   })
-  @IsString()
   @IsOptional()
-  description?: string;
+  @IsObject()
+  description?: JsonValue;
 
   @ApiPropertyOptional({
     description: 'Stripe Price ID',
